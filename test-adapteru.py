@@ -1,21 +1,22 @@
+#!python3
 
-
-
-
-import importlib.util
-import pip
 
 
 verbose = 50
 
-def lib_check_install(package_name):
-    spec = importlib.util.find_spec(package_name)
-    if spec is None:
-        print(package_name +" is not installed, trying to install...")
-        pip.main(['install', package_name])
+
+# lib_check_install v2
+import importlib.util
+import pip
+def lib_check_install(*packages):
+	for p in packages:
+		spec = importlib.util.find_spec(p)
+		if spec is None:
+			print(p +" is not installed, trying to install...")
+			pip.main(['install', p])
 
 
-lib_check_install('pyvisa')
+lib_check_install('pyvisa', 'pyvisa-py')
 import pyvisa #pip install pyvisa pyvisa-py
 
 import time
@@ -26,6 +27,9 @@ import time
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
 
+lib_check_install('mplcursors')
+import mplcursors
+
 
 
 data_loadReqA = []
@@ -34,7 +38,7 @@ data_loadA = []
 data_loadW = []
 
 
-if False: #fake demo measurings
+if True: #fake demo measurings
 	data_loadReqA = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4]
 	data_loadA =  [0.0, 0.500547, 0.600448, 0.699854, 0.799964, 0.899635, 0.99913, 1.099376, 0.0, 1.300171, 1.399442, 1.494956, 1.59529, 1.69556, 1.799899, 1.900312, 2.000822, 2.100236, 2.200443, 2.294846, 2.39518, 2.500621, 2.600104, 2.700486, 2.799766, 2.89998, 3.000602, 3.099993, 3.200127, 0.154693, 0.155484]
 	data_loadV =  [20.110512, 19.90115, 19.857828, 19.818253, 19.779373, 19.736511, 19.692806, 19.652285, 0.000429, 4.552769, 4.509553, 4.466291, 4.425251, 4.38199, 4.337087, 4.293545, 4.250551, 4.207586, 4.164163, 4.123359, 4.079357, 4.033477, 3.990113, 3.945801, 3.902156, 3.857874, 3.815471, 3.769044, 3.724066, 0.186585, 0.000444]
@@ -114,54 +118,49 @@ if True:
 	# pyplot example for multiple y axis
 	#  https://matplotlib.org/stable/gallery/spines/multiple_yaxis_with_spines.html
 	#
-	
-	fig, ax = plt.subplots()
-	#plot = fig.add_subplot(111)
+	fig, axs = plt.subplots(3, sharex=False, sharey=False)
 
-	fig.subplots_adjust(right=0.75)
-
-	twin1 = ax.twinx()
-	twin2 = ax.twinx()
-
-	# Offset the right spine of twin2.  The ticks and label have already been
-	# placed on the right by twinx above.
-	twin2.spines.right.set_position(("axes", 1.2))
+	linesA = axs[0].plot(data_loadReqA, data_loadA, marker='o', label='Measured Current [A]')
+	#axs[0].set(xlim=(0, None), ylim=(0, None))
+	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
+	axs[0].legend(loc='best', shadow=True)
 
 
-	pA, = plt.plot(data_loadReqA, data_loadA, marker='o', label='Measured Current [A]')
-	#ax.set(xlim=(0, ), ylim=(0, ), xlabel="'Requested current [A]'", ylabel="Measured Current [A]")
-	ax.set(xlim=(0, None), ylim=(0, None), xlabel="'Requested current [A]'", ylabel="Measured Current [A]")
-	ax.tick_params(axis='y', colors=pA.get_color())
-	
 
-	pV, = plt.plot(data_loadReqA, data_loadV, marker='+', label='Measured Voltage [V]')
-	twin1.set(ylim=(0, None), ylabel="Measured Voltage [V]")
-	twin1.tick_params(axis='y', colors=pV.get_color())
+	linesV = axs[1].plot(data_loadReqA, data_loadV, marker='+', label='Measured Voltage [V]')
+	axs[1].set(ylim=(0, None))
+	#axs[1].tick_linesArams(axis='y', colors=linesV.get_color())
+	axs[1].legend(loc='best', shadow=True)
 
-	pW, = plt.plot(data_loadReqA, data_loadW, marker='x', label='Measured Power [W]')
-	twin2.set(ylim=(0, None), ylabel="Measured Power [W]")
-	twin2.tick_params(axis='y', colors=pW.get_color())
+	linesW = axs[2].plot(data_loadReqA, data_loadW, marker='x', label='Measured Power [W]')
+	axs[2].set(ylim=(0, None), xlabel="'Requested current [A]'")
+	#twin2.tick_linesArams(axis='y', colors=linesW.get_color())
+	axs[2].legend(loc='best', shadow=True)
 
 
-	legend = plt.legend(loc='best', shadow=True)
+	def create_mplcursor_for_points_on_line(lines, ax=None, annotation_func=None, **kwargs):
+		ax = ax or plt.gca()
+		scats = [ax.scatter(x=line.get_xdata(), y=line.get_ydata(), color='none') for line in lines]
+		cursor = mplcursors.cursor(scats, **kwargs)
+		if annotation_func is not None:
+			cursor.connect('add', annotation_func)
+		return cursor
 
-	
-	def on_plot_hover(event):
-		# Iterating over each data member plotted
-		listOfLine2D = plt.gca().get_lines()
-		for curve in listOfLine2D:
-			# Searching which data member corresponds to current mouse position
-			if curve.contains(event)[0]:
-				print("over %s" % curve.get_gid())
-            
-	fig.canvas.mpl_connect('motion_notify_event', on_plot_hover)  
+	#fig.tight_layout()
 
-	import pprint
-	from pprint import pp
-	pp(plt.gca().get_lines())
-	listOfLine2D = plt.gca().get_lines()
-	print(listOfLine2D)
-	for line in listOfLine2D:
-		print(line)
-		pp(line.get_data())
+	#mplcursors.cursor(hover=True, highlight=False)
+
+	#annotation_func = ()"add", lambda sel: sel.annotation.set_text("TIC ID = {}\nTmag = {}\nGaia ID = {}\nGmag = {}".format(ticID[sel.target.index],
+                                                                                                            
+
+	create_mplcursor_for_points_on_line(linesA, ax=axs[0], hover=True, 
+				     annotation_func=lambda sel: sel.annotation.set_text('Measured current: '+str(sel.target[1])+' V\nRequested current: '+str(sel.target[0])+' A')
+					 )
+	create_mplcursor_for_points_on_line(linesV, ax=axs[1], hover=True,
+				     annotation_func=lambda sel: sel.annotation.set_text('Measured voltage: '+str(sel.target[1])+' A\nRequested current: '+str(sel.target[0])+' A')
+					 )
+	create_mplcursor_for_points_on_line(linesW, ax=axs[2], hover=True,
+				     annotation_func=lambda sel: sel.annotation.set_text('Measured power: '+str(sel.target[1])+' W\nRequested current: '+str(sel.target[0])+' W')
+					 )
+
 	plt.show()
