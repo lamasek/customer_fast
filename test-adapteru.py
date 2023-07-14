@@ -141,7 +141,7 @@ if True:
 	def create_mplcursor_for_points_on_line(lines, ax=None, annotation_func=None, **kwargs):
 		ax = ax or plt.gca()
 		scats = [ax.scatter(x=line.get_xdata(), y=line.get_ydata(), color='none') for line in lines]
-		cursor = mplcursors.cursor(scats, **kwargs)
+		cursor = mplcursors.cursor(scats, highlight=True, **kwargs)
 		if annotation_func is not None:
 			cursor.connect('add', annotation_func)
 		return cursor
@@ -152,15 +152,31 @@ if True:
 
 	#annotation_func = ()"add", lambda sel: sel.annotation.set_text("TIC ID = {}\nTmag = {}\nGaia ID = {}\nGmag = {}".format(ticID[sel.target.index],
                                                                                                             
+	def af0(sel):
+		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
+		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
+		return(sel.annotation.set_text(
+			'Measured current: '+str(sel.target[1])+' A\n'+
+			'Requested current: '+str(sel.target[0])+' A')
+		)
+	create_mplcursor_for_points_on_line(linesA, ax=axs[0], hover=True, annotation_func=af0)
 
-	create_mplcursor_for_points_on_line(linesA, ax=axs[0], hover=True, 
-				     annotation_func=lambda sel: sel.annotation.set_text('Measured current: '+str(sel.target[1])+' V\nRequested current: '+str(sel.target[0])+' A')
-					 )
-	create_mplcursor_for_points_on_line(linesV, ax=axs[1], hover=True,
-				     annotation_func=lambda sel: sel.annotation.set_text('Measured voltage: '+str(sel.target[1])+' A\nRequested current: '+str(sel.target[0])+' A')
-					 )
-	create_mplcursor_for_points_on_line(linesW, ax=axs[2], hover=True,
-				     annotation_func=lambda sel: sel.annotation.set_text('Measured power: '+str(sel.target[1])+' W\nRequested current: '+str(sel.target[0])+' W')
-					 )
+	def af1(sel):
+		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
+		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
+		return(sel.annotation.set_text(
+			'Measured voltage: '+str(sel.target[1])+' V\n'
+			+'Requested voltage: '+str(sel.target[0])+' V')
+		)
+	create_mplcursor_for_points_on_line(linesV, ax=axs[1], hover=True, annotation_func=af1)
+	
+	def af2(sel):
+		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
+		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=0.7)
+		return(sel.annotation.set_text(
+			'Measured power: '+str(sel.target[1])+' W\n'+
+			'Requested current: '+str(sel.target[0])+' W')
+		)
+	create_mplcursor_for_points_on_line(linesW, ax=axs[2], hover=True, annotation_func=af2)
 
 	plt.show()
