@@ -166,7 +166,7 @@ if True:
 		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
 		return(sel.annotation.set_text(
 			'Measured voltage: '+str(sel.target[1])+' V\n'
-			+'Requested voltage: '+str(sel.target[0])+' V')
+			+'Requested current: '+str(sel.target[0])+' A')
 		)
 	create_mplcursor_for_points_on_line(linesV, ax=axs[1], hover=True, annotation_func=af1)
 	
@@ -175,7 +175,7 @@ if True:
 		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=0.7)
 		return(sel.annotation.set_text(
 			'Measured power: '+str(sel.target[1])+' W\n'+
-			'Requested current: '+str(sel.target[0])+' W')
+			'Requested current: '+str(sel.target[0])+' A')
 		)
 	create_mplcursor_for_points_on_line(linesW, ax=axs[2], hover=True, annotation_func=af2)
 
