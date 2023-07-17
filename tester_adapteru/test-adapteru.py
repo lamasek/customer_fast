@@ -21,8 +21,8 @@ import time
 
 import sys
 
-#lib_check_install('pyqtgraph')
-#import pyqtgraph as pg #pip install pyqtgraph
+lib_check_install('pyqtgraph')
+import pyqtgraph as pg #pip install pyqtgraph
 
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
@@ -45,21 +45,44 @@ import qdarktheme ### FIX it by: pip install pyqtdarktheme
 
 
 config = {
-	"load": {
-		'VISAresource': 'TCPIP0::10.10.134.5::INSTR'
+	'GUItheme': 'auto', #light, dark, auto
+	"curID": '2',
+	'cfgs': {
+		'1': {
+			"load": {
+				'type': 'VISA',
+				'VISAresource': 'TCPIP0::10.10.134.5::INSTR',
+			},
+			"wattmeter": {
+				'VISAresource': '',
+			},
+			'test_adapteru': {
+				'reqmAstart': 500,#mA
+				'reqmAstep': 100,#mA
+				'reqmAmax' : 10000,#mA
+				'Vmin': 1,#V
+				'VminAttempts': 3,#attempts
+				'time_step_delay': 800, #ms
+			},
+		},
+		'2': {
+			"load": {
+				'type': 'demo1',
+				'VISAresource': '',
+			},
+			"wattmeter": {
+				'VISAresource': '',
+			},
+			'test_adapteru': {
+				'reqmAstart': 500,#mA
+				'reqmAstep': 100,#mA
+				'reqmAmax' : 10000,#mA
+				'Vmin': 1,#V
+				'VminAttempts': 3,#attempts
+				'time_step_delay': 80, #ms
+			},
+		},
 	},
-	"wattmeter": {
-		'VISAresource': ''
-	},
-	'test_adapteru': {
-		'reqmAstart': 500,#mA
-		'reqmAstep': 100,#mA
-		'reqmAmax' : 10000,#mA
-		'Vmin': 1,#V
-		'VminAttempts': 3,#attempts
-		'time_step_delay': 80, #ms
-	}
-	
 }
 
 data = { # all measured data
@@ -68,8 +91,8 @@ data = { # all measured data
 	#   time:   (time1, time2, ...)
 	#   graphID: graphID
 }
+configCurrent = config['cfgs'][config['curID']]
 
-load_demo = True
 # GLOBAL VARIABLES ##################################################################
 
 # DATA 
@@ -92,10 +115,10 @@ class load():
 	connected = False
 
 	def connect(self):
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			self.connected = True
 			return(True)
-		else:
+		elif configCurrent['load']['type'] == 'VISA':
 			self.rm = pyvisa.ResourceManager()
 			print('Connecting to ' + config['load']['VISAresource'])
 			self.PVload = self.rm.open_resource(config['load']['VISAresource'])
@@ -105,27 +128,34 @@ class load():
 
 			#TODO
 			return(False)
+		else:
+			return(False)
 
 	def disconnect(self):
 		print('Load disconnecting...')
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			self.connected = False
 			return(True)
+		elif configCurrent['load']['type'] == 'VISA':
+			#TODO
+			return(False)
 		else:
 			return(False)
 
 	def measure_init(self):
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			self.demo_idx = 0
 			return(True)
-		else:
+		elif configCurrent['load']['type'] == 'VISA':
 			self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
 			self.PVload.write(':SOURCE:CURRent:LEVEL:IMMEDIATE 0') #set load to 0 Amps
 			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
+			return(True)
+		else:
 			return(False)
 
 	def measure(self):
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			if self.demo_idx < len (self.demo_loadA):
 				loadA = self.demo_loadA[self.demo_idx]
 				loadV = self.demo_loadV[self.demo_idx]
@@ -135,10 +165,12 @@ class load():
 				loadV = 0
 				loadW = 0
 			self.demo_idx += 1
-		else: # do real measure
+		elif configCurrent['load']['type'] == 'VISA':
 			loadA = float(self.PVload.query(":MEASURE:CURRENT?").strip())
 			loadV = float(self.PVload.query(":MEASURE:VOLTAGE?").strip())
 			loadW = float(self.PVload.query(":MEASURE:POWER?").strip())
+		else:
+			return(False)
 		
 		if verbose>120:
 			print("Current: ", loadA, ', ', end='')
@@ -148,21 +180,23 @@ class load():
 
 
 	def measure_finish(self):
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			None
-		else:
+		elif configCurrent['load']['type'] == 'VISA':
 			self.PVload.write(":SOURCE:INPUT:STATE Off")
-
+		else:
+			None
 
 	def setCurrent(self, current):
-		if  load_demo == True:
+		if  configCurrent['load']['type'] == 'demo1':
 			None
-		else:
-
+		elif configCurrent['load']['type'] == 'VISA':
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + current
 			if verbose > 100:
 				print('PVcommand = '+PVcommand)
 			self.PVload.write(PVcommand)
+		else:
+			None
 
 
 
@@ -255,22 +289,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.widget_test_zatizeni_graph
 		#self.graphWidget1 = PlotWidget(parent=self.verticalLayoutWidget)
 
-		self.loadReqmAstart = config['test_adapteru']['reqmAstart']
-		self.loadReqmAstep = config['test_adapteru']['reqmAstep']
-		self.loadReqmAmax = config['test_adapteru']['reqmAmax']
-		self.loadVmin = config['test_adapteru']['Vmin']
-		self.loadVminAttempts = config['test_adapteru']['VminAttempts']
-		self.time_step_delay = config['test_adapteru']['time_step_delay']
+		self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
+		self.loadReqmAstep = configCurrent['test_adapteru']['reqmAstep']
+		self.loadReqmAmax = configCurrent['test_adapteru']['reqmAmax']
+		self.loadVmin = configCurrent['test_adapteru']['Vmin']
+		self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
+		self.time_step_delay = configCurrent['test_adapteru']['time_step_delay']
 
 		self.load = load()
 
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni.pressed.connect(self.test_zatizeni_start_stop)
 
+		#self.penColor = color=(205, 205, 205)
+		#self.pen = pg.mkPen(self.penColor, width=1)
+		#self.cursor = Qt.CursorShape.CrossCursor
+
+
 
 	def test_zatizeni_start_stop(self):
 		if self.test_zatizeni_running == False: #start
-			self.loadReqmAstart = config['test_adapteru']['reqmAstart']
+			self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
 			print('Connecting to Load')
 			ret = self.load.connect()
 			if ret == True:
@@ -288,7 +327,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				data_loadV = []
 				global data_loadW
 				data_loadW = []
-				self.loadVminAttempts = config['test_adapteru']['VminAttempts']
+				self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
 
 				self.plotWidget.plotItem.clear()
 
@@ -372,10 +411,13 @@ def main():
 	global data
 	print("Main running...")
 
-	app = QtWidgets.QApplication(sys.argv)
-	## Apply dark theme to Qt application
-	app.setStyleSheet(qdarktheme.load_stylesheet())
 
+	app = QtWidgets.QApplication(sys.argv)
+
+	## Apply dark theme to Qt application
+	qdarktheme.setup_theme(config['GUItheme'])
+
+	
 	window = MainWindow()
 
 	window.show()

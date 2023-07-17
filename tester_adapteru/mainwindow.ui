@@ -6,21 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>585</width>
+    <height>439</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>641</width>
-      <height>441</height>
+      <width>511</width>
+      <height>451</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -100,8 +106,8 @@
        <rect>
         <x>10</x>
         <y>40</y>
-        <width>601</width>
-        <height>351</height>
+        <width>351</width>
+        <height>281</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -160,7 +166,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>585</width>
      <height>17</height>
     </rect>
    </property>
