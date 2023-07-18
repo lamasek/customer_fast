@@ -135,7 +135,7 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="PlotWidget" name="plotWidget" native="true"/>
+          <widget class="PlotWidget" name="plotWidget1" native="true"/>
          </item>
         </layout>
        </item>

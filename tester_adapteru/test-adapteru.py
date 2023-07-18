@@ -22,7 +22,7 @@ import time
 import sys
 
 lib_check_install('pyqtgraph')
-import pyqtgraph as pg #pip install pyqtgraph
+#import pyqtgraph as pg #pip install pyqtgraph
 
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
@@ -208,6 +208,9 @@ def create_graph():
 	#
 	fig, axs = plt.subplots(3, sharex=False, sharey=False)
 
+	#plt.style.use('dark_background')
+
+
 	linesA = axs[0].plot(data_loadReqA, data_loadA, marker='o', label='Measured Current [A]')
 	#axs[0].set(xlim=(0, None), ylim=(0, None))
 	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
@@ -274,6 +277,7 @@ def create_graph():
 
 from MainWindow import Ui_MainWindow
 #pyuic6 mainwindow.ui -o MainWindow.py
+#https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
@@ -304,7 +308,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.penColor = color=(205, 205, 205)
 		#self.pen = pg.mkPen(self.penColor, width=1)
 		#self.cursor = Qt.CursorShape.CrossCursor
-
+		#print(qwidget_as_canvas1)
 
 
 	def test_zatizeni_start_stop(self):
@@ -329,7 +333,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				data_loadW = []
 				self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
 
-				self.plotWidget.plotItem.clear()
+				self.plotWidget1.plotItem.clear()
 
 				self.label_test_zatizeni.setText('Measuring')
 				self.label_test_zatizeni.setStyleSheet('color:green')
@@ -375,7 +379,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			self.loadReqmA += self.loadReqmAstep
 
-			self.plotWidget.plotItem.plot(data_loadV)
+			self.plotWidget1.plotItem.plot(data_loadV)
 
 			if loadV < self.loadVmin:
 				self.loadVminAttempts -= 1
@@ -394,7 +398,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load.disconnect()
 			self.timer_test_zatizeni.stop()
 			print(data_loadV)
-			self.plotWidget.plotItem.plot(data_loadV)
+			self.plotWidget1.plotItem.plot(data_loadV)
 			create_graph()
 
 	#if verbose > 150:
