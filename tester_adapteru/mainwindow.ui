@@ -135,7 +135,7 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="PlotWidget" name="plotWidget1" native="true"/>
+          <widget class="FigureCanvasQTAgg" name="plotWidget1" native="true"/>
          </item>
         </layout>
        </item>
@@ -175,9 +175,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PlotWidget</class>
+   <class>FigureCanvasQTAgg</class>
    <extends>QWidget</extends>
-   <header>pyqtgraph</header>
+   <header>matplotlib.backends.backend_qtagg</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
