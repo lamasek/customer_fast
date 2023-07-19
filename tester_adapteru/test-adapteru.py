@@ -275,19 +275,25 @@ def create_graph():
 
 
 
-from MainWindow import Ui_MainWindow
 #pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
+#https://www.pythonguis.com/tutorials/pyqt6-first-steps-qt-designer/
+#to delam widget
+# FigureCanvasQTAgg
+# matplotlib.backends.backend_qtagg
 
+#verze s .py
+from MainWindow import Ui_MainWindow
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
 		super(MainWindow, self).__init__(*args, **kwargs)
 		self.setupUi(self)
 
+#verze s .ui
 #class MainWindow(QtWidgets.QMainWindow):
-#    def __init__(self, *args, **kwargs):
-#        super().__init__(*args, **kwargs)
- #       uic.loadUi("mainwindow.ui", self)
+#	def __init__(self, *args, **kwargs):
+#		super().__init__(*args, **kwargs)
+#		uic.loadUi("mainwindow.ui", self)
 
 		#graph
 		#self.widget_test_zatizeni_graph
