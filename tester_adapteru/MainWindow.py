@@ -77,7 +77,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.plotWidget1 = FigureCanvasQTAgg(parent=self.verticalLayoutWidget)
+        self.plotWidget1 = MplWidget(parent=self.verticalLayoutWidget)
         self.plotWidget1.setObjectName("plotWidget1")
         self.horizontalLayout_3.addWidget(self.plotWidget1)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
@@ -118,4 +118,4 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Main), _translate("MainWindow", "Main"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_export), _translate("MainWindow", "Export"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_help), _translate("MainWindow", "Help"))
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from mplwidget import MplWidget
