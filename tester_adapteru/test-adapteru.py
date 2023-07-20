@@ -278,12 +278,16 @@ def create_graph():
 #pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 #https://www.pythonguis.com/tutorials/pyqt6-first-steps-qt-designer/
+# https://www.pythonguis.com/tutorials/pyqt6-plotting-matplotlib/
 #to delam widget
 # FigureCanvasQTAgg
 # matplotlib.backends.backend_qtagg
 
 #verze s .py
 from MainWindow import Ui_MainWindow
+
+from matplotlib.backends.backend_qtagg import (NavigationToolbar2QT as NavigationToolbar)
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
 		super(MainWindow, self).__init__(*args, **kwargs)
@@ -339,7 +343,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				data_loadW = []
 				self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
 
-				self.plotWidget1.plotItem.clear()
+				# TODO clear graph
+				#self.addToolBar(NavigationToolbar(self.plotWidget1.canvas, self))
+				self.plotWidget1.canvas.axes.clear()
+				self.plotWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
+				self.plotWidget1.canvas.draw()
+
 
 				self.label_test_zatizeni.setText('Measuring')
 				self.label_test_zatizeni.setStyleSheet('color:green')
@@ -385,7 +394,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			self.loadReqmA += self.loadReqmAstep
 
-			self.plotWidget1.plotItem.plot(data_loadV)
+			# TODO pridat data do grafu 
+			# self.plotWidget1.plotItem.plot(data_loadV)
 
 			if loadV < self.loadVmin:
 				self.loadVminAttempts -= 1
@@ -404,7 +414,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load.disconnect()
 			self.timer_test_zatizeni.stop()
 			print(data_loadV)
-			self.plotWidget1.plotItem.plot(data_loadV)
+			# TODO update grafu
+			# self.plotWidget1.plotItem.plot(data_loadV)
 			create_graph()
 
 	#if verbose > 150:
