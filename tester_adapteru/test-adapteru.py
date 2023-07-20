@@ -345,9 +345,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 				# TODO clear graph
 				#self.addToolBar(NavigationToolbar(self.plotWidget1.canvas, self))
-				self.plotWidget1.canvas.axes.clear()
-				self.plotWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
-				self.plotWidget1.canvas.draw()
+				#self.plotWidget1.canvas.axes.clear()
+				#self.plotWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
+				#self.plotWidget1.canvas.draw()
 
 
 				self.label_test_zatizeni.setText('Measuring')
@@ -379,7 +379,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		if verbose >200:
 			print('test_zatizeni_mereni()')
 		if self.loadReqmA < self.loadReqmAmax:
-			self.loadReqA = str(self.loadReqmA/1000)
+			self.loadReqA = float(self.loadReqmA/1000)
 			if verbose>100:
 				print('loadReqA=', self.loadReqA, ', ', end='')
 			self.load.setCurrent(self.loadReqA)	
@@ -396,6 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			# TODO pridat data do grafu 
 			# self.plotWidget1.plotItem.plot(data_loadV)
+			self.plotWidget1.update_plot(data_loadReqA, data_loadA, data_loadV, data_loadW)
 
 			if loadV < self.loadVmin:
 				self.loadVminAttempts -= 1
@@ -416,7 +417,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			print(data_loadV)
 			# TODO update grafu
 			# self.plotWidget1.plotItem.plot(data_loadV)
-			create_graph()
+			#create_graph()
 
 	#if verbose > 150:
 	#	print('data_loadReqA = ', data_loadReqA)
