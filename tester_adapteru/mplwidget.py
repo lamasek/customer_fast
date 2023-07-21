@@ -11,16 +11,31 @@ from matplotlib.backends.backend_qtagg import FigureCanvas
 
 from matplotlib.figure import Figure
 
+import matplotlib.pyplot as plt
+
 import mplcursors
 
 
-	
 class MplWidget(QWidget):
 	
 	def __init__(self, parent = None):
 
 		QWidget.__init__(self, parent)
 		
+
+
+	def myinit(self, theme=None):
+		if theme is None:
+			theme = 'none'
+		if theme != 'none':
+			if theme == 'dark':
+				plt.style.use('dark_background')
+			if theme == 'light':
+				None
+			if theme == 'auto':
+				None
+				#TODO detect
+
 		self.fig = Figure()
 		self.canvas = FigureCanvas(self.fig)
 		
@@ -36,8 +51,11 @@ class MplWidget(QWidget):
 
 		self.fig.tight_layout()
 
+
 		self.canvas.draw()
 		#plt.show()
+
+
 
 
 	def create_mplcursor_for_points_on_line(self, lines, ax, annotation_func, **kwargs):
