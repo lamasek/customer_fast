@@ -48,10 +48,15 @@ from MainWindow import Ui_MainWindow
 
 
 config = {
-	'GUItheme': 'auto', #light, dark, auto
 	"curID": '2',
 	'cfgs': {
 		'1': {
+			'GUI': {
+				'theme': 'auto', #light, dark, auto, none
+			},
+			'plots': {
+				'theme': 'auto', #light, dark, auto, none
+			},
 			"load": {
 				'type': 'VISA',
 				'VISAresource': 'TCPIP0::10.10.134.5::INSTR',
@@ -70,6 +75,12 @@ config = {
 			},
 		},
 		'2': {
+			'GUI': {
+				'theme': 'light', #light, dark, auto
+			},
+			'plots': {
+				'theme': 'light', #light, dark, auto
+			},
 			"load": {
 				'type': 'demo1',
 				'VISAresource': '',
@@ -247,6 +258,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.load = load()
 
+		self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
 
 		self.test_zatizeni_running = False
@@ -365,7 +377,7 @@ def main():
 	app = QtWidgets.QApplication(sys.argv)
 
 	## Apply dark theme to Qt application
-	qdarktheme.setup_theme(config['GUItheme'])
+	qdarktheme.setup_theme(configCurrent['GUI']['theme'])
 
 	
 	window = MainWindow()
