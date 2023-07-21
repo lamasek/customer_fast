@@ -312,6 +312,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.load = load()
 
+		self.mplWidget1.plot_init()
+
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni.pressed.connect(self.test_zatizeni_start_stop)
 
@@ -322,7 +324,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def test_zatizeni_start_stop(self):
-		if self.test_zatizeni_running == False: #start
+		if self.test_zatizeni_running == False: # START
 			self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
 			print('Connecting to Load')
 			ret = self.load.connect()
@@ -343,11 +345,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				data_loadW = []
 				self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
 
-				# TODO clear graph
-				#self.addToolBar(NavigationToolbar(self.plotWidget1.canvas, self))
-				#self.plotWidget1.canvas.axes.clear()
-				#self.plotWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
-				#self.plotWidget1.canvas.draw()
+				self.mplWidget1.plot_init()
+				#self.addToolBar(NavigationToolbar(self.mplWidget1.canvas, self))
+				#self.mplWidget1.canvas.axes.clear()
+				#self.mplWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
+				#self.mplWidget1.canvas.draw()
 
 
 				self.label_test_zatizeni.setText('Measuring')
@@ -394,9 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			self.loadReqmA += self.loadReqmAstep
 
-			# TODO pridat data do grafu 
-			# self.plotWidget1.plotItem.plot(data_loadV)
-			self.plotWidget1.update_plot(data_loadReqA, data_loadA, data_loadV, data_loadW)
+			self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
 
 			if loadV < self.loadVmin:
 				self.loadVminAttempts -= 1
@@ -414,19 +414,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load.measure_finish()
 			self.load.disconnect()
 			self.timer_test_zatizeni.stop()
-			print(data_loadV)
 			# TODO update grafu
-			# self.plotWidget1.plotItem.plot(data_loadV)
-			#create_graph()
-
-	#if verbose > 150:
-	#	print('data_loadReqA = ', data_loadReqA)
-	#	print('data_loadA = ', data_loadA)
-	#	print('data_loadV = ', data_loadV)
-	#	print('data_loadV = ', data_loadW)
-
-
-	
+			# self.mplWidget1.plotItem.plot(data_loadV)
 
 
 def main():
