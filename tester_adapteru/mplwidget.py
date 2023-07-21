@@ -34,10 +34,11 @@ class MplWidget(QWidget):
 		#axs = self.canvas.figure.add_subplot(3, 1, sharex=False, sharey=False)
 		#self.fig, self.axs = self.canvas.figure.subplots(3, sharex=False, sharey=False)
 
+		self.fig.tight_layout()
+
 		self.canvas.draw()
 		#plt.show()
 
-		self.fig.tight_layout()
 
 	def create_mplcursor_for_points_on_line(self, lines, ax, annotation_func, **kwargs):
 		if ax == None:
@@ -51,7 +52,6 @@ class MplWidget(QWidget):
 
 
 	#mplcursors.cursor(hover=True, highlight=False)
-
 	#annotation_func = ()"add", lambda sel: sel.annotation.set_text("TIC ID = {}\nTmag = {}\nGaia ID = {}\nGmag = {}".format(ticID[sel.target.index],
 																											
 	def af1(self, sel):
@@ -67,7 +67,7 @@ class MplWidget(QWidget):
 		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
 		return(sel.annotation.set_text(
 			'Measured voltage: '+str(sel.target[1])+' V\n'
-			+'Requested voltage: '+str(sel.target[0])+' V')
+			+'Requested current: '+str(sel.target[0])+' A')
 		)
 	
 	def af3(self, sel):
@@ -75,7 +75,7 @@ class MplWidget(QWidget):
 		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=0.7)
 		return(sel.annotation.set_text(
 			'Measured power: '+str(sel.target[1])+' W\n'+
-			'Requested current: '+str(sel.target[0])+' W')
+			'Requested current: '+str(sel.target[0])+' A')
 		)
 
 	def plot_init(self):
@@ -102,21 +102,24 @@ class MplWidget(QWidget):
 
 	def plot_update(self, xdata, y1data, y2data, y3data):
 			self.ax1.cla()  # Clear the canvas.
-			#self.ax1.plot(xdata, y1data)
 			self.linesA = self.ax1.plot(xdata, y1data, marker='o', label='Measured Current [A]')
 			self.ax1.set(ylim=(0, None))
+			self.ax1.legend(loc='best', shadow=True)
 
 
 			self.ax2.cla()  # Clear the canvas.
-			#self.ax2.plot(xdata, y2data)
 			self. linesV = self.ax2.plot(xdata, y2data, marker='+', label='Measured Voltage [V]')
+			self.ax2.set(ylim=(0, None))
+			self.ax2.legend(loc='best', shadow=True)
 
 
 			self.ax3.cla()  # Clear the canvas.
 			self.linesW = self.ax3.plot(xdata, y3data, marker='x', label='Measured Power [W]')
-			#self.ax3.plot(xdata, y3data)
+			self.ax3.set(ylim=(0, None), xlabel="'Requested current [A]'")
+			self.ax3.legend(loc='best', shadow=True)
+
 			
-			self.create_mplcursor_for_points_on_line(self.linesA, self.ax1, self.af1, hover=False)
+			self.create_mplcursor_for_points_on_line(self.linesA, self.ax1, annotation_func=self.af1, hover=False)
 			self.create_mplcursor_for_points_on_line(self.linesV, self.ax2, annotation_func=self.af2, hover=False)
 			self.create_mplcursor_for_points_on_line(self.linesW, self.ax3, annotation_func=self.af3, hover=False)
 

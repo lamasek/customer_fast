@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 150
+verbose = 180
 
 
 # lib_check_install v2
@@ -27,6 +27,7 @@ lib_check_install('pyqtgraph')
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import (NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 
 lib_check_install('mplcursors')
@@ -39,6 +40,8 @@ lib_check_install('pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
 
 
+from MainWindow import Ui_MainWindow
+
 
 
 ###### GLOBAL variables - config ####################################################
@@ -46,7 +49,7 @@ import qdarktheme ### FIX it by: pip install pyqtdarktheme
 
 config = {
 	'GUItheme': 'auto', #light, dark, auto
-	"curID": '2',
+	"curID": '1',
 	'cfgs': {
 		'1': {
 			"load": {
@@ -62,7 +65,8 @@ config = {
 				'reqmAmax' : 10000,#mA
 				'Vmin': 1,#V
 				'VminAttempts': 3,#attempts
-				'time_step_delay': 800, #ms
+				'time_step_delay': 1000, #ms, musi byt o trochu vetsi nez time_measure_delay
+				'time_measure_delay': 800, #ms , jak dlouho ceka mereni po nastaveni proudu - nemelo by byt vetsi nez time_step_delay - cca 100ms
 			},
 		},
 		'2': {
@@ -80,6 +84,7 @@ config = {
 				'Vmin': 1,#V
 				'VminAttempts': 3,#attempts
 				'time_step_delay': 80, #ms
+				'time_measure_delay': 2, #ms , jak dlouho ceka mereni po nastaveni proudu - nemelo by byt vetsi nez time_step_delay - cca 100ms
 			},
 		},
 	},
@@ -120,14 +125,14 @@ class load():
 			return(True)
 		elif configCurrent['load']['type'] == 'VISA':
 			self.rm = pyvisa.ResourceManager()
-			print('Connecting to ' + config['load']['VISAresource'])
-			self.PVload = self.rm.open_resource(config['load']['VISAresource'])
+			print('Connecting to ' + configCurrent['load']['VISAresource'])
+			self.PVload = self.rm.open_resource(configCurrent['load']['VISAresource'])
 			# Query if instrument is present
 			# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
 			print(self.PVload.query("*IDN?"))
-
-			#TODO
-			return(False)
+			self.connected = True
+			#TODO check
+			return(True)
 		else:
 			return(False)
 
@@ -137,8 +142,10 @@ class load():
 			self.connected = False
 			return(True)
 		elif configCurrent['load']['type'] == 'VISA':
-			#TODO
-			return(False)
+			self.rm.close() 
+			#TODO check
+			self.connected = False
+			return(True)
 		else:
 			return(False)
 
@@ -150,6 +157,7 @@ class load():
 			self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
 			self.PVload.write(':SOURCE:CURRent:LEVEL:IMMEDIATE 0') #set load to 0 Amps
 			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
+			#TODO check
 			return(True)
 		else:
 			return(False)
@@ -169,6 +177,7 @@ class load():
 			loadA = float(self.PVload.query(":MEASURE:CURRENT?").strip())
 			loadV = float(self.PVload.query(":MEASURE:VOLTAGE?").strip())
 			loadW = float(self.PVload.query(":MEASURE:POWER?").strip())
+			#TODO check
 		else:
 			return(False)
 		
@@ -191,87 +200,12 @@ class load():
 		if  configCurrent['load']['type'] == 'demo1':
 			None
 		elif configCurrent['load']['type'] == 'VISA':
-			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + current
+			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
 			if verbose > 100:
 				print('PVcommand = '+PVcommand)
 			self.PVload.write(PVcommand)
 		else:
 			None
-
-
-
-#graph
-def create_graph():
-
-	# pyplot example for multiple y axis
-	#  https://matplotlib.org/stable/gallery/spines/multiple_yaxis_with_spines.html
-	#
-	fig, axs = plt.subplots(3, sharex=False, sharey=False)
-
-	#plt.style.use('dark_background')
-
-
-	linesA = axs[0].plot(data_loadReqA, data_loadA, marker='o', label='Measured Current [A]')
-	#axs[0].set(xlim=(0, None), ylim=(0, None))
-	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
-	axs[0].legend(loc='best', shadow=True)
-
-
-
-	linesV = axs[1].plot(data_loadReqA, data_loadV, marker='+', label='Measured Voltage [V]')
-	axs[1].set(ylim=(0, None))
-	#axs[1].tick_linesArams(axis='y', colors=linesV.get_color())
-	axs[1].legend(loc='best', shadow=True)
-
-	linesW = axs[2].plot(data_loadReqA, data_loadW, marker='x', label='Measured Power [W]')
-	axs[2].set(ylim=(0, None), xlabel="'Requested current [A]'")
-	#twin2.tick_linesArams(axis='y', colors=linesW.get_color())
-	axs[2].legend(loc='best', shadow=True)
-
-
-	def create_mplcursor_for_points_on_line(lines, ax=None, annotation_func=None, **kwargs):
-		ax = ax or plt.gca()
-		scats = [ax.scatter(x=line.get_xdata(), y=line.get_ydata(), color='none') for line in lines]
-		cursor = mplcursors.cursor(scats, highlight=True, **kwargs)
-		if annotation_func is not None:
-			cursor.connect('add', annotation_func)
-		return cursor
-
-	#fig.tight_layout()
-
-	#mplcursors.cursor(hover=True, highlight=False)
-
-	#annotation_func = ()"add", lambda sel: sel.annotation.set_text("TIC ID = {}\nTmag = {}\nGaia ID = {}\nGmag = {}".format(ticID[sel.target.index],
-																											
-	def af0(sel):
-		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
-		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
-		return(sel.annotation.set_text(
-			'Measured current: '+str(sel.target[1])+' A\n'+
-			'Requested current: '+str(sel.target[0])+' A')
-		)
-	create_mplcursor_for_points_on_line(linesA, ax=axs[0], hover=True, annotation_func=af0)
-
-	def af1(sel):
-		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
-		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="yellow", alpha=0.7)
-		return(sel.annotation.set_text(
-			'Measured voltage: '+str(sel.target[1])+' V\n'
-			+'Requested voltage: '+str(sel.target[0])+' V')
-		)
-	create_mplcursor_for_points_on_line(linesV, ax=axs[1], hover=True, annotation_func=af1)
-	
-	def af2(sel):
-		sel.annotation.get_bbox_patch().set(fc="yellow", alpha=0.7)
-		sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=0.7)
-		return(sel.annotation.set_text(
-			'Measured power: '+str(sel.target[1])+' W\n'+
-			'Requested current: '+str(sel.target[0])+' W')
-		)
-	create_mplcursor_for_points_on_line(linesW, ax=axs[2], hover=True, annotation_func=af2)
-
-	plt.show()
-
 
 
 
@@ -282,11 +216,6 @@ def create_graph():
 #to delam widget
 # FigureCanvasQTAgg
 # matplotlib.backends.backend_qtagg
-
-#verze s .py
-from MainWindow import Ui_MainWindow
-
-from matplotlib.backends.backend_qtagg import (NavigationToolbar2QT as NavigationToolbar)
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
@@ -385,8 +314,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			if verbose>100:
 				print('loadReqA=', self.loadReqA, ', ', end='')
 			self.load.setCurrent(self.loadReqA)	
-			time.sleep(0.1)
-			
+			if verbose>150:
+				print('Wait ' + str(configCurrent['test_adapteru']['time_measure_delay']/1000) +'s: ', end='', flush=True)
+			time.sleep(configCurrent['test_adapteru']['time_measure_delay']/1000)
+			if verbose>150:
+				print(' done.')
+
 			loadA, loadV, loadW = self.load.measure()
 
 			data_loadReqA.append(self.loadReqA) 
