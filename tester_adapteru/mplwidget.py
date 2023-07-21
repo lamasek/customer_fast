@@ -118,10 +118,21 @@ class MplWidget(QWidget):
 			self.ax3.set(ylim=(0, None), xlabel="'Requested current [A]'")
 			self.ax3.legend(loc='best', shadow=True)
 
-			
-			self.create_mplcursor_for_points_on_line(self.linesA, self.ax1, annotation_func=self.af1, hover=False)
-			self.create_mplcursor_for_points_on_line(self.linesV, self.ax2, annotation_func=self.af2, hover=False)
-			self.create_mplcursor_for_points_on_line(self.linesW, self.ax3, annotation_func=self.af3, hover=False)
+			try:
+				self.cursor1.remove()
+			except:
+				None
+			self.cursor1 = self.create_mplcursor_for_points_on_line(self.linesA, self.ax1, annotation_func=self.af1, hover=False)
+			try:
+				self.cursor2.remove()
+			except:
+				None
+			self.cursor2 = self.create_mplcursor_for_points_on_line(self.linesV, self.ax2, annotation_func=self.af2, hover=False)
+			try:
+				self.cursor3.remove()
+			except:
+				None
+			self.cursor3 = self.create_mplcursor_for_points_on_line(self.linesW, self.ax3, annotation_func=self.af3, hover=False)
 
 			self.canvas.draw() # Trigger the canvas to update and redraw.
 

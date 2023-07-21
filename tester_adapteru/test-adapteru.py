@@ -49,7 +49,7 @@ from MainWindow import Ui_MainWindow
 
 config = {
 	'GUItheme': 'auto', #light, dark, auto
-	"curID": '1',
+	"curID": '2',
 	'cfgs': {
 		'1': {
 			"load": {
@@ -126,7 +126,13 @@ class load():
 		elif configCurrent['load']['type'] == 'VISA':
 			self.rm = pyvisa.ResourceManager()
 			print('Connecting to ' + configCurrent['load']['VISAresource'])
-			self.PVload = self.rm.open_resource(configCurrent['load']['VISAresource'])
+			try:
+				self.PVload = self.rm.open_resource(configCurrent['load']['VISAresource'])
+			except Exception as e:
+				print('  Connection failed: ' + str(e))
+				self.connected = False
+				return(False)
+
 			# Query if instrument is present
 			# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
 			print(self.PVload.query("*IDN?"))
