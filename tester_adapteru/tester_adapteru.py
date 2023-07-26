@@ -67,9 +67,9 @@ config = {
 			'test_adapteru': {
 				'reqmAstart': 500,#mA
 				'reqmAstep': 100,#mA
-				'reqmAmax' : 10000,#mA
-				'Vmin': 1,#V
-				'VminAttempts': 3,#attempts
+				'reqmAstop' : 10000,#mA
+				'stop_mV': 1,#V
+				'stop_mVAttempts': 3,#attempts
 				'time_step_delay': 1000, #ms, musi byt o trochu vetsi nez time_measure_delay
 				'time_measure_delay': 800, #ms , jak dlouho ceka mereni po nastaveni proudu - nemelo by byt vetsi nez time_step_delay - cca 100ms
 			},
@@ -91,9 +91,9 @@ config = {
 			'test_adapteru': {
 				'reqmAstart': 500,#mA
 				'reqmAstep': 100,#mA
-				'reqmAmax' : 10000,#mA
-				'Vmin': 1,#V
-				'VminAttempts': 3,#attempts
+				'reqmAstop' : 10000,#mA
+				'stop_mV': 1,#V
+				'stop_mVAttempts': 3,#attempts
 				'time_step_delay': 80, #ms
 				'time_measure_delay': 2, #ms , jak dlouho ceka mereni po nastaveni proudu - nemelo by byt vetsi nez time_step_delay - cca 100ms
 			},
@@ -116,6 +116,9 @@ data_loadReqA = []
 data_loadA = []
 data_loadV = []
 data_loadW = []
+
+
+CSVDELIM = ', '
 
 ###############################
 
@@ -234,27 +237,21 @@ class load():
 # FigureCanvasQTAgg
 # matplotlib.backends.backend_qtagg
 
-class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-	def __init__(self, *args, obj=None, **kwargs):
-		super(MainWindow, self).__init__(*args, **kwargs)
-		self.setupUi(self)
-
 #verze s .ui
 #class MainWindow(QtWidgets.QMainWindow):
 #	def __init__(self, *args, **kwargs):
 #		super().__init__(*args, **kwargs)
 #		uic.loadUi("mainwindow.ui", self)
 
+class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+	def __init__(self, *args, obj=None, **kwargs):
+		super(MainWindow, self).__init__(*args, **kwargs)
+		self.setupUi(self)
+
+
 		#graph
 		#self.widget_test_zatizeni_graph
 		#self.graphWidget1 = PlotWidget(parent=self.verticalLayoutWidget)
-
-		self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
-		self.loadReqmAstep = configCurrent['test_adapteru']['reqmAstep']
-		self.loadReqmAmax = configCurrent['test_adapteru']['reqmAmax']
-		self.loadVmin = configCurrent['test_adapteru']['Vmin']
-		self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
-		self.time_step_delay = configCurrent['test_adapteru']['time_step_delay']
 
 		self.load = load()
 
@@ -262,24 +259,81 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.mplWidget1.plot_init()
 
 		self.test_zatizeni_running = False
-		self.pushButton_test_zatizeni.pressed.connect(self.test_zatizeni_start_stop)
+		self.pushButton_test_zatizeni_start.pressed.connect(self.test_zatizeni_start)
+		self.pushButton_test_zatizeni_stop.pressed.connect(self.test_zatizeni_stop)
+
+
+		#self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
+		#self.loadReqmAstep = configCurrent['test_adapteru']['reqmAstep']
+		#self.loadreqmAstop = configCurrent['test_adapteru']['reqmAstop']
+		#self.loadstop_mV = configCurrent['test_adapteru']['stop_mV']
+		self.loadstop_mVAttempts = configCurrent['test_adapteru']['stop_mVAttempts']
+		#self.time_step_delay = configCurrent['test_adapteru']['time_step_delay']
+		#self.time_measure_delay = configCurrent['test_adapteru']['time_measure_delay']
+
+		self.spinBox_reqmAstart.setValue(configCurrent['test_adapteru']['reqmAstart'])
+		self.spinBox_reqmAstart.valueChanged.connect(self.spinBox_reqmAstart_changed)
+		
+		self.spinBox_reqmAstop.setValue(configCurrent['test_adapteru']['reqmAstop'])
+		self.spinBox_reqmAstop.valueChanged.connect(self.spinBox_reqmAstop_changed)
+		
+		self.spinBox_reqmAstep.setValue(configCurrent['test_adapteru']['reqmAstep'])
+		self.spinBox_reqmAstep.valueChanged.connect(self.spinBox_reqmAstep_changed)
+		
+		self.spinBox_time_step_delay.setValue(configCurrent['test_adapteru']['time_step_delay'])
+		self.spinBox_time_step_delay.valueChanged.connect(self.spinBox_time_step_delay_changed)
+		
+		self.spinBox_time_measure_delay.setValue(configCurrent['test_adapteru']['time_measure_delay'])
+		self.spinBox_time_measure_delay.valueChanged.connect(self.spinBox_time_measure_delay_changed)
+		
+		self.spinBox_stop_mV.setValue(configCurrent['test_adapteru']['stop_mV'])
+		self.spinBox_stop_mV.valueChanged.connect(self.spinBox_stop_mV_changed)
+		
+		self.spinBox_stop_mVAttempts.setValue(configCurrent['test_adapteru']['stop_mVAttempts'])
+		self.spinBox_stop_mVAttempts.valueChanged.connect(self.spinBox_stop_mVAttempts_changed)
+		
 
 		#self.penColor = color=(205, 205, 205)
 		#self.pen = pg.mkPen(self.penColor, width=1)
 		#self.cursor = Qt.CursorShape.CrossCursor
 		#print(qwidget_as_canvas1)
 
+		#EXPORTS
+		self.export_plainTextEdit1.setPlaceholderText('nothing measured yet...')
+		self.export_plainTextEdit1.clear()
 
-	def test_zatizeni_start_stop(self):
-		if self.test_zatizeni_running == False: # START
-			self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
-			print('Connecting to Load')
+	def spinBox_reqmAstart_changed(self, i):
+		configCurrent['test_adapteru']['reqmAstart'] = i
+
+	def spinBox_reqmAstop_changed(self, i):
+		configCurrent['test_adapteru']['reqmAstop'] = i
+
+	def spinBox_reqmAstep_changed(self, i):
+		configCurrent['test_adapteru']['reqmAstep'] = i
+
+	def spinBox_time_step_delay_changed(self, i):
+		configCurrent['test_adapteru']['time_step_delay'] = i
+
+	def spinBox_time_measure_delay_changed(self, i):
+		configCurrent['test_adapteru']['time_measure_delay'] = i
+
+	def spinBox_stop_mV_changed(self, i):
+		configCurrent['test_adapteru']['stop_mV'] = i
+
+	def spinBox_stop_mVAttempts_changed(self, i):
+		configCurrent['test_adapteru']['stop_mVAttempts'] = i
+
+
+	def test_zatizeni_start(self):
+		if self.test_zatizeni_running == False:
+			if verbose > 100:
+				print('Connecting to Load')
 			ret = self.load.connect()
 			if ret == True:
+				self.test_zatizeni_running = True
 				self.label_test_zatizeni.setText('Load connected')
 				self.label_test_zatizeni.setStyleSheet('color:green')
-				self.test_zatizeni_running = True
-				self.loadReqmA = 0
+				self.loadReqmA = configCurrent['test_adapteru']['reqmAstart']
 				self.load.measure_init()
 
 				global data_loadReqA
@@ -290,7 +344,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				data_loadV = []
 				global data_loadW
 				data_loadW = []
-				self.loadVminAttempts = configCurrent['test_adapteru']['VminAttempts']
+				self.loadstop_mVAttempts = configCurrent['test_adapteru']['stop_mVAttempts']
 
 				self.mplWidget1.plot_init()
 				#self.addToolBar(NavigationToolbar(self.mplWidget1.canvas, self))
@@ -302,15 +356,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.label_test_zatizeni.setText('Measuring')
 				self.label_test_zatizeni.setStyleSheet('color:green')
 
-				# schedule Measure!
+
+				#EXPORTS
+				self.export_plainTextEdit1.appendPlainText(
+					'Requested Current [A]'+CSVDELIM+
+					'Measured Current [A]'+CSVDELIM+
+					'Measured Voltage [V]'+CSVDELIM+
+					'Measured Power [W]'
+					)
+
+				# schedule Measuring
 				self.timer_test_zatizeni = QtCore.QTimer()
-				self.timer_test_zatizeni.setInterval(self.time_step_delay) # ms
+				self.timer_test_zatizeni.setInterval(configCurrent['test_adapteru']['time_step_delay']) # ms
 				self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
 				self.timer_test_zatizeni.start()
 			else:
 				self.label_test_zatizeni.setText('FAIL to connect Load')
 				self.label_test_zatizeni.setStyleSheet('color:red')
-		else: #STOP
+		else:
+			None
+
+	def test_zatizeni_stop(self):
+		if self.test_zatizeni_running == True:
 			self.test_zatizeni_running = False
 			self.timer_test_zatizeni.stop()
 			ret = self.load.measure_finish()
@@ -327,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def test_zatizeni_mereni(self):
 		if verbose >200:
 			print('test_zatizeni_mereni()')
-		if self.loadReqmA < self.loadReqmAmax:
+		if self.loadReqmA < configCurrent['test_adapteru']['reqmAstop']:
 			self.loadReqA = float(self.loadReqmA/1000)
 			if verbose>100:
 				print('loadReqA=', self.loadReqA, ', ', end='')
@@ -345,13 +412,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadV.append(loadV)
 			data_loadW.append(loadW)
 
-			self.loadReqmA += self.loadReqmAstep
+			self.loadReqmA += configCurrent['test_adapteru']['reqmAstep']
 
 			self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
 
-			if loadV < self.loadVmin:
-				self.loadVminAttempts -= 1
-			if self.loadVminAttempts < 0:
+			#Update exports
+			self.export_plainTextEdit1.appendPlainText(
+				str(self.loadReqA)+CSVDELIM+
+				str(loadA)+CSVDELIM+
+				str(loadV)+CSVDELIM+
+				str(loadW)
+				)
+
+			# END of measuring?
+			if loadV < configCurrent['test_adapteru']['stop_mV']:
+				self.loadstop_mVAttempts -= 1
+				if verbose > 100:
+					print('Measuring - test_zatizeni_mereni - attempts is now:' + str(self.loadstop_mVAttempts))
+			if self.loadstop_mVAttempts <= 0:
 				self.test_zatizeni_finish()
 
 		else: #finished
@@ -367,6 +445,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.timer_test_zatizeni.stop()
 			# TODO update grafu
 			# self.mplWidget1.plotItem.plot(data_loadV)
+			self.export_plainTextEdit1.appendPlainText('#--------------------------------------')
+			self.export_plainTextEdit1.appendPlainText('')
+
 
 
 def main():
