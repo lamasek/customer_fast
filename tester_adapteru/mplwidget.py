@@ -117,6 +117,25 @@ class MplWidget(QWidget):
 
 		self.canvas.draw()
 
+	def plot_clear(self):
+			self.ax1.cla()  # Clear the canvas.
+			self.ax2.cla()
+			self.ax3.cla()
+			try:
+				self.cursor1.remove()
+			except:
+				None
+			try:
+				self.cursor2.remove()
+			except:
+				None
+			try:
+				self.cursor3.remove()
+			except:
+				None
+
+			self.canvas.draw() # Trigger the canvas to update and redraw.
+
 
 	def plot_update(self, xdata, y1data, y2data, y3data):
 			self.ax1.cla()  # Clear the canvas.

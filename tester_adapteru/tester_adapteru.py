@@ -326,6 +326,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 	def test_zatizeni_start(self):
 		if self.test_zatizeni_running == False:
+			self.label_test_zatizeni.setText('init')
+			self.label_test_zatizeni.setStyleSheet('')
+
+			global data_loadReqA
+			data_loadReqA = []
+			global data_loadA
+			data_loadA = []
+			global data_loadV
+			data_loadV = []
+			global data_loadW
+			data_loadW = []
+			self.loadstop_mVAttempts = configCurrent['test_adapteru']['stop_mVAttempts']
+
+			self.mplWidget1.plot_clear()
+
 			if verbose > 100:
 				print('Connecting to Load')
 			ret = self.load.connect()
@@ -335,22 +350,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.label_test_zatizeni.setStyleSheet('color:green')
 				self.loadReqmA = 0
 				self.load.measure_init()
-
-				global data_loadReqA
-				data_loadReqA = []
-				global data_loadA
-				data_loadA = []
-				global data_loadV
-				data_loadV = []
-				global data_loadW
-				data_loadW = []
-				self.loadstop_mVAttempts = configCurrent['test_adapteru']['stop_mVAttempts']
-
-				self.mplWidget1.plot_init()
-				#self.addToolBar(NavigationToolbar(self.mplWidget1.canvas, self))
-				#self.mplWidget1.canvas.axes.clear()
-				#self.mplWidget1.canvas.axes.plot([1,2,3,4,5],  [1,2,3,3,2])
-				#self.mplWidget1.canvas.draw()
 
 
 				self.label_test_zatizeni.setText('Measuring')
