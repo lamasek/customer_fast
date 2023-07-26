@@ -333,7 +333,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.test_zatizeni_running = True
 				self.label_test_zatizeni.setText('Load connected')
 				self.label_test_zatizeni.setStyleSheet('color:green')
-				self.loadReqmA = configCurrent['test_adapteru']['reqmAstart']
+				self.loadReqmA = 0
 				self.load.measure_init()
 
 				global data_loadReqA
@@ -412,7 +412,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadV.append(loadV)
 			data_loadW.append(loadW)
 
-			self.loadReqmA += configCurrent['test_adapteru']['reqmAstep']
+			if self.loadReqmA > 0 or configCurrent['test_adapteru']['reqmAstart'] == 0: # next step
+				self.loadReqmA += configCurrent['test_adapteru']['reqmAstep']
+			else: # we are at zero and we need to skip to reqmAstart
+				self.loadReqmA = configCurrent['test_adapteru']['reqmAstart']
 
 			self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
 
