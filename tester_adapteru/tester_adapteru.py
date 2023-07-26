@@ -48,7 +48,7 @@ from MainWindow import Ui_MainWindow
 
 
 config = {
-	"curID": '2',
+	"curID": '1',
 	'cfgs': {
 		'1': {
 			'GUI': {
