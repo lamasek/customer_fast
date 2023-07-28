@@ -66,6 +66,7 @@ CONFIG_DEFAULT = {
 					'plots/theme': 'auto',
 					'load/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'load/demo': False, #if True, demo values are served instead of connecting real Load
+					'load/measure_interval': 1000, # ms
 					'test_adapteru/reqmAstart':  500, # mA
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
@@ -90,6 +91,9 @@ data_loadReqA = []
 data_loadA = []
 data_loadV = []
 data_loadW = []
+data_loadAh = []
+data_loadWh = []
+data_loadTime = []
 
 CSVDELIM = ', '
 
@@ -114,6 +118,9 @@ class load():
 	demo_idx = 0
 
 	connected = False
+
+	def is_connected(self):
+		return(self.connected)
 
 	def connect(self):
 		if  self.demo == True:
@@ -147,16 +154,6 @@ class load():
 			self.connected = False
 			return(True)
 
-	def measure_init(self):
-		if  self.demo == True:
-			self.demo_idx = 0
-			return(True)
-		else:
-			self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
-			self.PVload.write(':SOURCE:CURRent:LEVEL:IMMEDIATE 0') #set load to 0 Amps
-			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
-			#TODO check
-			return(True)
 
 	def measure(self):
 		if  self.demo == True:
@@ -182,9 +179,29 @@ class load():
 		return(loadA, loadV, loadW)
 
 
-	def measure_finish(self):
+	#def measure_init(self):
+	#	if  self.demo == True:
+	#		self.demo_idx = 0
+	#		return(True)
+	#	else:
+	#		self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
+	#		self.PVload.write(':SOURCE:CURRent:LEVEL:IMMEDIATE 0') #set load to 0 Amps
+	#		self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
+	#		#TODO check
+	#		return(True)
+
+	def setFunctionCurrent():
 		if  self.demo == True:
 			None
+
+		self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
+
+	def setStateOn(state = False): #True = ON, False=OFF
+		if self.demo:
+			None
+
+		if state:
+			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
 		else:
 			self.PVload.write(":SOURCE:INPUT:STATE Off")
 
@@ -223,6 +240,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		QCoreApplication.setOrganizationDomain('lamasek.com')
 		QCoreApplication.setApplicationName("tester_adapteru")
 	
+		# CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
 		self.cfg = QSettingsManager()
 		self.cfg.updated.connect(self.config_show)
@@ -243,9 +261,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		
 		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 
-
+		# LOAD --------------------
 		self.load = load(self.cfg.get('load/VISAresource'))
+		self.pushButton_4.pressed.connect(self.load_mereni_start)
+		#self.pushButton_5.pressed.connect(self.load_disconnect)
+		self.pushButton_5.pressed.connect(self.load_mereni_stop)
 
+
+
+		# TEST ZATIZENI -----------------------------------
 		self.mplWidget1.myinit()
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
@@ -256,42 +280,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.pushButton_test_zatizeni_stop.pressed.connect(self.test_zatizeni_stop)
 
 
-		#self.loadReqmAstart = configCurrent['test_adapteru']['reqmAstart']
-		#self.loadReqmAstep = configCurrent['test_adapteru']['reqmAstep']
-		#self.loadreqmAstop = configCurrent['test_adapteru']['reqmAstop']
-		#self.loadstop_mV = configCurrent['test_adapteru']['stop_mV']
-		#self.loadstop_mVAttempts = configCurrent['test_adapteru']['stop_mVAttempts']
-		#self.time_step_delay = configCurrent['test_adapteru']['time_step_delay']
-		#self.time_measure_delay = configCurrent['test_adapteru']['time_measure_delay']
-
-		#self.spinBox_reqmAstart.setValue(configCurrent['test_adapteru']['reqmAstart'])
-		#self.spinBox_reqmAstart.valueChanged.connect(self.spinBox_reqmAstart_changed)
-		
-		#self.spinBox_reqmAstop.setValue(configCurrent['test_adapteru']['reqmAstop'])
-		#self.spinBox_reqmAstop.valueChanged.connect(self.spinBox_reqmAstop_changed)
-		
-		#self.spinBox_reqmAstep.setValue(configCurrent['test_adapteru']['reqmAstep'])
-		#self.spinBox_reqmAstep.valueChanged.connect(self.spinBox_reqmAstep_changed)
-		
-		#self.spinBox_time_step_delay.setValue(configCurrent['test_adapteru']['time_step_delay'])
-		#self.spinBox_time_step_delay.valueChanged.connect(self.spinBox_time_step_delay_changed)
-		
-		#self.spinBox_time_measure_delay.setValue(configCurrent['test_adapteru']['time_measure_delay'])
-		#self.spinBox_time_measure_delay.valueChanged.connect(self.spinBox_time_measure_delay_changed)
-		
-		#self.spinBox_stop_mV.setValue(configCurrent['test_adapteru']['stop_mV'])
-		#self.spinBox_stop_mV.valueChanged.connect(self.spinBox_stop_mV_changed)
-		
-		#self.spinBox_stop_mVAttempts.setValue(configCurrent['test_adapteru']['stop_mVAttempts'])
-		#self.spinBox_stop_mVAttempts.valueChanged.connect(self.spinBox_stop_mVAttempts_changed)
-		
-
 		#self.penColor = color=(205, 205, 205)
 		#self.pen = pg.mkPen(self.penColor, width=1)
 		#self.cursor = Qt.CursorShape.CrossCursor
 		#print(qwidget_as_canvas1)
 
-		#EXPORTS
+		# EXPORTS -----------------------
 		self.export_plainTextEdit1.setPlaceholderText('nothing measured yet...')
 		self.export_plainTextEdit1.clear()
 
@@ -312,26 +306,91 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		for key in CONFIG_DEFAULT:
 			self.cfg.set(key, CONFIG_DEFAULT[key])
 
-	#def spinBox_reqmAstart_changed(self, i):
-	#	configCurrent['test_adapteru']['reqmAstart'] = i
 
-	#def spinBox_reqmAstop_changed(self, i):
-	#	configCurrent['test_adapteru']['reqmAstop'] = i
-
-	#def spinBox_reqmAstep_changed(self, i):
-	#	configCurrent['test_adapteru']['reqmAstep'] = i
-
-	#def spinBox_time_step_delay_changed(self, i):
-	#	configCurrent['test_adapteru']['time_step_delay'] = i
-
-	#def spinBox_time_measure_delay_changed(self, i):
-	#	configCurrent['test_adapteru']['time_measure_delay'] = i
-
-	#def spinBox_stop_mV_changed(self, i):
+	#def load_connect(self):
 	#	configCurrent['test_adapteru']['stop_mV'] = i
 
 	#def spinBox_stop_mVAttempts_changed(self, i):
 	#	configCurrent['test_adapteru']['stop_mVAttempts'] = i
+
+	def load_mereni_start(self):
+		if  self.load.is_connected() == False:
+			self.load_label_status.setText('Trying to connect...')
+			self.label_test_zatizeni.setStyleSheet('')
+			ret = self.load.connect()
+			if ret == False:
+				self.load_label_status.setText('FAILED to connect Load')
+				self.load_label_status.setStyleSheet('color:red')
+				return(false)
+			else:
+				self.load_label_status.setText('Load connected')
+				self.load_label_status.setStyleSheet('color:green')
+		
+		global data_loadReqA
+		data_loadReqA = []
+		global data_loadA
+		data_loadA = []
+		global data_loadV
+		data_loadV = []
+		global data_loadW
+		data_loadW = []
+		global data_loadAh
+		data_loadAh = []
+		global data_loadWh
+		data_loadWh = []
+		global data_loadTime
+		data_loadTime = []
+
+		#TODO clear graphs
+
+
+		self.label_test_zatizeni.setText('Measuring')
+		self.label_test_zatizeni.setStyleSheet('color:green')
+
+		# schedule Measuring
+		self.timer_load_mereni = QtCore.QTimer()
+		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
+		self.timer_load_mereni.timeout.connect(self.load_mereni_mereni)
+		self.timer_load_mereni.start()
+
+
+	def load_mereni_stop(self):
+		if  self.load.is_connected() == True:
+			self.load_label_status.setText('Disconnecting...')
+			self.label_test_zatizeni.setStyleSheet(None)
+			ret = self.load.disconnect()
+			if ret == False:
+				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
+				self.load_label_status.setStyleSheet('color:red')
+			else:
+				self.load_label_status.setText('Disconnected ')
+				self.load_label_status.setStyleSheet(None)
+
+		self.load_label_status.setText('Stopped')
+		self.load_label_status.setStyleSheet(None)
+		self.load.disconnect()
+
+		self.timer_load_mereni.stop()
+
+
+	def load_mereni_mereni(self):
+
+		loadA, loadV, loadW = self.load.measure()
+		data_loadA.append(loadA)
+		data_loadV.append(loadV)
+		data_loadW.append(loadW)
+		tt = time.time()
+		data_loadTime.append(tt)
+
+		#self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
+
+		#Update exports
+		self.export_plainTextEdit1.appendPlainText(
+			str(tt)+CSVDELIM+
+			str(loadA)+CSVDELIM+
+			str(loadV)+CSVDELIM+
+			str(loadW)
+			)
 
 
 	def test_zatizeni_start(self):
@@ -359,7 +418,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.label_test_zatizeni.setText('Load connected')
 				self.label_test_zatizeni.setStyleSheet('color:green')
 				self.loadReqmA = 0
-				self.load.measure_init()
+				self.load.setFunctionCurrent()
+				self.load.setCurrent(0)
+				self.load.setStateOn(True)
 
 
 				self.label_test_zatizeni.setText('Measuring')
@@ -389,7 +450,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		if self.test_zatizeni_running == True:
 			self.test_zatizeni_running = False
 			self.timer_test_zatizeni.stop()
-			ret = self.load.measure_finish()
+			ret = self.load.setStateOn(False)
 			ret = self.load.disconnect()
 			if ret:
 				self.label_test_zatizeni.setText('User aborted')
@@ -452,7 +513,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.label_test_zatizeni.setText('Finished')
 			self.label_test_zatizeni.setStyleSheet(None)
 			self.test_zatizeni_running = False
-			self.load.measure_finish()
+			self.load.setState(False)
 			self.load.disconnect()
 			self.timer_test_zatizeni.stop()
 			# TODO update grafu
