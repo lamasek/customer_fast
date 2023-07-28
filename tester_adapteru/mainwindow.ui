@@ -22,9 +22,9 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="load_tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -116,7 +116,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QWidget" name="widget" native="true"/>
+         <widget class="QWidget" name="load_mplWidget1" native="true"/>
         </item>
        </layout>
       </widget>
