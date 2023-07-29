@@ -21,8 +21,11 @@ import time
 
 import sys
 
+import math
+
 lib_check_install('pyqtgraph')
-#import pyqtgraph as pg #pip install pyqtgraph
+#import pyqtgraph #as pg #pip install pyqtgraph
+#from pyqtgraph import mkPen #nefunguje protoze kolize s importem z GUI
 
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
@@ -35,7 +38,7 @@ import mplcursors
 
 lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtCore import QCoreApplication
+from PyQt6.QtCore import QCoreApplication, Qt
 
 lib_check_install('pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
@@ -62,20 +65,25 @@ from MainWindow import Ui_MainWindow
 
 
 CONFIG_DEFAULT = {
-					'GUI/theme': 'auto',
+					'GUI/theme': 'auto', #auto, dark, light
 					'plots/theme': 'auto',
 					'load/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'load/demo': False, #if True, demo values are served instead of connecting real Load
 					'load/measure_interval': 1000, # ms
+					'load/measure_A': True,
+					'load/measure_V': True,
+					'load/measure_W': True,
+					'load/measure_Wh': False,
+					'load/measure_X': False,
 					'test_adapteru/reqmAstart':  500, # mA
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
-					'test_adapteru/stop_mV': 1, # V
+					'test_adapteru/stop_mV': 1000, # mV
 					'test_adapteru/stop_mVAttempts': 5,
 					'test_adapteru/time_step_delay': 1000, #ms, musi byt o trochu vetsi nez time_measure_delay
-					'test_adapteru/time_measure_delay': 800
+					'test_adapteru/time_measure_delay': 800,
+					'export/CSVDELIM': ', ', #delimiter for export window
 				}
-
 
 # GLOBAL VARIABLES ##################################################################
 
@@ -88,14 +96,20 @@ data = { # all measured data
 #configCurrent = config['cfgs'][config['curID']]
 
 data_loadReqA = []
+#data_loadReqAtime = []
+
 data_loadA = []
+data_loadAtime = []
 data_loadV = []
+data_loadVtime = []
 data_loadW = []
+data_loadWtime = []
 data_loadAh = []
+data_loadAhtime = []
 data_loadWh = []
+data_loadWhtime = []
 data_loadTime = []
 
-CSVDELIM = ', '
 
 ###############################
 
@@ -103,22 +117,13 @@ class load():
 	def __init__(self, VISAresource):
 		self.VISAresource = VISAresource
 
-	def setDemo(demo):
-		self.demo = demo
-	
-	demo = False
-
+	demo = False	#f True, it does not connect to real device, it provide fake demo values
 	VISAresource = ''
-
-	demo_loadReqA = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4]
-	demo_loadA =  [0.0, 0.500547, 0.600448, 0.699854, 0.799964, 0.899635, 0.99913, 1.099376, 0.0, 1.300171, 1.399442, 1.494956, 1.59529, 1.69556, 1.799899, 1.900312, 2.000822, 2.100236, 2.200443, 2.294846, 2.39518, 2.500621, 2.600104, 2.700486, 2.799766, 2.89998, 3.000602, 3.099993, 3.200127, 0.154693, 0.155484, 0, 0]
-	demo_loadV =  [20.110512, 19.90115, 19.857828, 19.818253, 19.779373, 19.736511, 19.692806, 19.652285, 0.000429, 4.552769, 4.509553, 4.466291, 4.425251, 4.38199, 4.337087, 4.293545, 4.250551, 4.207586, 4.164163, 4.123359, 4.079357, 4.033477, 3.990113, 3.945801, 3.902156, 3.857874, 3.815471, 3.769044, 3.724066, 0.186585, 0.000444, 0 , 0]
-	demo_loadW =  [0.0, 9.961804, 11.923586, 13.869891, 15.822795, 17.755629, 19.675667, 21.605242, 0.0, 5.919187, 6.310858, 6.676911, 7.059631, 7.429928, 7.806316, 8.159076, 8.504566, 8.836926, 9.163002, 9.462538, 9.770794, 10.086198, 10.374709, 10.655582, 10.925121, 11.187757, 11.448711, 11.683687, 11.917484, 0.028863, 6.9e-05, 0, 0]
-
-	demo_idx = 0
-
 	connected = False
 
+	def setDemo(self, d): #pokud demo, tak dela sinusovku co 10s a jen kladnou
+		self.demo = d
+	
 	def is_connected(self):
 		return(self.connected)
 
@@ -138,7 +143,9 @@ class load():
 
 			# Query if instrument is present
 			# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
-			print(self.PVload.query("*IDN?"))
+			IDNreply = self.PVload.query("*IDN?")
+			if verbose>50:
+				print(IDNreply)
 			self.connected = True
 			#TODO check
 			return(True)
@@ -154,52 +161,36 @@ class load():
 			self.connected = False
 			return(True)
 
-
-	def measure(self):
+	def measure(self, varName):
 		if  self.demo == True:
-			if self.demo_idx < len (self.demo_loadA):
-				loadA = self.demo_loadA[self.demo_idx]
-				loadV = self.demo_loadV[self.demo_idx]
-				loadW = self.demo_loadW[self.demo_idx]
-			else:
-				loadA = 0
-				loadV = 0
-				loadW = 0
-			self.demo_idx += 1
+			i = math.sin( # sinus, period 5s in time
+					(time.time()%5) / 5 * 2*3.1415
+				)
+			if i < 0: #only positive part
+				i = 0
+			return( i )
 		else:
-			loadA = float(self.PVload.query(":MEASURE:CURRENT?").strip())
-			loadV = float(self.PVload.query(":MEASURE:VOLTAGE?").strip())
-			loadW = float(self.PVload.query(":MEASURE:POWER?").strip())
-			#TODO check
-		
-		if verbose>120:
-			print("Current: ", loadA, ', ', end='')
-			print("Voltage: ", loadV, ', ', end='')
-			print("Power: ", loadW)
-		return(loadA, loadV, loadW)
+			if varName == 'A':
+				return(float(self.PVload.query(":MEASURE:CURRENT?").strip()))
+			elif varName == 'V':
+				return(float(self.PVload.query(":MEASURE:VOLTAGE?").strip()))
+			elif varName == 'W':
+				return(float(self.PVload.query(":MEASURE:POWER?").strip()))
+			else:
+				return(False)
+			
 
-
-	#def measure_init(self):
-	#	if  self.demo == True:
-	#		self.demo_idx = 0
-	#		return(True)
-	#	else:
-	#		self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
-	#		self.PVload.write(':SOURCE:CURRent:LEVEL:IMMEDIATE 0') #set load to 0 Amps
-	#		self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
-	#		#TODO check
-	#		return(True)
-
-	def setFunctionCurrent():
+	def setFunctionCurrent(self):
 		if  self.demo == True:
-			None
+			return()
 
 		self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
 
-	def setStateOn(state = False): #True = ON, False=OFF
+	def setStateOn(self, state = False): #True = ON, False=OFF
 		if self.demo:
 			None
-
+			return()
+		
 		if state:
 			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
 		else:
@@ -207,7 +198,7 @@ class load():
 
 	def setCurrent(self, current):
 		if  self.demo == True:
-			None
+			return()
 		else:
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
 			if verbose > 100:
@@ -248,9 +239,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.config_show()
 		self.config_pushButton_ClearToDefault.clicked.connect(self.config_set_to_default)
 
+		self.config_comboBox_GUItheme.addItems(('auto', 'dark', 'light'))
+		self.cfg.add_handler('GUI/theme', self.config_comboBox_GUItheme)
+		self.config_GUItheme_change()
+		self.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_change)
+
 		#self.config_init()
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
-
 		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
 		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
 		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
@@ -261,11 +256,57 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		
 		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 
+
 		# LOAD --------------------
 		self.load = load(self.cfg.get('load/VISAresource'))
-		self.pushButton_4.pressed.connect(self.load_mereni_start)
-		#self.pushButton_5.pressed.connect(self.load_disconnect)
-		self.pushButton_5.pressed.connect(self.load_mereni_stop)
+		#self.load_checkBox_RemCtrl_state TODO
+		self.load.setDemo(self.cfg.get('load/demo'))
+		self.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
+		self.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
+		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
+		self.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
+		self.cfg.add_handler('load/measure_interval', self.load_spinBox_measure_interval)
+		self.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
+		self.cfg.add_handler('load/measure_A', self.load_checkBox_measure_A)
+		self.load_checkBox_measure_A.stateChanged.connect(self.load_checkBox_measure_A_changed)
+		self.load_checkBox_measure_A_changed() # set initial state from config
+		self.cfg.add_handler('load/measure_V', self.load_checkBox_measure_V)
+		self.load_checkBox_measure_V.stateChanged.connect(self.load_checkBox_measure_V_changed)
+		self.load_checkBox_measure_V_changed() # set initial state from config
+		self.cfg.add_handler('load/measure_W', self.load_checkBox_measure_W)
+		self.load_checkBox_measure_W.stateChanged.connect(self.load_checkBox_measure_W_changed)
+		self.load_checkBox_measure_W_changed() # set initial state from config
+		self.cfg.add_handler('load/measure_Wh', self.load_checkBox_measure_Wh)
+		self.load_checkBox_measure_Wh.stateChanged.connect(self.load_checkBox_measure_Wh_changed)
+		self.load_checkBox_measure_Wh_changed() # set initial state from config
+		self.cfg.add_handler('load/measure_X', self.load_checkBox_measure_X)
+		self.load_checkBox_measure_X.stateChanged.connect(self.load_checkBox_measure_X_changed)
+		self.load_checkBox_measure_X_changed() # set initial state from config
+
+		self.load_measuring_finished = True # semaphor for measuring method
+
+		# setup graphs
+		#self.penColor = color=(205, 205, 205)
+		#self.pen = pyqtgraph.mkPen(self.penColor, width=1)
+		self.cursor = Qt.CursorShape.CrossCursor
+      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
+		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
+		self.load_plotWidget1_dataLine =  self.load_plotWidget1.plot([], [],
+			'Current [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		self.load_plotWidget1.setLabel('left', 'Current/I [A]')
+		self.load_plotWidget2_dataLine =  self.load_plotWidget2.plot([], [],
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		self.load_plotWidget2.setLabel('left', 'Voltage/U [V]')
+		self.load_plotWidget3_dataLine =  self.load_plotWidget3.plot([], [],
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		self.load_plotWidget3.setLabel('left', 'Power/P [W]')
+		self.load_plotWidget4_dataLine =  self.load_plotWidget4.plot([], [],
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		self.load_plotWidget4.setLabel('left', 'Energy? [Wh]')
+		self.load_plotWidget5_dataLine =  self.load_plotWidget5.plot([], [],
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		self.load_plotWidget5.setLabel('left', '?? [X]')
+
 
 
 
@@ -306,14 +347,49 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		for key in CONFIG_DEFAULT:
 			self.cfg.set(key, CONFIG_DEFAULT[key])
 
+	def config_GUItheme_change(self):
+		try:
+			qdarktheme.setup_theme(self.cfg.get('GUI/theme'))
+		except:
+			None
 
-	#def load_connect(self):
-	#	configCurrent['test_adapteru']['stop_mV'] = i
+	# LOAD ------------------------------
+	def load_checkBox_demo_changed(self):
+		self.load.setDemo(self.cfg.get('load/demo'))
 
-	#def spinBox_stop_mVAttempts_changed(self, i):
-	#	configCurrent['test_adapteru']['stop_mVAttempts'] = i
+	def load_checkBox_measure_A_changed(self):
+		if self.cfg.get('load/measure_A'):
+			self.load_plotWidget1.show()
+		else:
+			self.load_plotWidget1.hide()
+
+	def load_checkBox_measure_V_changed(self):
+		if self.cfg.get('load/measure_V'):
+			self.load_plotWidget2.show()
+		else:
+			self.load_plotWidget2.hide()
+
+	def load_checkBox_measure_W_changed(self):
+		if self.cfg.get('load/measure_W'):
+			self.load_plotWidget3.show()
+		else:
+			self.load_plotWidget3.hide()
+
+	def load_checkBox_measure_Wh_changed(self):
+		if self.cfg.get('load/measure_Wh'):
+			self.load_plotWidget4.show()
+		else:
+			self.load_plotWidget4.hide()
+
+	def load_checkBox_measure_X_changed(self):
+		if self.cfg.get('load/measure_X'):
+			self.load_plotWidget5.show()
+		else:
+			self.load_plotWidget5.hide()
+
 
 	def load_mereni_start(self):
+		#self.load.setDemo(self.cfg.get('load/demo'))
 		if  self.load.is_connected() == False:
 			self.load_label_status.setText('Trying to connect...')
 			self.label_test_zatizeni.setStyleSheet('')
@@ -321,29 +397,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			if ret == False:
 				self.load_label_status.setText('FAILED to connect Load')
 				self.load_label_status.setStyleSheet('color:red')
-				return(false)
+				return(False)
 			else:
 				self.load_label_status.setText('Load connected')
 				self.load_label_status.setStyleSheet('color:green')
 		
-		global data_loadReqA
-		data_loadReqA = []
-		global data_loadA
-		data_loadA = []
-		global data_loadV
-		data_loadV = []
-		global data_loadW
-		data_loadW = []
-		global data_loadAh
-		data_loadAh = []
-		global data_loadWh
-		data_loadWh = []
-		global data_loadTime
-		data_loadTime = []
-
-		#TODO clear graphs
-
-
 		self.label_test_zatizeni.setText('Measuring')
 		self.label_test_zatizeni.setStyleSheet('color:green')
 
@@ -374,25 +432,65 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def load_mereni_mereni(self):
+		if self.load_measuring_finished == False:
+			print('load_mereni_mereni-nestiha')
+			#return()
+		self.load_measuring_finished = False
 
-		loadA, loadV, loadW = self.load.measure()
-		data_loadA.append(loadA)
-		data_loadV.append(loadV)
-		data_loadW.append(loadW)
+		global data_loadTime
 		tt = time.time()
 		data_loadTime.append(tt)
 
-		#self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
+
+		if self.cfg.get('load/measure_A'):
+			global data_loadA
+			loadA = self.load.measure('A')
+			data_loadA.append(loadA)
+			data_loadAtime.append(time.time())
+			self.load_plotWidget1_dataLine.setData(data_loadAtime, data_loadA)
+
+		if self.cfg.get('load/measure_V'):
+			global data_loadV
+			loadV = self.load.measure('V')
+			data_loadV.append(loadV)
+			data_loadVtime.append(time.time())
+			self.load_plotWidget2_dataLine.setData(data_loadVtime, data_loadV)
+
+		if self.cfg.get('load/measure_W'):
+			global data_loadW
+			loadW = self.load.measure('W')
+			data_loadW.append(loadW)
+			data_loadWtime.append(time.time())
+			self.load_plotWidget3_dataLine.setData(data_loadWtime, data_loadW)
+
 
 		#Update exports
-		self.export_plainTextEdit1.appendPlainText(
-			str(tt)+CSVDELIM+
-			str(loadA)+CSVDELIM+
-			str(loadV)+CSVDELIM+
-			str(loadW)
-			)
+		#self.export_plainTextEdit1.appendPlainText(
+		#	str(tt)+CSVDELIM+
+		#	str(loadA)+CSVDELIM+
+		#	str(loadV)+CSVDELIM+
+		#	str(loadW)
+		#	)
+		self.load_measuring_finished = True
 
 
+	def load_mereni_clearGraphs(self):
+		global data_loadA, data_loadAtime
+		data_loadA = []
+		data_loadAtime = []
+		global data_loadV, data_loadVtime
+		data_loadV = []
+		data_loadVtime = []
+		global data_loadW, data_loadWtime
+		data_loadW = []
+		data_loadWtime = []
+
+		self.load_plotWidget1_dataLine.setData([], [])
+		self.load_plotWidget2_dataLine.setData([], [])
+		self.load_plotWidget3_dataLine.setData([], [])
+
+
+	# TEST_ZATIZENI -----------------------------------------
 	def test_zatizeni_start(self):
 		if self.test_zatizeni_running == False:
 			self.label_test_zatizeni.setText('init')
@@ -412,7 +510,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			if verbose > 100:
 				print('Connecting to Load')
-			ret = self.load.connect()
+			ret = self.load.connect() #connected
 			if ret == True:
 				self.test_zatizeni_running = True
 				self.label_test_zatizeni.setText('Load connected')
@@ -429,9 +527,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 				#EXPORTS
 				self.export_plainTextEdit1.appendPlainText(
-					'Requested Current [A]'+CSVDELIM+
-					'Measured Current [A]'+CSVDELIM+
-					'Measured Voltage [V]'+CSVDELIM+
+					'Requested Current [A]'+self.cfg.get('export/CSVDELIM')+
+					'Measured Current [A]'+self.cfg.get('export/CSVDELIM')+
+					'Measured Voltage [V]'+self.cfg.get('export/CSVDELIM')+
 					'Measured Power [W]'
 					)
 
@@ -475,7 +573,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			if verbose>150:
 				print(' done.')
 
-			loadA, loadV, loadW = self.load.measure()
+			loadA = self.load.measure('A')
+			loadV = self.load.measure('V')
+			loadW = self.load.measure('W')
 
 			data_loadReqA.append(self.loadReqA) 
 			data_loadA.append(loadA)
@@ -491,14 +591,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 			#Update exports
 			self.export_plainTextEdit1.appendPlainText(
-				str(self.loadReqA)+CSVDELIM+
-				str(loadA)+CSVDELIM+
-				str(loadV)+CSVDELIM+
+				str(self.loadReqA)+self.cfg.get('export/CSVDELIM')+
+				str(loadA)+self.cfg.get('export/CSVDELIM')+
+				str(loadV)+self.cfg.get('export/CSVDELIM')+
 				str(loadW)
 				)
 
-			# END of measuring?
-			if loadV < self.cfg.get('test_adapteru/stop_mV'):
+			# END of measuring by V?
+			if loadV*1000 < self.cfg.get('test_adapteru/stop_mV'):
 				self.loadstop_mVAttempts -= 1
 				if verbose > 100:
 					print('Measuring - test_zatizeni_mereni - attempts is now:' + str(self.loadstop_mVAttempts))
@@ -513,7 +613,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.label_test_zatizeni.setText('Finished')
 			self.label_test_zatizeni.setStyleSheet(None)
 			self.test_zatizeni_running = False
-			self.load.setState(False)
+			self.load.setStateOn(False)
 			self.load.disconnect()
 			self.timer_test_zatizeni.stop()
 			# TODO update grafu
