@@ -3,7 +3,7 @@
 verbose = 80
 
 
-# lib_check_install v2
+# lib_check_install v2 by Josef La Masek ----------------------------
 import importlib.util
 import pip
 def lib_check_install(*packages):
@@ -12,7 +12,7 @@ def lib_check_install(*packages):
 		if spec is None:
 			print(p +" is not installed, trying to install...")
 			pip.main(['install', p])
-
+#--------------------------------------------------------------------
 
 lib_check_install('pyvisa', 'pyvisa-py')
 import pyvisa #pip install pyvisa pyvisa-py
@@ -37,7 +37,7 @@ lib_check_install('mplcursors')
 import mplcursors
 
 lib_check_install('PyQt6')
-from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6 import QtWidgets, uic, QtCore, QtGui
 from PyQt6.QtCore import QCoreApplication, Qt
 
 lib_check_install('pyqtdarktheme')
@@ -48,6 +48,21 @@ import qdarktheme ### FIX it by: pip install pyqtdarktheme
 
 lib_check_install('pyqtconfig')
 from pyqtconfig import QSettingsManager
+
+
+# MS windows only
+# 'FIX' the apllication logo in the taskbar 
+# sets grouping this script as unique app - not Pythonw.exe with python logo
+# see https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
+lib_check_install('ctypes')
+try:
+    import ctypes
+    myappid = u'LaMasek.tester_adapteru' # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except all:
+    pass
+
+
 
 
 from MainWindow import Ui_MainWindow
@@ -230,7 +245,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		QCoreApplication.setOrganizationName("LaMasek")
 		QCoreApplication.setOrganizationDomain('lamasek.com')
 		QCoreApplication.setApplicationName("tester_adapteru")
-	
+
+		# APP ICONS
+		self.setWindowIcon(QtGui.QIcon('images\logo_charger_white.png'))
+
+
+
 		# CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
 		self.cfg = QSettingsManager()

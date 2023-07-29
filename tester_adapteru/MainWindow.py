@@ -103,6 +103,7 @@ class Ui_MainWindow(object):
         self.Load_label.setObjectName("Load_label")
         self.horizontalLayout_5.addWidget(self.Load_label)
         self.load_spinBox_measure_interval = QtWidgets.QSpinBox(parent=self.tab_Load)
+        self.load_spinBox_measure_interval.setMinimum(50)
         self.load_spinBox_measure_interval.setMaximum(1000000)
         self.load_spinBox_measure_interval.setSingleStep(100)
         self.load_spinBox_measure_interval.setProperty("value", 100)
@@ -289,7 +290,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Tester Adapteru"))
         self.label.setText(_translate("MainWindow", "GUI theme"))
         self.config_pushButton_ClearToDefault.setText(_translate("MainWindow", "Clear Config to default"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_config), _translate("MainWindow", "Config"))
