@@ -24,7 +24,7 @@ import sys
 import math
 
 lib_check_install('pyqtgraph')
-#import pyqtgraph #as pg #pip install pyqtgraph
+import pyqtgraph #as pg #pip install pyqtgraph
 #from pyqtgraph import mkPen #nefunguje protoze kolize s importem z GUI
 
 lib_check_install('matplotlib')
@@ -191,6 +191,8 @@ class load():
 				return(float(self.PVload.query(":MEASURE:VOLTAGE?").strip()))
 			elif varName == 'W':
 				return(float(self.PVload.query(":MEASURE:POWER?").strip()))
+			elif varName == 'Wh':
+				return(float(self.PVload.query(":MEASURE:WATThours?").strip()))
 			else:
 				return(False)
 			
@@ -236,6 +238,14 @@ class load():
 #		super().__init__(*args, **kwargs)
 #		uic.loadUi("mainwindow.ui", self)
 
+# development environment install
+# pip install pyqt6-tools
+# pyuic6 -o MainWindow.py mainwindow.ui
+# or if something went wrong with PATH, .... you can use:
+# python -m PyQt6.uic.pyuic -o output.py -x input.ui
+
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
 		super(MainWindow, self).__init__(*args, **kwargs)
@@ -265,7 +275,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_change)
 
 		#self.config_init()
-		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
 		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
 		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
@@ -278,8 +287,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# LOAD --------------------
+		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load = load(self.cfg.get('load/VISAresource'))
-		#self.load_checkBox_RemCtrl_state TODO
+
+		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
+		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
+		
 		self.load.setDemo(self.cfg.get('load/demo'))
 		self.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
 		self.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
@@ -305,26 +318,56 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.load_measuring_finished = True # semaphor for measuring method
 
+
 		# setup graphs
-		#self.penColor = color=(205, 205, 205)
-		#self.pen = pyqtgraph.mkPen(self.penColor, width=1)
+		self.penColor = color=(205, 205, 205)
+		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
 		self.cursor = Qt.CursorShape.CrossCursor
       # https://www.geeksforgeeks.org/pyqtgraph-symbols/
 		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
-		self.load_plotWidget1_dataLine =  self.load_plotWidget1.plot([], [],
-			'Current [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+		
+		self.load_plotWidget1.setMinimumSize(300, 200)
+		self.load_plotWidget1.showGrid(x=True, y=True)
+		#self.load_plotWidget1.setLimits(yMin=-0.1)
+		#self.load_plotWidget2.setRange(yRange=(0,1), disableAutoRange=False)
+		#self.load_plotWidget2.setAutoPan(y=True)
+		daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.load_plotWidget1.setAxisItems({"bottom": daxis1})
 		self.load_plotWidget1.setLabel('left', 'Current/I [A]')
+		self.load_plotWidget1.setCursor(self.cursor)
+		self.load_plotWidget1_dataLine =  self.load_plotWidget1.plot([], [],
+			'Current [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+
+		self.load_plotWidget2.setMinimumSize(300, 200)
+		self.load_plotWidget2.showGrid(x=True, y=True)
+		daxis2 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.load_plotWidget2.setAxisItems({"bottom": daxis2})
 		self.load_plotWidget2_dataLine =  self.load_plotWidget2.plot([], [],
-			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget2.setLabel('left', 'Voltage/U [V]')
+
+		self.load_plotWidget3.setMinimumSize(300, 200)
+		self.load_plotWidget3.showGrid(x=True, y=True)
+		daxis3 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.load_plotWidget3.setAxisItems({"bottom": daxis3})
 		self.load_plotWidget3_dataLine =  self.load_plotWidget3.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
 		self.load_plotWidget3.setLabel('left', 'Power/P [W]')
+
+		self.load_plotWidget4.setMinimumSize(300, 200)
+		self.load_plotWidget4.showGrid(x=True, y=True)
+		daxis4 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.load_plotWidget4.setAxisItems({"bottom": daxis4})
 		self.load_plotWidget4_dataLine =  self.load_plotWidget4.plot([], [],
-			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
-		self.load_plotWidget4.setLabel('left', 'Energy? [Wh]')
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		self.load_plotWidget4.setLabel('left', 'Capacity [Wh]')
+
+		self.load_plotWidget5.setMinimumSize(300, 200)
+		self.load_plotWidget5.showGrid(x=True, y=True)
+		daxis5 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.load_plotWidget5.setAxisItems({"bottom": daxis5})
 		self.load_plotWidget5_dataLine =  self.load_plotWidget5.plot([], [],
-			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
+			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget5.setLabel('left', '?? [X]')
 
 
@@ -374,6 +417,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			None
 
 	# LOAD ------------------------------
+
+	def load_pushButton_StateON_pressed(self):
+		if self.load.is_connected() != True:
+			return()
+		if verbose > 120:
+			print('Load State set to ON')
+		ret = self.load.setStateOn(True)
+
+	def load_pushButton_StateOFF_pressed(self):
+		if self.load.is_connected() != True:
+			return()
+		if verbose > 120:
+			print('Load State set to OFF')
+		ret = self.load.setStateOn(False)
+
 	def load_checkBox_demo_changed(self):
 		self.load.setDemo(self.cfg.get('load/demo'))
 
@@ -422,6 +480,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_label_status.setText('Load connected')
 				self.load_label_status.setStyleSheet('color:green')
 		
+
 		self.label_test_zatizeni.setText('Measuring')
 		self.label_test_zatizeni.setStyleSheet('color:green')
 
@@ -483,6 +542,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadWtime.append(time.time())
 			self.load_plotWidget3_dataLine.setData(data_loadWtime, data_loadW)
 
+		if self.cfg.get('load/measure_Wh'):
+			global data_loadWh
+			loadWh = self.load.measure('Wh')
+			data_loadWh.append(loadWh)
+			data_loadWhtime.append(time.time())
+			self.load_plotWidget4_dataLine.setData(data_loadWhtime, data_loadWh)
+
 
 		#Update exports
 		#self.export_plainTextEdit1.appendPlainText(
@@ -504,10 +570,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		global data_loadW, data_loadWtime
 		data_loadW = []
 		data_loadWtime = []
+		global data_loadWh, data_loadWhtime
+		data_loadWh = []
+		data_loadWhtime = []
 
 		self.load_plotWidget1_dataLine.setData([], [])
 		self.load_plotWidget2_dataLine.setData([], [])
 		self.load_plotWidget3_dataLine.setData([], [])
+		self.load_plotWidget4_dataLine.setData([], [])
+		self.load_plotWidget5_dataLine.setData([], [])
 
 
 	# TEST_ZATIZENI -----------------------------------------
