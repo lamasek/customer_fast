@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>629</width>
-    <height>475</height>
+    <width>1028</width>
+    <height>610</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -85,7 +85,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,10">
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,0,0,10">
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
@@ -97,23 +97,37 @@
              <widget class="QLineEdit" name="load_lineEdit_VISAresource"/>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="load_pushButton_connect">
               <property name="text">
                <string>Connect</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="load_pushButton_disconnect">
               <property name="text">
                <string>Disconnect</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QCheckBox" name="load_checkBox_RemCtrl_state">
+             <widget class="QLabel" name="label_7">
               <property name="text">
-               <string>Rem. Ctrl.: State</string>
+               <string>Rem. Ctrl.:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="load_pushButton_StateON">
+              <property name="text">
+               <string>State ON</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="load_pushButton_StateOFF">
+              <property name="text">
+               <string>State OFF</string>
               </property>
              </widget>
             </item>
@@ -212,7 +226,7 @@
           <item>
            <widget class="QLabel" name="load_label_Measure">
             <property name="text">
-             <string>Measure:</string>
+             <string>Measure and show - values:</string>
             </property>
            </widget>
           </item>
@@ -263,8 +277,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>601</width>
-             <height>1028</height>
+             <width>985</width>
+             <height>1042</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -451,9 +465,6 @@
               <property name="singleStep">
                <number>1000</number>
               </property>
-              <property name="stepType">
-               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
-              </property>
               <property name="displayIntegerBase">
                <number>10</number>
               </property>
@@ -541,8 +552,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>629</width>
-     <height>17</height>
+     <width>1028</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
