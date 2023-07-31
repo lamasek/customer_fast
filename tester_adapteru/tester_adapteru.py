@@ -43,6 +43,9 @@ from PyQt6.QtCore import QCoreApplication, Qt
 lib_check_install('pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
 
+lib_check_install('darkdetect')
+import darkdetect ### FIX it by: pip install darkdetect
+
 #lib_check_install('pprint')
 #import pprint
 
@@ -70,14 +73,6 @@ from MainWindow import Ui_MainWindow
 
 
 ###### GLOBAL variables - config ####################################################
-
-#config_OLD = {
-#			'GUI': {
-#				'theme': 'auto', #light, dark, auto, none
-#			},
-#			'plots': {
-#				'theme': 'auto', #light, dark, auto, none
-
 
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
@@ -368,8 +363,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.cfg.set(key, CONFIG_DEFAULT[key])
 
 	def config_GUItheme_change(self):
+		theme = self.cfg.get('GUI/theme')
 		try:
-			qdarktheme.setup_theme(self.cfg.get('GUI/theme'))
+			qdarktheme.setup_theme(theme)
+		except:
+			None
+		try:
+			if theme == 'auto':
+				if darkdetect.isDark():
+					theme = 'dark'
+				else:
+					theme = 'light'
+			if theme == 'light':
+				self.load_plotWidget1.setBackground("w")
+				self.load_plotWidget2.setBackground("w")
+				self.load_plotWidget3.setBackground("w")
+				self.load_plotWidget4.setBackground("w")
+				self.load_plotWidget5.setBackground("w")
+			else:
+				self.load_plotWidget1.setBackground("k")
+				self.load_plotWidget2.setBackground("k")
+				self.load_plotWidget3.setBackground("k")
+				self.load_plotWidget4.setBackground("k")
+				self.load_plotWidget5.setBackground("k")
 		except:
 			None
 
