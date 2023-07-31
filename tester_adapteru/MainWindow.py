@@ -63,12 +63,12 @@ class Ui_MainWindow(object):
         self.load_lineEdit_VISAresource = QtWidgets.QLineEdit(parent=self.tab_Load)
         self.load_lineEdit_VISAresource.setObjectName("load_lineEdit_VISAresource")
         self.horizontalLayout.addWidget(self.load_lineEdit_VISAresource)
-        self.pushButton = QtWidgets.QPushButton(parent=self.tab_Load)
-        self.pushButton.setObjectName("pushButton")
-        self.horizontalLayout.addWidget(self.pushButton)
-        self.pushButton_2 = QtWidgets.QPushButton(parent=self.tab_Load)
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.horizontalLayout.addWidget(self.pushButton_2)
+        self.load_pushButton_connect = QtWidgets.QPushButton(parent=self.tab_Load)
+        self.load_pushButton_connect.setObjectName("load_pushButton_connect")
+        self.horizontalLayout.addWidget(self.load_pushButton_connect)
+        self.load_pushButton_disconnect = QtWidgets.QPushButton(parent=self.tab_Load)
+        self.load_pushButton_disconnect.setObjectName("load_pushButton_disconnect")
+        self.horizontalLayout.addWidget(self.load_pushButton_disconnect)
         self.label_7 = QtWidgets.QLabel(parent=self.tab_Load)
         self.label_7.setObjectName("label_7")
         self.horizontalLayout.addWidget(self.label_7)
@@ -301,8 +301,8 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_config), _translate("MainWindow", "Config"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_console), _translate("MainWindow", "Console"))
         self.label_2.setText(_translate("MainWindow", "Load: VISA  resource"))
-        self.pushButton.setText(_translate("MainWindow", "Connect"))
-        self.pushButton_2.setText(_translate("MainWindow", "Disconnect"))
+        self.load_pushButton_connect.setText(_translate("MainWindow", "Connect"))
+        self.load_pushButton_disconnect.setText(_translate("MainWindow", "Disconnect"))
         self.label_7.setText(_translate("MainWindow", "Rem. Ctrl.:"))
         self.load_pushButton_StateON.setText(_translate("MainWindow", "State ON"))
         self.load_pushButton_StateOFF.setText(_translate("MainWindow", "State OFF"))
@@ -314,7 +314,7 @@ class Ui_MainWindow(object):
         self.load_pushButton_clearGraphs.setText(_translate("MainWindow", "Clear Graphs"))
         self.Load_label.setText(_translate("MainWindow", "Interval [ms]"))
         self.load_checkBox_demo.setText(_translate("MainWindow", "Demo"))
-        self.load_label_Measure.setText(_translate("MainWindow", "Measure:"))
+        self.load_label_Measure.setText(_translate("MainWindow", "Measure and show - values:"))
         self.load_checkBox_measure_A.setText(_translate("MainWindow", "I [A]"))
         self.load_checkBox_measure_V.setText(_translate("MainWindow", "U [V]"))
         self.load_checkBox_measure_W.setText(_translate("MainWindow", "P [W]"))
@@ -338,6 +338,14 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_export), _translate("MainWindow", "Export"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_help), _translate("MainWindow", "Help"))
 from mplwidget import MplWidget
-#import pyqtgraph as pg
-#
 from pyqtgraph import PlotWidget
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec())

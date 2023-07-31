@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -97,14 +97,14 @@
              <widget class="QLineEdit" name="load_lineEdit_VISAresource"/>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="load_pushButton_connect">
               <property name="text">
                <string>Connect</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="load_pushButton_disconnect">
               <property name="text">
                <string>Disconnect</string>
               </property>
@@ -226,7 +226,7 @@
           <item>
            <widget class="QLabel" name="load_label_Measure">
             <property name="text">
-             <string>Measure:</string>
+             <string>Measure and show - values:</string>
             </property>
            </widget>
           </item>

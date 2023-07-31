@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 80
+verbose = 280
 
 
 # lib_check_install v2 by Josef La Masek ----------------------------
@@ -37,7 +37,8 @@ lib_check_install('mplcursors')
 import mplcursors
 
 lib_check_install('PyQt6')
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
+from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
+
 from PyQt6.QtCore import QCoreApplication, Qt
 
 lib_check_install('pyqtdarktheme')
@@ -110,8 +111,6 @@ data = { # all measured data
 }
 #configCurrent = config['cfgs'][config['curID']]
 
-data_loadReqA = []
-#data_loadReqAtime = []
 
 data_loadA = []
 data_loadAtime = []
@@ -124,6 +123,11 @@ data_loadAhtime = []
 data_loadWh = []
 data_loadWhtime = []
 data_loadTime = []
+
+data_test_zatizeni_ReqA = []
+data_test_zatizeni_A = []
+data_test_zatizeni_V = []
+data_test_zatizeni_W = []
 
 
 ###############################
@@ -209,9 +213,9 @@ class load():
 			return()
 		
 		if state:
-			self.PVload.write(":SOURCE:INPUT:STATE On")    # Enable electronic load
+			return(self.PVload.write(":SOURCE:INPUT:STATE On"))    # Enable electronic load
 		else:
-			self.PVload.write(":SOURCE:INPUT:STATE Off")
+			return(self.PVload.write(":SOURCE:INPUT:STATE Off"))
 
 	def setCurrent(self, current):
 		if  self.demo == True:
@@ -242,7 +246,7 @@ class load():
 # pip install pyqt6-tools
 # pyuic6 -o MainWindow.py mainwindow.ui
 # or if something went wrong with PATH, .... you can use:
-# python -m PyQt6.uic.pyuic -o output.py -x input.ui
+# python -m PyQt6.uic.pyuic -o MainWindow.py -x mainwindow.ui
 
 
 
@@ -289,7 +293,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		# LOAD --------------------
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load = load(self.cfg.get('load/VISAresource'))
-
+		self.load_pushButton_connect.pressed.connect(self.load_connect)
+		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
 		
@@ -345,6 +350,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget2_dataLine =  self.load_plotWidget2.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget2.setLabel('left', 'Voltage/U [V]')
+		#self.load_plotWidget2.autoRange(item)
+		#self.load_plotWidget2.enableAutoRange(x=True, y=True)
+		#self.load_plotWidget2.setAutoVisible(x=True, y=True) # Set whether automatic range uses only visible data when determining the range to show.
+
 
 		self.load_plotWidget3.setMinimumSize(300, 200)
 		self.load_plotWidget3.showGrid(x=True, y=True)
@@ -378,16 +387,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
 
-
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni_start.pressed.connect(self.test_zatizeni_start)
 		self.pushButton_test_zatizeni_stop.pressed.connect(self.test_zatizeni_stop)
 
-
-		#self.penColor = color=(205, 205, 205)
-		#self.pen = pg.mkPen(self.penColor, width=1)
-		#self.cursor = Qt.CursorShape.CrossCursor
-		#print(qwidget_as_canvas1)
 
 		# EXPORTS -----------------------
 		self.export_plainTextEdit1.setPlaceholderText('nothing measured yet...')
@@ -417,6 +420,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			None
 
 	# LOAD ------------------------------
+
+	def load_connect(self):
+		if  self.load.is_connected() == True:
+			return(True)
+		else:
+			self.load_label_status.setText('Trying to connect...')
+			self.label_test_zatizeni.setStyleSheet('')
+			ret = self.load.connect()
+			if ret == False:
+				self.load_label_status.setText('FAILED to connect Load')
+				self.load_label_status.setStyleSheet('color:red')
+				return(False)
+			else:
+				self.load_label_status.setText('Load connected')
+				self.load_label_status.setStyleSheet('color:green')
+				return(True)
+
+	def load_disconnect(self):
+		if  self.load.is_connected() == True:
+			self.load_label_status.setText('Disconnecting...')
+			self.label_test_zatizeni.setStyleSheet(None)
+			ret = self.load.disconnect()
+			if ret == False:
+				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
+				self.load_label_status.setStyleSheet('color:red')
+			else:
+				self.load_label_status.setText('Disconnected ')
+				self.load_label_status.setStyleSheet(None)
+
 
 	def load_pushButton_StateON_pressed(self):
 		if self.load.is_connected() != True:
@@ -469,20 +501,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def load_mereni_start(self):
 		#self.load.setDemo(self.cfg.get('load/demo'))
 		if  self.load.is_connected() == False:
-			self.load_label_status.setText('Trying to connect...')
-			self.label_test_zatizeni.setStyleSheet('')
-			ret = self.load.connect()
-			if ret == False:
-				self.load_label_status.setText('FAILED to connect Load')
-				self.load_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.load_label_status.setText('Load connected')
-				self.load_label_status.setStyleSheet('color:green')
-		
+			self.load_connect()
 
-		self.label_test_zatizeni.setText('Measuring')
-		self.label_test_zatizeni.setStyleSheet('color:green')
+		#self.label_test_zatizeni.setText('Measuring')
+		#self.label_test_zatizeni.setStyleSheet('color:green')
 
 		# schedule Measuring
 		self.timer_load_mereni = QtCore.QTimer()
@@ -492,20 +514,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def load_mereni_stop(self):
-		if  self.load.is_connected() == True:
-			self.load_label_status.setText('Disconnecting...')
-			self.label_test_zatizeni.setStyleSheet(None)
-			ret = self.load.disconnect()
-			if ret == False:
-				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.load_label_status.setStyleSheet('color:red')
-			else:
-				self.load_label_status.setText('Disconnected ')
-				self.load_label_status.setStyleSheet(None)
-
-		self.load_label_status.setText('Stopped')
-		self.load_label_status.setStyleSheet(None)
-		self.load.disconnect()
 
 		self.timer_load_mereni.stop()
 
@@ -581,72 +589,77 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget5_dataLine.setData([], [])
 
 
-	# TEST_ZATIZENI -----------------------------------------
+	# TEST_ZATIZENI ----------------------------------------------------------------
 	def test_zatizeni_start(self):
-		if self.test_zatizeni_running == False:
-			self.label_test_zatizeni.setText('init')
-			self.label_test_zatizeni.setStyleSheet('')
+		if self.test_zatizeni_running == True: # test already running
+			return()
 
-			global data_loadReqA
-			data_loadReqA = []
-			global data_loadA
-			data_loadA = []
-			global data_loadV
-			data_loadV = []
-			global data_loadW
-			data_loadW = []
-			self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
+		self.label_test_zatizeni.setText('Init')
+		self.label_test_zatizeni.setStyleSheet('')
 
-			self.mplWidget1.plot_clear()
+		global data_test_zatizeni_ReqA
+		data_test_zatizeni_ReqA = []
+		global data_test_zatizeni_A
+		data_test_zatizeni_A = []
+		global data_test_zatizeni_V
+		data_test_zatizeni_V = []
+		global data_test_zatizeni_W
+		data_test_zatizeni_W = []
+		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 
-			if verbose > 100:
-				print('Connecting to Load')
-			ret = self.load.connect() #connected
+		self.mplWidget1.plot_clear()
+
+		if verbose > 100:
+			print('Connecting to Load')
+
+		if not self.load.is_connected():
+			ret = self.load_connect()
 			if ret == True:
-				self.test_zatizeni_running = True
 				self.label_test_zatizeni.setText('Load connected')
 				self.label_test_zatizeni.setStyleSheet('color:green')
-				self.loadReqmA = 0
-				self.load.setFunctionCurrent()
-				self.load.setCurrent(0)
-				self.load.setStateOn(True)
-
-
-				self.label_test_zatizeni.setText('Measuring')
-				self.label_test_zatizeni.setStyleSheet('color:green')
-
-
-				#EXPORTS
-				self.export_plainTextEdit1.appendPlainText(
-					'Requested Current [A]'+self.cfg.get('export/CSVDELIM')+
-					'Measured Current [A]'+self.cfg.get('export/CSVDELIM')+
-					'Measured Voltage [V]'+self.cfg.get('export/CSVDELIM')+
-					'Measured Power [W]'
-					)
-
-				# schedule Measuring
-				self.timer_test_zatizeni = QtCore.QTimer()
-				self.timer_test_zatizeni.setInterval(self.cfg.get('test_adapteru/time_step_delay')) # ms
-				self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
-				self.timer_test_zatizeni.start()
 			else:
-				self.label_test_zatizeni.setText('FAIL to connect Load')
+				self.label_test_zatizeni.setText('FAILED to connect Load')
 				self.label_test_zatizeni.setStyleSheet('color:red')
-		else:
-			None
+				return()
+
+
+		self.test_zatizeni_running = True
+
+		self.loadReqmA = 0
+		self.load.setFunctionCurrent()
+		self.load.setCurrent(0)
+		self.load.setStateOn(True)
+
+		self.label_test_zatizeni.setText('Measuring')
+		self.label_test_zatizeni.setStyleSheet('color:green')
+
+
+		#EXPORTS
+		self.export_plainTextEdit1.appendPlainText(
+			'Requested Current [A]'+self.cfg.get('export/CSVDELIM')+
+			'Measured Current [A]'+self.cfg.get('export/CSVDELIM')+
+			'Measured Voltage [V]'+self.cfg.get('export/CSVDELIM')+
+			'Measured Power [W]'
+			)
+
+		# schedule Measuring
+		self.timer_test_zatizeni = QtCore.QTimer()
+		self.timer_test_zatizeni.setInterval(self.cfg.get('test_adapteru/time_step_delay')) # ms
+		self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
+		self.timer_test_zatizeni.start()
+
 
 	def test_zatizeni_stop(self):
 		if self.test_zatizeni_running == True:
 			self.test_zatizeni_running = False
 			self.timer_test_zatizeni.stop()
-			ret = self.load.setStateOn(False)
-			ret = self.load.disconnect()
+			ret = self.load.setStateOn(False) #turn OFF the load
+			#ret = self.load.disconnect() will break other measuring, better stay connected
 			if ret:
-				self.label_test_zatizeni.setText('User aborted')
+				self.label_test_zatizeni.setText('User stopped')
 				self.label_test_zatizeni.setStyleSheet(None)
-
 			else:
-				self.label_test_zatizeni.setText('User aborted, FAIL to disconnect')
+				self.label_test_zatizeni.setText('User stopped, FAIL to set State OFF')
 				self.label_test_zatizeni.setStyleSheet('color:red')
 
 
@@ -660,7 +673,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load.setCurrent(self.loadReqA)	
 			if verbose>150:
 				print('Wait ' + str(self.cfg.get('test_adapteru/time_measure_delay')/1000) +'s: ', end='', flush=True)
-			time.sleep(self.cfg.get('test_adapteru/time_measure_delay')/1000)
+			#time.sleep
+			QtTest.QTest.qWait(self.cfg.get('test_adapteru/time_measure_delay'))
+
 			if verbose>150:
 				print(' done.')
 
@@ -668,17 +683,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			loadV = self.load.measure('V')
 			loadW = self.load.measure('W')
 
-			data_loadReqA.append(self.loadReqA) 
-			data_loadA.append(loadA)
-			data_loadV.append(loadV)
-			data_loadW.append(loadW)
+			data_test_zatizeni_ReqA.append(self.loadReqA) 
+			data_test_zatizeni_A.append(loadA)
+			data_test_zatizeni_V.append(loadV)
+			data_test_zatizeni_W.append(loadW)
 
 			if self.loadReqmA > 0 or self.cfg.get('test_adapteru/reqmAstart') == 0: # next step
 				self.loadReqmA += self.cfg.get('test_adapteru/reqmAstep')
 			else: # we are at zero and we need to skip to reqmAstart
 				self.loadReqmA = self.cfg.get('test_adapteru/reqmAstart')
 
-			self.mplWidget1.plot_update(data_loadReqA, data_loadA, data_loadV, data_loadW)
+			self.mplWidget1.plot_update(data_test_zatizeni_ReqA, data_test_zatizeni_A, data_test_zatizeni_V, data_test_zatizeni_W)
 
 			#Update exports
 			self.export_plainTextEdit1.appendPlainText(
@@ -705,10 +720,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.label_test_zatizeni.setStyleSheet(None)
 			self.test_zatizeni_running = False
 			self.load.setStateOn(False)
-			self.load.disconnect()
+			#self.load.disconnect()
 			self.timer_test_zatizeni.stop()
 			# TODO update grafu
-			# self.mplWidget1.plotItem.plot(data_loadV)
+			# self.mplWidget1.plotItem.plot(data_test_zatizeni_V)
 			self.export_plainTextEdit1.appendPlainText('#--------------------------------------')
 			self.export_plainTextEdit1.appendPlainText('')
 
