@@ -1,0 +1,59 @@
+
+
+
+Rigol DL3031A
+*IDN?
+"RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
+
+:MEASURE:CURRENT?
+:MEASURE:VOLTAGE?
+:MEASURE:POWER?
+:MEASURE:WATThours?
+
+
+:SOURCE:INPUT:STATE On
+:SOURCE:INPUT:STATE Off
+
+:[SOURce]:FUNCtion {CURRent|RESistance|VOLTage|POWer}
+:SOURCE:FUNCTION?
+
+:SOURCE:FUNCTION CURRent
+:SOURCE:CURRent:LEVEL:IMMEDIATE <A>
+
+
+:[SOURce]:FUNCtion:MODE {FIXed|LIST|WAVe|BATTery}
+:SOUR:FUNC:MODE?
+
+
+:SOUR:FUNC:MODE BATT
+
+proud se nastavuje jako
+:SOUR:CURR:LEVEL?
+Range 6/60A se nastavuje jako:
+:SOUR:CURR:RANG 60
+:SOUR:CURR:RANGE?
+
+V_stop se nastavuje jako 
+
+
+
+
+napsat vyrobci ze VISA/SCPI tuhne (zařízení funguje, ale nedá se na něj vzdáleně dostat, pomůže vypnout/zapnout napájení) kdyz:
+ command is emtpy string
+ command ends with newline character
+
+
+Command sent:	:SOUR:CURR:RANG 60
+VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+Command sent:	:SOUR:CURR:RANG MINimum
+VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
+
+
+otáčecí kolečko nesedí přesně kroky mechanické zarážky na odečet stavu
+občas otočím o "zoubek" a nic se nestane
+občas neotočím a změní se hodnota
+ojediněle přeskakuje hodnota aniž bych točil - tohle je asi nejhorší stav
+
+
+ojediněle (cca jednou denně) tuhne - pomůže jen vypnout/zapnout
+

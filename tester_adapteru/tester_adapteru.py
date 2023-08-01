@@ -118,6 +118,8 @@ from MainWindow import Ui_MainWindow
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
 					'plots/theme': 'auto',
+					'VISA/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
+					'VISA/SCPIcommand' : '*IDN?',
 					'load/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'load/demo': False, #if True, demo values are served instead of connecting real Load
 					'load/measure_interval': 1000, # ms
@@ -166,6 +168,68 @@ data_test_zatizeni_W = []
 
 
 ###############################
+class visa():
+	def __init__(self, VISAresource):
+		self.VISAresource = VISAresource
+
+	VISAresource = ''
+	connected = False
+
+	def is_connected(self):
+		return(self.connected)
+
+	def connect(self):
+		if self.connected:
+			return(True, 'Already connected')
+		self.rm = pyvisa.ResourceManager()
+		if verbose > 120:
+			print('Connecting to ' + self.VISAresource)
+		try:
+			self.PVload = self.rm.open_resource(self.VISAresource)
+		except Exception as e:
+			print('  Connection failed: ' + str(e))
+			self.connected = False
+			return(False, ' Connection failed'+str(e))
+
+		# Query if instrument is present
+		# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
+		try:
+			IDNreply = self.PVload.query("*IDN?")
+		except Exception as e:
+			print('SCPI *IDN? test after connection failed: ' + str(e))
+			self.connected = False
+			return(False, 'SCPI *IDN? test after connection failed: '+str(e))
+		if verbose>50:
+			print(IDNreply)
+		self.connected = True
+		return(True, IDNreply)
+
+	def send(self, commandi):
+		if  self.connected == True:
+			command = commandi.strip()
+			if command =='':
+				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
+			try:
+				reply = self.PVload.query(command)
+				if verbose>50:
+					print(reply)
+				return(True, reply)
+			except Exception as e:
+				if verbose > 50:
+					print('  Comand "' + command + '" failed: ' + str(e))
+				return(False, str(e))
+		else:
+			return(False, 'Not connected')
+
+	def disconnect(self):
+		if verbose > 80:
+			print('Load disconnecting...')
+		self.rm.close() 
+		#TODO check
+		self.connected = False
+		return(True)
+
+
 
 class load():
 	def __init__(self, VISAresource):
@@ -187,18 +251,20 @@ class load():
 			return(True)
 		else:
 			self.rm = pyvisa.ResourceManager()
-			print('Connecting to ' + self.VISAresource)
+			if verbose > 120:
+				print('Connecting to ' + self.VISAresource)
 			try:
 				self.PVload = self.rm.open_resource(self.VISAresource)
 			except Exception as e:
-				print('  Connection failed: ' + str(e))
+				if verbose > 120:
+					print('  Connection failed: ' + str(e))
 				self.connected = False
 				return(False)
 
 			# Query if instrument is present
 			# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
 			IDNreply = self.PVload.query("*IDN?")
-			if verbose>50:
+			if verbose > 50:
 				print(IDNreply)
 			self.connected = True
 			#TODO check
@@ -295,7 +361,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		QCoreApplication.setApplicationName("tester_adapteru")
 
 		# APP ICONS
-		self.setWindowIcon(QtGui.QIcon('images\logo_charger_white.png'))
+		qiconlogo = QtGui.QIcon('images\logo_charger_white.png')
+		self.setWindowIcon(qiconlogo)
 
 
 
@@ -324,9 +391,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 
 
+		# VISA ------------------------------------------------------------------------
+		self.visa = visa(self.cfg.get('VISA/VISAresource'))
+		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
+		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
+		self.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
+		self.cfg.add_handler('VISA/SCPIcommand', self.visa_lineEdit_SCPIcommand)
+		self.visa_lineEdit_SCPIcommand.returnPressed.connect(self.visa_send)
+		self.visa_pushButton_send.pressed.connect(self.visa_send)
+
+
+
 		# LOAD --------------------
-		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load = load(self.cfg.get('load/VISAresource'))
+		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_pushButton_connect.pressed.connect(self.load_connect)
 		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
@@ -434,6 +512,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.export_plainTextEdit1.clear()
 
 
+		# COMMENTS -------------------------------
+		self.cfg.add_handler('comments/text', self.comments_plainTextEdit)
+
+
+	# classes for CONFIG ------------------------------------------------
 	def config_show(self):
 		self.config_plainTextEdit.clear()
 		d = self.cfg.as_dict()
@@ -477,14 +560,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		except:
 			None
 
-	# LOAD ------------------------------
+	# classes for VISA ------------------------------
+	def visa_connect(self):
+		if  self.visa.is_connected() == True:
+			return(True)
+		else:
+			self.visa_label_status.setText('Trying to connect...')
+			self.visa_label_status.setStyleSheet('')
+			ret, retStr = self.visa.connect()
+			self.visa_plainTextEdit_output.appendPlainText(retStr)
+			if ret == False:
+				self.visa_label_status.setText('FAILED to connect')
+				self.visa_label_status.setStyleSheet('color:red')
+				return(False)
+			else:
+				self.visa_label_status.setText('Connected')
+				self.visa_label_status.setStyleSheet('color:green')
+				return(True)
+
+	def visa_disconnect(self):
+		if  self.visa.is_connected() == True:
+			self.visa_label_status.setText('Disconnecting...')
+			self.visa_label_status.setStyleSheet(None)
+			ret = self.visa.disconnect()
+			if ret == False:
+				self.visa_label_status.setText('Disconnected, FAILED to nice disconnect')
+				self.visa_label_status.setStyleSheet('color:red')
+			else:
+				self.visa_label_status.setText('Disconnected ')
+				self.visa_label_status.setStyleSheet(None)
+
+	def visa_send(self):
+		if  self.visa.is_connected() == True:
+			command = self.visa_lineEdit_SCPIcommand.text()
+			self.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
+			retCode, retStr = self.visa.send(command)
+			self.visa_plainTextEdit_output.appendPlainText(retStr)
+		else:
+			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+
+
+	# classes for LOAD ------------------------------
 
 	def load_connect(self):
 		if  self.load.is_connected() == True:
 			return(True)
 		else:
 			self.load_label_status.setText('Trying to connect...')
-			self.label_test_zatizeni.setStyleSheet('')
+			self.load_label_status.setStyleSheet('')
 			ret = self.load.connect()
 			if ret == False:
 				self.load_label_status.setText('FAILED to connect Load')
@@ -498,7 +621,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def load_disconnect(self):
 		if  self.load.is_connected() == True:
 			self.load_label_status.setText('Disconnecting...')
-			self.label_test_zatizeni.setStyleSheet(None)
+			self.load_label_status.setStyleSheet(None)
 			ret = self.load.disconnect()
 			if ret == False:
 				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
