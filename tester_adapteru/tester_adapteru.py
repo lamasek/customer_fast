@@ -3,19 +3,58 @@
 verbose = 280
 
 
-# lib_check_install v2 by Josef La Masek ----------------------------
+# lib_check_install v3 by Josef La Masek ----------------------------
 import importlib.util
+import subprocess
+import sys
 import pip
-def lib_check_install(*packages):
-	for p in packages:
-		spec = importlib.util.find_spec(p)
-		if spec is None:
-			print(p +" is not installed, trying to install...")
-			pip.main(['install', p])
+def lib_check_install(MODULEname, PACKAGEname=None): 
+	#
+	# check if module MODULEname is avalable for include, if not, it try to install it via pip
+	# if MODname name is different than package name, you have to provide PACKAGEname too
+	#
+	#  if there is package which is not able to include, use (MODULEname=None, PACKAGENAME)
+	#
+	# useful especially when you dont have package for your soft, but need to install it on more computers
+	#
+	#
+	# examples:
+	#
+	# lib_check_install('pyvisa')
+	# import pyvisa
+	#
+	# lib_check_install(None, 'pyvisa-py')
+	#
+	# lib_check_install('qdarktheme', 'pyqtdarktheme')
+	# import qdarktheme
+
+
+	if PACKAGEname == None:
+		PACKAGEname = MODULEname
+
+	if MODULEname is not None:
+		spec = importlib.util.find_spec(MODULEname)
+		if spec is not None:
+			return()
+		print(MODULEname + ' is not import able, trying to install PKG ' + PACKAGEname)
+	else: # non importable package is checked via pip
+		reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
+		installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
+		if PACKAGEname.lower() in map(str.lower, installed_packages):
+			return()
+		print(PACKAGEname + ' is not installed, trying to install...')
+		
+	try:
+		subprocess.check_call([sys.executable, '-m', 'pip', 'install', PACKAGEname])
+	except:
+		None
+	#pip.main(['install', p]) # old deprecated way
 #--------------------------------------------------------------------
 
-lib_check_install('pyvisa', 'pyvisa-py')
+lib_check_install('pyvisa')
 import pyvisa #pip install pyvisa pyvisa-py
+
+lib_check_install(None, 'pyvisa-py')
 
 import time
 
@@ -24,8 +63,8 @@ import sys
 import math
 
 lib_check_install('pyqtgraph')
-import pyqtgraph #as pg #pip install pyqtgraph
-#from pyqtgraph import mkPen #nefunguje protoze kolize s importem z GUI
+import pyqtgraph # pip install pyqtgraph
+from pyqtgraph import mkPen
 
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
@@ -41,8 +80,9 @@ from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 
 from PyQt6.QtCore import QCoreApplication, Qt
 
-lib_check_install('pyqtdarktheme')
+lib_check_install('qdarktheme', 'pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
+#https://pyqtdarktheme.readthedocs.io/en/v1.0.2/how_to_use.html
 
 lib_check_install('darkdetect')
 import darkdetect ### FIX it by: pip install darkdetect
@@ -244,7 +284,6 @@ class load():
 # python -m PyQt6.uic.pyuic -o MainWindow.py -x mainwindow.ui
 
 
-
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self, *args, obj=None, **kwargs):
 		super(MainWindow, self).__init__(*args, **kwargs)
@@ -345,6 +384,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget2_dataLine =  self.load_plotWidget2.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget2.setLabel('left', 'Voltage/U [V]')
+		self.load_plotWidget2.setCursor(self.cursor)
 		#self.load_plotWidget2.autoRange(item)
 		#self.load_plotWidget2.enableAutoRange(x=True, y=True)
 		#self.load_plotWidget2.setAutoVisible(x=True, y=True) # Set whether automatic range uses only visible data when determining the range to show.
@@ -357,6 +397,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget3_dataLine =  self.load_plotWidget3.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
 		self.load_plotWidget3.setLabel('left', 'Power/P [W]')
+		self.load_plotWidget3.setCursor(self.cursor)
 
 		self.load_plotWidget4.setMinimumSize(300, 200)
 		self.load_plotWidget4.showGrid(x=True, y=True)
@@ -365,6 +406,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget4_dataLine =  self.load_plotWidget4.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget4.setLabel('left', 'Capacity [Wh]')
+		self.load_plotWidget4.setCursor(self.cursor)
 
 		self.load_plotWidget5.setMinimumSize(300, 200)
 		self.load_plotWidget5.showGrid(x=True, y=True)
@@ -373,7 +415,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget5_dataLine =  self.load_plotWidget5.plot([], [],
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget5.setLabel('left', '?? [X]')
-
+		self.load_plotWidget5.setCursor(self.cursor)
 
 
 

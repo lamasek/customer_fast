@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1028</width>
-    <height>610</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Tester Adapteru</string>
   </property>
@@ -39,7 +31,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -277,8 +269,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>985</width>
-             <height>1042</height>
+             <width>771</width>
+             <height>1028</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -552,8 +544,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1028</width>
-     <height>21</height>
+     <width>799</width>
+     <height>17</height>
     </rect>
    </property>
   </widget>
