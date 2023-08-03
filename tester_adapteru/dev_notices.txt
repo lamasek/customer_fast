@@ -1,0 +1,69 @@
+
+obecně - oddělovač desetinného místa je na zařízení .
+v OS je to dle nastavení OS/locale
+	 - v ČR je to 	,
+	- v US je to 	.
+
+
+Rigol DL3031A
+*IDN?
+"RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
+
+:MEASURE:CURRENT?
+:MEASURE:VOLTAGE?
+:MEASURE:POWER?
+:MEASURE:WATThours?
+
+
+:SOURCE:INPUT:STATE On
+:SOURCE:INPUT:STATE Off
+
+:[SOURce]:FUNCtion {CURRent|RESistance|VOLTage|POWer}
+:SOURCE:FUNCTION?
+
+:SOURCE:FUNCTION CURRent
+:SOURCE:CURRent:LEVEL:IMMEDIATE <A>
+:SOUR:CURR:LEVEL?
+
+Range 6/60A se nastavuje jako:
+:SOUR:CURR:RANGE?
+:SOUR:CURR:RANG 6
+:SOUR:CURR:RANG 60
+
+
+:[SOURce]:FUNCtion:MODE {FIXed|LIST|WAVe|BATTery}
+:SOUR:FUNC:MODE?
+
+:SOUR:FUNC:MODE BATT
+:BATT?
+:BATT <current>
+:BATT:LEVEL?
+:BATT:RANGE?
+:BATT:VSTOP?
+
+
+
+
+
+napsat vyrobci ze:
+
+
+otáčecí kolečko nesedí přesně kroky mechanické zarážky na odečet stavu
+občas otočím o "zoubek" a nic se nestane
+občas neotočím a změní se hodnota
+ojediněle přeskakuje hodnota aniž bych točil - tohle je asi nejhorší stav
+
+
+ojediněle (cca jednou denně) tuhne - pomůže jen vypnout/zapnout
+neřekne přesně kdy - většinou během ovládání nebo začátku/konce měření
+
+
+by bylo vhodne do dokumentace pridat ze existuji SCPI funkce:
+:SOUR:FUNC:MODE BATT
+:BATT?
+:BATT <current>
+:BATT:LEVEL?
+:BATT:RANGE?
+:BATT:VSTOP?
+
+ja uz jsem to trefil metodou pokus omyl i kdyz nejsou v navodu, ale nekomu to mozna usetri hodinu az dve prace

@@ -166,7 +166,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,0,0,10">
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,0,0,0,10">
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
@@ -176,6 +176,13 @@
             </item>
             <item>
              <widget class="QLineEdit" name="load_lineEdit_VISAresource"/>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_demo">
+              <property name="text">
+               <string>Demo</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_connect">
@@ -301,6 +308,126 @@
          </layout>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Rem. Ctrl.:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>Mode</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="load_radioButton_Mode_CC">
+            <property name="text">
+             <string>CC</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">load_buttonGroup_Mode</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="load_radioButton_Mode_BATT">
+            <property name="text">
+             <string>BATT</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">load_buttonGroup_Mode</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>BATT_Curent</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="load_doubleSpinBox_BATT_current">
+            <property name="decimals">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>BATT Range</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="load_radioButton_BATT_range_6A">
+            <property name="text">
+             <string>6A</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">load_buttonGroup_BATT_range</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="load_radioButton_BATT_range_60A">
+            <property name="text">
+             <string>60A</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">load_buttonGroup_BATT_range</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>BATT Vstop</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="load_doubleSpinBox_BATT_vstop"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_6"/>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -356,164 +483,48 @@
              </widget>
             </item>
             <item>
-             <widget class="QCheckBox" name="load_checkBox_demo">
+             <widget class="QLabel" name="load_label_Measure">
               <property name="text">
-               <string>Demo</string>
+               <string>Measure and show - values:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_measure_A">
+              <property name="text">
+               <string>I [A]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_measure_V">
+              <property name="text">
+               <string>U [V]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_measure_W">
+              <property name="text">
+               <string>P [W]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_measure_Wh">
+              <property name="text">
+               <string>Cap. [Wh]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="load_checkBox_measure_X">
+              <property name="text">
+               <string>X</string>
               </property>
              </widget>
             </item>
            </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_6">
-          <item>
-           <widget class="QLabel" name="load_label_Measure">
-            <property name="text">
-             <string>Measure and show - values:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="load_checkBox_measure_A">
-            <property name="text">
-             <string>I [A]</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="load_checkBox_measure_V">
-            <property name="text">
-             <string>U [V]</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="load_checkBox_measure_W">
-            <property name="text">
-             <string>P [W]</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="load_checkBox_measure_Wh">
-            <property name="text">
-             <string>Cap. [Wh]</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="load_checkBox_measure_X">
-            <property name="text">
-             <string>X</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <item>
-           <widget class="QLabel" name="label_14">
-            <property name="text">
-             <string>Rem. Ctrl.:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_17">
-            <property name="text">
-             <string>Mode</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton">
-            <property name="text">
-             <string>CC</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_2">
-            <property name="text">
-             <string>BATT</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_19">
-            <property name="text">
-             <string>BATT_Curent</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QDoubleSpinBox" name="doubleSpinBox">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_20">
-            <property name="text">
-             <string>BATT Range</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_3">
-            <property name="text">
-             <string>6A</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_4">
-            <property name="text">
-             <string>60A</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_4">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>BATT Vstop</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QDoubleSpinBox" name="doubleSpinBox_2"/>
           </item>
          </layout>
         </item>
@@ -835,4 +846,8 @@
  </customwidgets>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
+ </buttongroups>
 </ui>

@@ -168,9 +168,9 @@ data_test_zatizeni_W = []
 
 
 ###############################
-class visa():
-	def __init__(self, VISAresource):
-		self.VISAresource = VISAresource
+class visaDevice():
+	def __init__(self):
+		None
 
 	VISAresource = ''
 	connected = False
@@ -185,7 +185,7 @@ class visa():
 		if verbose > 120:
 			print('Connecting to ' + self.VISAresource)
 		try:
-			self.PVload = self.rm.open_resource(self.VISAresource)
+			self.PVdevice = self.rm.open_resource(self.VISAresource)
 		except Exception as e:
 			print('  Connection failed: ' + str(e))
 			self.connected = False
@@ -194,7 +194,7 @@ class visa():
 		# Query if instrument is present
 		# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
 		try:
-			IDNreply = self.PVload.query("*IDN?")
+			IDNreply = self.PVdevice.query("*IDN?")
 		except Exception as e:
 			print('SCPI *IDN? test after connection failed: ' + str(e))
 			self.connected = False
@@ -204,14 +204,21 @@ class visa():
 		self.connected = True
 		return(True, IDNreply)
 
+
 	def send(self, commandi):
 		if  self.connected == True:
 			command = commandi.strip()
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				reply = self.PVload.query(command)
-				if verbose>50:
+				if verbose>150:
+					print('Command:' + command)
+				if command[-1] == '?':
+					reply = self.PVdevice.query(command)
+				else:
+					self.PVdevice.write(command)
+					reply = ''
+				if verbose>150:
 					print(reply)
 				return(True, reply)
 			except Exception as e:
@@ -220,6 +227,45 @@ class visa():
 				return(False, str(e))
 		else:
 			return(False, 'Not connected')
+
+	def write(self, commandi):
+		if  self.connected == True:
+			command = commandi.strip()
+			if command =='':
+				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
+			try:
+				if verbose>150:
+					print('Command:' + command)
+				reply = self.PVdevice.write(command)
+				if verbose>50:
+					print(reply)
+				return(True, reply)
+			except Exception as e:
+				if verbose > 150:
+					print('  Comand "' + command + '" failed: ' + str(e))
+				return(False, str(e))
+		else:
+			return(False, 'Not connected')
+
+	def query(self, commandi):
+		if  self.connected == True:
+			command = commandi.strip()
+			if command =='':
+				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
+			try:
+				if verbose>150:
+					print('Command:' + command)
+				reply = self.PVdevice.query(command)
+				if verbose>50:
+					print(reply)
+				return(True, reply)
+			except Exception as e:
+				if verbose > 150:
+					print('  Comand "' + command + '" failed: ' + str(e))
+				return(False, str(e))
+		else:
+			return(False, 'Not connected')
+
 
 	def disconnect(self):
 		if verbose > 80:
@@ -232,54 +278,34 @@ class visa():
 
 
 class load():
-	def __init__(self, VISAresource):
-		self.VISAresource = VISAresource
+	#def __init__(self, VISAresource):
+	#	visaDevice.__init__(self, VISAresource)
 
-	demo = False	#f True, it does not connect to real device, it provide fake demo values
-	VISAresource = ''
-	connected = False
+	demo = False	# if True, it does not connect to real device, it provide fake demo values
+	#VISAresource = ''
+	#connected = False
 
 	def setDemo(self, d): #pokud demo, tak dela sinusovku co 10s a jen kladnou
 		self.demo = d
 	
-	def is_connected(self):
-		return(self.connected)
+	#def is_connected(self):
+	#	return(visaDevice.connected)
 
 	def connect(self):
 		if  self.demo == True:
-			self.connected = True
+			#self.connected = True
 			return(True)
 		else:
-			self.rm = pyvisa.ResourceManager()
-			if verbose > 120:
-				print('Connecting to ' + self.VISAresource)
-			try:
-				self.PVload = self.rm.open_resource(self.VISAresource)
-			except Exception as e:
-				if verbose > 120:
-					print('  Connection failed: ' + str(e))
-				self.connected = False
-				return(False)
-
-			# Query if instrument is present
-			# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
-			IDNreply = self.PVload.query("*IDN?")
-			if verbose > 50:
-				print(IDNreply)
-			self.connected = True
-			#TODO check
-			return(True)
-
+			ret = visaDevice.connect(self)
+			return(ret)
+			#self.connected = True
+	
 	def disconnect(self):
-		print('Load disconnecting...')
 		if  self.demo == True:
-			self.connected = False
+			visaDevice.connected = False
 			return(True)
 		else:
-			self.rm.close() 
-			#TODO check
-			self.connected = False
-			return(True)
+			visaDevice.disconnect(self) 
 
 	def measure(self, varName):
 		if  self.demo == True:
@@ -291,13 +317,17 @@ class load():
 			return( i )
 		else:
 			if varName == 'A':
-				return(float(self.PVload.query(":MEASURE:CURRENT?").strip()))
+				retCode, retString = visaDevice.query(self, ":MEASURE:CURRENT?")
+				return(float(retString.strip()))
 			elif varName == 'V':
-				return(float(self.PVload.query(":MEASURE:VOLTAGE?").strip()))
+				retCode, retString = visaDevice.query(self, ":MEASURE:VOLTAGE?")
+				return(float(retString.strip()))
 			elif varName == 'W':
-				return(float(self.PVload.query(":MEASURE:POWER?").strip()))
+				retCode, retString = visaDevice.query(self, ":MEASURE:POWER?")
+				return(float(retString.strip()))
 			elif varName == 'Wh':
-				return(float(self.PVload.query(":MEASURE:WATThours?").strip()))
+				retCode, retString = visaDevice.query(self, ":MEASURE:WATThours?")
+				return(float(retString.strip()))
 			else:
 				return(False)
 			
@@ -305,8 +335,13 @@ class load():
 	def setFunctionCurrent(self):
 		if  self.demo == True:
 			return()
+		visaDevice.write(self, ":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
 
-		self.PVload.write(":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
+	def setModeBATT(self):
+		if  self.demo == True:
+			return()
+		visaDevice.write(self, ":SOUR:FUNC:MODE BATT")    # Set to  mode BATTery
+
 
 	def setStateOn(self, state = False): #True = ON, False=OFF
 		if self.demo:
@@ -314,9 +349,9 @@ class load():
 			return()
 		
 		if state:
-			return(self.PVload.write(":SOURCE:INPUT:STATE On"))    # Enable electronic load
+			return(visaDevice.write(self, ":SOURCE:INPUT:STATE On"))    # Enable electronic load
 		else:
-			return(self.PVload.write(":SOURCE:INPUT:STATE Off"))
+			return(visaDevice.write(self, ":SOURCE:INPUT:STATE Off"))
 
 	def setCurrent(self, current):
 		if  self.demo == True:
@@ -325,7 +360,7 @@ class load():
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
 			if verbose > 100:
 				print('PVcommand = '+PVcommand)
-			self.PVload.write(PVcommand)
+			visaDevice.write(self, PVcommand)
 
 
 
@@ -355,7 +390,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		super(MainWindow, self).__init__(*args, **kwargs)
 		self.setupUi(self)
 
-
 		QCoreApplication.setOrganizationName("LaMasek")
 		QCoreApplication.setOrganizationDomain('lamasek.com')
 		QCoreApplication.setApplicationName("tester_adapteru")
@@ -363,7 +397,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		# APP ICONS
 		qiconlogo = QtGui.QIcon('images\logo_charger_white.png')
 		self.setWindowIcon(qiconlogo)
-
 
 
 		# CONFIG ----------------------------
@@ -392,7 +425,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# VISA ------------------------------------------------------------------------
-		self.visa = visa(self.cfg.get('VISA/VISAresource'))
+		self.visa = visaDevice()
 		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
 		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
 		self.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
@@ -401,22 +434,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.visa_pushButton_send.pressed.connect(self.visa_send)
 
 
-
 		# LOAD --------------------
-		self.load = load(self.cfg.get('load/VISAresource'))
+		self.load = load()
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
+		self.load.setDemo(self.cfg.get('load/demo'))
 		self.load_pushButton_connect.pressed.connect(self.load_connect)
 		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
+
 		
-		self.load.setDemo(self.cfg.get('load/demo'))
+		# LOAD Rem. Ctrl.
+		self.load_radioButton_Mode_CC.pressed.connect(self.load.setFunctionCurrent)
+		self.load_radioButton_Mode_BATT.pressed.connect(self.load.setModeBATT)
+		self.load_doubleSpinBox_BATT_current.valueChanged.connect(self.load_doubleSpinBox_BATT_current_changed)
+		self.load_radioButton_BATT_range_6A.pressed.connect( self.load_radioButton_BATT_range_6A_connect )
+		self.load_radioButton_BATT_range_60A.pressed.connect(self.load_radioButton_BATT_range_60A_connect)
+		self.load_doubleSpinBox_BATT_vstop.valueChanged.connect(self.load_doubleSpinBox_BATT_vstop_changed)
+
+		# LOAD Measure
 		self.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
 		self.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
 		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
 		self.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
 		self.cfg.add_handler('load/measure_interval', self.load_spinBox_measure_interval)
 		self.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
+
 		self.cfg.add_handler('load/measure_A', self.load_checkBox_measure_A)
 		self.load_checkBox_measure_A.stateChanged.connect(self.load_checkBox_measure_A_changed)
 		self.load_checkBox_measure_A_changed() # set initial state from config
@@ -567,6 +610,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		else:
 			self.visa_label_status.setText('Trying to connect...')
 			self.visa_label_status.setStyleSheet('')
+			self.visa.VISAresource = self.cfg.get('VISA/VISAresource')
 			ret, retStr = self.visa.connect()
 			self.visa_plainTextEdit_output.appendPlainText(retStr)
 			if ret == False:
@@ -608,6 +652,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		else:
 			self.load_label_status.setText('Trying to connect...')
 			self.load_label_status.setStyleSheet('')
+			self.load.VISAresource = self.cfg.get('load/VISAresource')
 			ret = self.load.connect()
 			if ret == False:
 				self.load_label_status.setText('FAILED to connect Load')
@@ -630,6 +675,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_label_status.setText('Disconnected ')
 				self.load_label_status.setStyleSheet(None)
 
+	
+	def load_doubleSpinBox_BATT_current_changed(self):
+		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
+
+	def load_radioButton_BATT_range_6A_connect(self):
+		self.load.write(':BATT:RANG 6')
+
+	def load_radioButton_BATT_range_60A_connect(self):
+		self.load.write(':BATT:RANG 60')
+
+	def load_doubleSpinBox_BATT_vstop_changed(self):
+		self.load.write(':BATT:VSTOP '+str(self.load_doubleSpinBox_BATT_vstop.value()))
 
 	def load_pushButton_StateON_pressed(self):
 		if self.load.is_connected() != True:
