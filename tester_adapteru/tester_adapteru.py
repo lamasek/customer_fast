@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 280
+verbose = 80
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -182,7 +182,7 @@ class visaDevice():
 		if self.connected:
 			return(True, 'Already connected')
 		self.rm = pyvisa.ResourceManager()
-		if verbose > 120:
+		if verbose > 70:
 			print('Connecting to ' + self.VISAresource)
 		try:
 			self.PVdevice = self.rm.open_resource(self.VISAresource)
@@ -211,7 +211,7 @@ class visaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if verbose>150:
+				if verbose>70:
 					print('Command:' + command)
 				if command[-1] == '?':
 					reply = self.PVdevice.query(command)
@@ -234,14 +234,14 @@ class visaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if verbose>150:
+				if verbose>70:
 					print('Command:' + command)
 				reply = self.PVdevice.write(command)
 				if verbose>50:
 					print(reply)
 				return(True, reply)
 			except Exception as e:
-				if verbose > 150:
+				if verbose > 50:
 					print('  Comand "' + command + '" failed: ' + str(e))
 				return(False, str(e))
 		else:
@@ -253,14 +253,14 @@ class visaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if verbose>150:
+				if verbose>70:
 					print('Command:' + command)
 				reply = self.PVdevice.query(command)
 				if verbose>50:
 					print(reply)
 				return(True, reply)
 			except Exception as e:
-				if verbose > 150:
+				if verbose > 70:
 					print('  Comand "' + command + '" failed: ' + str(e))
 				return(False, str(e))
 		else:
@@ -268,7 +268,7 @@ class visaDevice():
 
 
 	def disconnect(self):
-		if verbose > 80:
+		if verbose > 70:
 			print('Load disconnecting...')
 		self.rm.close() 
 		#TODO check
@@ -316,17 +316,23 @@ class load(visaDevice):
 				i = 0
 			return( i )
 		else:
+			global verbose
+			verbose -= 100
 			if varName == 'A':
 				retCode, retString = visaDevice.query(self, ":MEASURE:CURRENT?")
+				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'V':
 				retCode, retString = visaDevice.query(self, ":MEASURE:VOLTAGE?")
+				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'W':
 				retCode, retString = visaDevice.query(self, ":MEASURE:POWER?")
+				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'Wh':
 				retCode, retString = visaDevice.query(self, ":MEASURE:WATThours?")
+				verbose += 100
 				return(float(retString.strip()))
 			else:
 				return(False)
