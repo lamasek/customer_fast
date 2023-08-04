@@ -277,7 +277,7 @@ class visaDevice():
 
 
 
-class load():
+class load(visaDevice):
 	#def __init__(self, VISAresource):
 	#	visaDevice.__init__(self, VISAresource)
 
