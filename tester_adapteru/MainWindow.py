@@ -421,6 +421,11 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab_Comments, "")
         self.tab_help = QtWidgets.QWidget()
         self.tab_help.setObjectName("tab_help")
+        self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.tab_help)
+        self.verticalLayout_12.setObjectName("verticalLayout_12")
+        self.help_textEdit = QtWidgets.QTextEdit(parent=self.tab_help)
+        self.help_textEdit.setObjectName("help_textEdit")
+        self.verticalLayout_12.addWidget(self.help_textEdit)
         self.tabWidget.addTab(self.tab_help, "")
         self.verticalLayout_3.addWidget(self.tabWidget)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -433,7 +438,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(3)
+        self.tabWidget.setCurrentIndex(7)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
