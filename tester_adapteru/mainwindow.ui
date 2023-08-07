@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>7</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -157,6 +157,58 @@
        <attribute name="title">
         <string>Console</string>
        </attribute>
+      </widget>
+      <widget class="QWidget" name="tab_Wattmeter">
+       <attribute name="title">
+        <string>Wattmeter</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,10">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,10">
+          <item>
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>VISA Resource:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="text">
+             <string>Connect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_3">
+            <property name="text">
+             <string>Disconnect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>Status:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_24">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QWidget" name="widget" native="true"/>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="tab_Load">
        <attribute name="title">
@@ -791,9 +843,34 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QPushButton" name="export_pushButton_clear">
+            <property name="text">
+             <string>Clear</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="export_pushButton_save_as_text">
+            <property name="text">
+             <string>Save as TEXT</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="export_pushButton_save_as_pdf">
+            <property name="text">
+             <string>Save as PDF</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="QPlainTextEdit" name="export_plainTextEdit1"/>
+           <widget class="QTextEdit" name="export_textEdit1"/>
           </item>
          </layout>
         </item>

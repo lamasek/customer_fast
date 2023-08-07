@@ -120,6 +120,9 @@ CONFIG_DEFAULT = {
 					'plots/theme': 'auto',
 					'VISA/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'VISA/SCPIcommand' : '*IDN?',
+					'wattmeter/VISAresource' : 'TCPIP0::10.10.134.6::INSTR',
+					'wattmeter/measure_interval' : 1000, #ms
+					'wattmeter/demo' : False,
 					'load/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'load/demo': False, #if True, demo values are served instead of connecting real Load
 					'load/measure_interval': 1000, # ms
@@ -213,7 +216,7 @@ class visaDevice():
 			try:
 				if verbose>70:
 					print('Command:' + command)
-				if command[-1] == '?':
+				if '?' in command: # some devices (e.g. Yokogawa WT310E) have some IDs after ? (e.g. ":NUM:VAL? 1")
 					reply = self.PVdevice.query(command)
 				else:
 					self.PVdevice.write(command)
@@ -557,8 +560,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# EXPORTS -----------------------
-		self.export_plainTextEdit1.setPlaceholderText('nothing measured yet...')
-		self.export_plainTextEdit1.clear()
+		self.export_textEdit1.setPlaceholderText('nothing measured yet...')
+		self.export_textEdit1.clear()
+		self.export_pushButton_clear.pressed.connect(self.export_textEdit1.clear)
 
 
 		# COMMENTS -------------------------------
@@ -567,7 +571,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		# HELP -----------------------------------------------------
 		#include myhelp
-		#self.help_textEdit.
+		self.help_textEdit.insertHtml('''
+		<H1>Souhrn</H1>
+		
+		<H1>Záložky</H1>
+		
+		<H2>Config</H2>
+		Config je z disku načítán při spuštění aplikace, pak už ne.
+		Config je na disk ukládán při ukončení aplikace.
+		Default config je použit když:
+		  - jde o první spuštění aplikace
+		  - není načtena uložená konfigurace z disku
+		  - pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.
+
+		<H2>VISA</H2>
+		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je zasílán jako Query, pokud ne, je zasílán jako Write.
+				
+
+		
+		<H2>Export</H2>
+		Měření je vždy vkládáno na aktuální pozici kurzoru.
+		Před měřením není obsah mazán.
+
+		<H2>Comments</H2>
+		Poznámky a komentáře uživatele.¨
+		Obsah je ukládán na disk při ukončení programu.
+
+		''')
 
 		#VISA  Pokud 
 
@@ -810,7 +840,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#Update exports
-		#self.export_plainTextEdit1.appendPlainText(
+		#self.export_textEdit1.append(
 		#	str(tt)+CSVDELIM+
 		#	str(loadA)+CSVDELIM+
 		#	str(loadV)+CSVDELIM+
@@ -884,9 +914,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.label_test_zatizeni.setText('Measuring')
 		self.label_test_zatizeni.setStyleSheet('color:green')
 
-
-		#EXPORTS
-		self.export_plainTextEdit1.appendPlainText(
+		self.export_textEdit1.append(
 			'Requested Current [A]'+self.cfg.get('export/CSVDELIM')+
 			'Measured Current [A]'+self.cfg.get('export/CSVDELIM')+
 			'Measured Voltage [V]'+self.cfg.get('export/CSVDELIM')+
@@ -947,7 +975,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.mplWidget1.plot_update(data_test_zatizeni_ReqA, data_test_zatizeni_A, data_test_zatizeni_V, data_test_zatizeni_W)
 
 			#Update exports
-			self.export_plainTextEdit1.appendPlainText(
+			self.export_textEdit1.append(
 				str(self.loadReqA)+self.cfg.get('export/CSVDELIM')+
 				str(loadA)+self.cfg.get('export/CSVDELIM')+
 				str(loadV)+self.cfg.get('export/CSVDELIM')+
@@ -975,8 +1003,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.timer_test_zatizeni.stop()
 			# TODO update grafu
 			# self.mplWidget1.plotItem.plot(data_test_zatizeni_V)
-			self.export_plainTextEdit1.appendPlainText('#--------------------------------------')
-			self.export_plainTextEdit1.appendPlainText('')
+			self.export_textEdit1.append('#--------------------------------------')
+			self.export_textEdit1.append('')
 
 
 
