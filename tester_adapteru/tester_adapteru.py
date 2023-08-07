@@ -565,6 +565,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('comments/text', self.comments_plainTextEdit)
 
 
+		# HELP -----------------------------------------------------
+		#include myhelp
+		#self.help_textEdit.
+
+		#VISA  Pokud 
+
+
 	# classes for CONFIG ------------------------------------------------
 	def config_show(self):
 		self.config_plainTextEdit.clear()
