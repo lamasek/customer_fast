@@ -1,6 +1,15 @@
 
 
+
+
+
+
 YOKOGAWA WT310E
+
+pokud chceme cist hodnoty tak s pyvisa a pyvisa-py we have to switch to ASCII, otherwise library is crashing for non ASCII character
+:NUM:FORM ASCII
+:NUM:FORM?
+
 
 
 <Decimal> indicates a value expressed as a decimal number, as shown in the table below. Decimal values
@@ -15,7 +24,8 @@ to <NR3>. This is expressed as <NRf>.
 • This instrument returns a response to the controller in one of the forms from <NR1> to <NR3> depending on the query. The same form is
 
 *IDN?
-:MEAS?
+:MEAS? is only measurement settings
+
 
 COMMunicate:HEADer?
 COMMunicate:HEADer 0
@@ -34,7 +44,7 @@ kontrolovat ze to je spravne na NORM;0,10,0
 :INTEGrate:STOP
 :INTEGrate:RESet
 
-during integration Start (by button) error 846 can vyskytnout
+during integration Start (by button) error 846 can occure
     "Error(Code:846): Attempted to start integration while measurement of peak overflow was in progress"
     https://tmi.yokogawa.com/us/library/resources/faqs/errorcode846-occurs-when-attempting-to-start-integration-on-the-wt3000/
     The following error code will appear if Peak Over has occurred and you attempt to start integration. The WT3000 has two types of indicators,
@@ -42,10 +52,6 @@ during integration Start (by button) error 846 can vyskytnout
 
     reseni - u adapteru ktere merime se to deje jen ojedinele, staci mackat tlacitko dokud to nenastartuje
 
-
-pokud chceme cist hodnoty tak s pyvisa a pyvisa-py we have to switch to ASCII, otherwise library is crashing for non ASCII character
-:NUM:FORM ASCII
-:NUM:FORM?
 
 seznam co jde odecitat:
 :NUMeric?
