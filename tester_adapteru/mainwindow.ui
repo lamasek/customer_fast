@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>963</width>
-    <height>668</height>
+    <width>732</width>
+    <height>525</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -310,8 +310,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>939</width>
-             <height>510</height>
+             <width>714</width>
+             <height>393</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -435,7 +435,17 @@
                 </brush>
                </colorrole>
               </inactive>
-              <disabled/>
+              <disabled>
+               <colorrole role="ButtonText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="96">
+                  <red>164</red>
+                  <green>166</green>
+                  <blue>168</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
              </palette>
             </property>
             <property name="font">
@@ -474,7 +484,17 @@
                 </brush>
                </colorrole>
               </inactive>
-              <disabled/>
+              <disabled>
+               <colorrole role="ButtonText">
+                <brush brushstyle="SolidPattern">
+                 <color alpha="96">
+                  <red>164</red>
+                  <green>166</green>
+                  <blue>168</blue>
+                 </color>
+                </brush>
+               </colorrole>
+              </disabled>
              </palette>
             </property>
             <property name="font">
@@ -723,8 +743,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>925</width>
-             <height>1042</height>
+             <width>704</width>
+             <height>1028</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -784,7 +804,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_testACDCadapteru">
+      <widget class="QWidget" name="tab_test_ACDCadapteru">
        <attribute name="title">
         <string>Test AC/DC adapteru</string>
        </attribute>
@@ -799,7 +819,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="doubleSpinBox">
+           <widget class="QDoubleSpinBox" name="testACDCadapteru_doubleSpinBo_Po">
             <property name="minimum">
              <double>0.100000000000000</double>
             </property>
@@ -816,12 +836,12 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="comboBox"/>
+           <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru"/>
           </item>
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_15">
+         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_30">
             <property name="text">
@@ -830,14 +850,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="testACDCadapteru_pushButton_start">
             <property name="text">
              <string>Start</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_2">
+           <widget class="QPushButton" name="testACDCadapteru_pushButton_stop">
             <property name="text">
              <string>Stop</string>
             </property>
@@ -851,7 +871,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label_29">
+           <widget class="QLabel" name="testACDCadapteru_label_status">
             <property name="text">
              <string>Init...</string>
             </property>
@@ -872,16 +892,16 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>939</width>
-             <height>510</height>
+             <width>714</width>
+             <height>396</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
             <item>
-             <widget class="QWidget" name="widget" native="true"/>
+             <widget class="QWidget" name="testACDCadapteru_plotWidget1" native="true"/>
             </item>
             <item>
-             <widget class="QWidget" name="widget_2" native="true"/>
+             <widget class="QWidget" name="testACDCadapteru_plotWidget2" native="true"/>
             </item>
            </layout>
           </widget>
@@ -1143,8 +1163,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>963</width>
-     <height>21</height>
+     <width>732</width>
+     <height>17</height>
     </rect>
    </property>
   </widget>
@@ -1167,7 +1187,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>

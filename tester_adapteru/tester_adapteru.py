@@ -62,10 +62,6 @@ import sys
 
 import math
 
-lib_check_install('pyqtgraph')
-import pyqtgraph # pip install pyqtgraph
-from pyqtgraph import mkPen
-
 lib_check_install('matplotlib')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -92,6 +88,10 @@ import darkdetect ### FIX it by: pip install darkdetect
 
 lib_check_install('pyqtconfig')
 from pyqtconfig import QSettingsManager
+
+lib_check_install('pyqtgraph')
+import pyqtgraph # pip install pyqtgraph
+from pyqtgraph import mkPen
 
 
 # MS windows only
@@ -135,7 +135,7 @@ CONFIG_DEFAULT = {
 					'load/measure_W': True,
 					'load/measure_Wh': False,
 					'load/measure_X': False,
-					'test_adapteru/reqmAstart':  500, # mA
+					'testACDCadapteru/Po':  1, #W
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -183,7 +183,7 @@ data_test_zatizeni_W = []
 
 
 ###############################
-class visaDevice():
+class VisaDevice():
 	def __init__(self):
 		None
 
@@ -292,7 +292,7 @@ class visaDevice():
 			return(False, 'Not connected')
 
 
-class load(visaDevice):
+class Load(VisaDevice):
 
 	demo = False	# if True, it does not connect to real device, it provide fake demo values
 	#demo_connected = False
@@ -305,16 +305,16 @@ class load(visaDevice):
 			#self.demo_connected = True
 			return(True, 'Demo connected')
 		else:
-			r, s = visaDevice.connect(self)
+			r, s = VisaDevice.connect(self)
 			return(r, s)
 			#self.connected = True
 	
 	def disconnect(self):
 		if  self.demo == True:
-			#visaDevice.connected = False
+			#VisaDevice.connected = False
 			return(True)
 		else:
-			visaDevice.disconnect(self) 
+			VisaDevice.disconnect(self) 
 
 	def measure(self, varName):
 		if  self.demo == True:
@@ -328,19 +328,19 @@ class load(visaDevice):
 			global verbose
 			verbose -= 100
 			if varName == 'A':
-				retCode, retString = visaDevice.query(self, ":MEASURE:CURRENT?")
+				retCode, retString = VisaDevice.query(self, ":MEASURE:CURRENT?")
 				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'V':
-				retCode, retString = visaDevice.query(self, ":MEASURE:VOLTAGE?")
+				retCode, retString = VisaDevice.query(self, ":MEASURE:VOLTAGE?")
 				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'W':
-				retCode, retString = visaDevice.query(self, ":MEASURE:POWER?")
+				retCode, retString = VisaDevice.query(self, ":MEASURE:POWER?")
 				verbose += 100
 				return(float(retString.strip()))
 			elif varName == 'Wh':
-				retCode, retString = visaDevice.query(self, ":MEASURE:WATThours?")
+				retCode, retString = VisaDevice.query(self, ":MEASURE:WATThours?")
 				verbose += 100
 				return(float(retString.strip()))
 			else:
@@ -350,12 +350,12 @@ class load(visaDevice):
 	def setFunctionCurrent(self):
 		if  self.demo == True:
 			return()
-		visaDevice.write(self, ":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
+		VisaDevice.write(self, ":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
 
 	def setModeBATT(self):
 		if  self.demo == True:
 			return()
-		visaDevice.write(self, ":SOUR:FUNC:MODE BATT")    # Set to  mode BATTery
+		VisaDevice.write(self, ":SOUR:FUNC:MODE BATT")    # Set to  mode BATTery
 
 
 	def setStateOn(self, state = False): #True = ON, False=OFF
@@ -364,9 +364,9 @@ class load(visaDevice):
 			return()
 		
 		if state:
-			return(visaDevice.write(self, ":SOURCE:INPUT:STATE On"))    # Enable electronic load
+			return(VisaDevice.write(self, ":SOURCE:INPUT:STATE On"))    # Enable electronic load
 		else:
-			return(visaDevice.write(self, ":SOURCE:INPUT:STATE Off"))
+			return(VisaDevice.write(self, ":SOURCE:INPUT:STATE Off"))
 
 	def setCurrent(self, current):
 		if  self.demo == True:
@@ -375,17 +375,17 @@ class load(visaDevice):
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
 			if verbose > 100:
 				print('PVcommand = '+PVcommand)
-			visaDevice.write(self, PVcommand)
+			VisaDevice.write(self, PVcommand)
 
 
-class wattmeter(visaDevice):
+class Wattmeter(VisaDevice):
 
 	def connect(self):
-		r, s = visaDevice.connect(self)
+		r, s = VisaDevice.connect(self)
 		if r == False:
 			return(r, s)
 
-		visaDevice.write(self, ':NUM:FORM ASCII')
+		VisaDevice.write(self, ':NUM:FORM ASCII')
 		#todo check ze je ok
 
 		#todo check ze:
@@ -404,35 +404,51 @@ class wattmeter(visaDevice):
 		verbose -= 100
 		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
 		if varName == 'MATH':
-			retCode, retString = visaDevice.query(self, ":NUM:VAL? 1")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
 			verbose += 100
 			return(float(retString.strip()))
 		elif varName == 'V':
-			retCode, retString = visaDevice.query(self, ":NUM:VAL? 3")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
 			verbose += 100
 			return(float(retString.strip()))
 		elif varName == 'A':
-			retCode, retString = visaDevice.query(self, ":NUM:VAL? 4")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
 			verbose += 100
 			return(float(retString.strip()))
 		elif varName == 'W':
-			retCode, retString = visaDevice.query(self, ":NUM:VAL? 5")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
 			verbose += 100
 			return(float(retString.strip()))
 		else:
 			return(False)
 
 	def integrateStart(self):
-		return(visaDevice.write(self, ":INTEGrate:STARt"))
+		return(VisaDevice.write(self, ":INTEGrate:STARt"))
 
 	def integrateCheck(self):
-		retCode, retString = visaDevice.query(self, ":MEASURE:WATThours?")
+		retCode, retString = VisaDevice.query(self, ":MEASURE:WATThours?")
 
 
 
 	def integrateStart(self):
-		return(visaDevice.write(self, ":INTEGrate:STARt"))
+		return(VisaDevice.write(self, ":INTEGrate:STARt"))
 
+class TestACDCadapteru():
+	data1 = []
+	data2 = []
+
+	def do_measure(	self,
+			wm: Wattmeter,
+			ld: Load, 
+			exportTextEdit: QtWidgets.QTextEdit, 
+			plot1: pyqtgraph.PlotWidget, 
+			plot2: pyqtgraph.PlotWidget,
+			statusLabel: QtWidgets.QLabel
+			):
+		statusLabel.setText = 'Started'
+		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1>')
+	
+	
 
 #pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
@@ -504,7 +520,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# VISA ------------------------------------------------------------------------
-		self.visa = visaDevice()
+		self.visa = VisaDevice()
 		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
 		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
 		self.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
@@ -516,7 +532,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# WATTMETER -----------------------------------------------------------------
-		self.wattmeter = wattmeter()
+		self.wattmeter = Wattmeter()
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
 		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter_disconnect)
@@ -583,7 +599,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		# LOAD --------------------
-		self.load = load()
+		self.load = Load()
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load.setDemo(self.cfg.get('load/demo'))
 		self.load_pushButton_connect.pressed.connect(self.load_connect)
@@ -681,6 +697,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget5.setCursor(self.cursor)
 
 
+		# testACDCadapteru ----------------------------------------------
+		self.testACDCadapteru = TestACDCadapteru()
+		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
 
 		# TEST ZATIZENI -----------------------------------
 		self.mplWidget1.myinit()
@@ -707,6 +726,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.help_textEdit.insertHtml('''
 <H1>Souhrn</H1>
 		
+	<P> Měření a ovládání na Wattmetru Yokogawa WT310E a DC zátěže Rigol DL 3000.</P>
+				
+	
+				
 <H1>Záložky</H1>
 		
 	<H2>Config</H2>
@@ -732,9 +755,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		<P>
 			Kroky testu:  
 			<OL>
-				<LI>Měření 10 minutového průměru spotřeby</LI>
-				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%)</LI>
-				<LI>Měření účinnosti při malém zatížení (10%)</LI>
+				<LI>Měření standby spotřeby - 10 minutového průměru příkonu bez zátěže - <B>Pstb</B></LI>
+				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%) - <B>Pa</B></LI>
+				<LI>Měření účinnosti při malém zatížení (10%) -<B>P10</B></LI>
+				<LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
+				<LI>VA charakteristika a časový průběh U a I při přetížení</LI>
+				<LI>Test ochrany proti zkratu</LI>
+				<LI>Zátěž 1 hodina max. výkon</LI>
 			</OL>	
 		</P>
 		
@@ -1162,6 +1189,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget4_dataLine.setData([], [])
 		self.load_plotWidget5_dataLine.setData([], [])
 
+
+	# testACDCadapteru ------------------------------------------------------
+	def testACDCadapteru_start(self):
+		self.testACDCadapteru.do_measure(
+			wm = self.wattmeter,
+			ld = self.load, 
+			exportTextEdit = self.export_textEdit1, 
+			plot1 = self.testACDCadapteru_plotWidget1,
+			plot2 = self.testACDCadapteru_plotWidget2,
+			statusLabel = self.testACDCadapteru_label_status
+		)
 
 	# TEST_ZATIZENI ----------------------------------------------------------------
 	def test_zatizeni_start(self):
