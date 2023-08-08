@@ -123,6 +123,10 @@ CONFIG_DEFAULT = {
 					'wattmeter/VISAresource' : 'TCPIP0::10.10.134.6::INSTR',
 					'wattmeter/measure_interval' : 1000, #ms
 					'wattmeter/demo' : False,
+					'wattmeter/measure_W': True,
+					'wattmeter/measure_A': True,
+					'wattmeter/measure_V': True,
+					'wattmeter/measure_MATH': True,
 					'load/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'load/demo': False, #if True, demo values are served instead of connecting real Load
 					'load/measure_interval': 1000, # ms
@@ -162,7 +166,15 @@ data_loadAh = []
 data_loadAhtime = []
 data_loadWh = []
 data_loadWhtime = []
-data_loadTime = []
+
+data_wattmeter_W = []
+data_wattmeter_Wtime = []
+data_wattmeter_A = []
+data_wattmeter_Atime = []
+data_wattmeter_V = []
+data_wattmeter_Vtime = []
+data_wattmeter_MATH = []
+data_wattmeter_MATHtime = []
 
 data_test_zatizeni_ReqA = []
 data_test_zatizeni_A = []
@@ -182,6 +194,7 @@ class visaDevice():
 		return(self.connected)
 
 	def connect(self):
+		# return retCode=True/False, retString=Error str/IDN of device
 		if self.connected:
 			return(True, 'Already connected')
 		self.rm = pyvisa.ResourceManager()
@@ -203,9 +216,18 @@ class visaDevice():
 			self.connected = False
 			return(False, 'SCPI *IDN? test after connection failed: '+str(e))
 		if verbose>50:
-			print(IDNreply)
+			print(IDNreply.strip())
 		self.connected = True
 		return(True, IDNreply)
+
+	def disconnect(self):
+		# return(True/False)
+		if verbose > 70:
+			print('Load disconnecting...')
+		self.rm.close() 
+		#TODO check
+		self.connected = False
+		return(True)
 
 
 	def send(self, commandi):
@@ -270,42 +292,26 @@ class visaDevice():
 			return(False, 'Not connected')
 
 
-	def disconnect(self):
-		if verbose > 70:
-			print('Load disconnecting...')
-		self.rm.close() 
-		#TODO check
-		self.connected = False
-		return(True)
-
-
-
 class load(visaDevice):
-	#def __init__(self, VISAresource):
-	#	visaDevice.__init__(self, VISAresource)
 
 	demo = False	# if True, it does not connect to real device, it provide fake demo values
-	#VISAresource = ''
-	#connected = False
-
+	#demo_connected = False
+	
 	def setDemo(self, d): #pokud demo, tak dela sinusovku co 10s a jen kladnou
 		self.demo = d
 	
-	#def is_connected(self):
-	#	return(visaDevice.connected)
-
 	def connect(self):
 		if  self.demo == True:
-			#self.connected = True
-			return(True)
+			#self.demo_connected = True
+			return(True, 'Demo connected')
 		else:
-			ret = visaDevice.connect(self)
-			return(ret)
+			r, s = visaDevice.connect(self)
+			return(r, s)
 			#self.connected = True
 	
 	def disconnect(self):
 		if  self.demo == True:
-			visaDevice.connected = False
+			#visaDevice.connected = False
 			return(True)
 		else:
 			visaDevice.disconnect(self) 
@@ -372,6 +378,61 @@ class load(visaDevice):
 			visaDevice.write(self, PVcommand)
 
 
+class wattmeter(visaDevice):
+
+	def connect(self):
+		r, s = visaDevice.connect(self)
+		if r == False:
+			return(r, s)
+
+		visaDevice.write(self, ':NUM:FORM ASCII')
+		#todo check ze je ok
+
+		#todo check ze:
+		#:integ?
+		#kontrolovat ze to je spravne na NORM;0,10,0
+
+
+		return(r, s)
+		#self.connected = True
+
+
+
+
+	def measure(self, varName):
+		global verbose
+		verbose -= 100
+		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
+		if varName == 'MATH':
+			retCode, retString = visaDevice.query(self, ":NUM:VAL? 1")
+			verbose += 100
+			return(float(retString.strip()))
+		elif varName == 'V':
+			retCode, retString = visaDevice.query(self, ":NUM:VAL? 3")
+			verbose += 100
+			return(float(retString.strip()))
+		elif varName == 'A':
+			retCode, retString = visaDevice.query(self, ":NUM:VAL? 4")
+			verbose += 100
+			return(float(retString.strip()))
+		elif varName == 'W':
+			retCode, retString = visaDevice.query(self, ":NUM:VAL? 5")
+			verbose += 100
+			return(float(retString.strip()))
+		else:
+			return(False)
+
+	def integrateStart(self):
+		return(visaDevice.write(self, ":INTEGrate:STARt"))
+
+	def integrateCheck(self):
+		retCode, retString = visaDevice.query(self, ":MEASURE:WATThours?")
+
+
+
+	def integrateStart(self):
+		return(visaDevice.write(self, ":INTEGrate:STARt"))
+
 
 #pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
@@ -407,6 +468,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		qiconlogo = QtGui.QIcon('images\logo_charger_white.png')
 		self.setWindowIcon(qiconlogo)
 
+		# for all pyqt graphs in this app:
+		self.penColor = color=(205, 205, 205)
+		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
+		self.cursor = Qt.CursorShape.CrossCursor
+		plotMinW = 300
+		plotMinH = 150
+      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
+		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
+
 
 		# CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
@@ -441,6 +511,75 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('VISA/SCPIcommand', self.visa_lineEdit_SCPIcommand)
 		self.visa_lineEdit_SCPIcommand.returnPressed.connect(self.visa_send)
 		self.visa_pushButton_send.pressed.connect(self.visa_send)
+
+		# CONSOLE -------------------------------------------------------------------
+
+
+		# WATTMETER -----------------------------------------------------------------
+		self.wattmeter = wattmeter()
+		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
+		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
+		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter_disconnect)
+
+		# Wattmeter Measure
+		self.wattmeter_mereni_finished = True # semaphor for measuring method
+		self.wattmeter_pushButton_start.pressed.connect(self.wattmeter_mereni_start)
+		self.wattmeter_pushButton_stop.pressed.connect(self.wattmeter_mereni_stop)
+		self.cfg.add_handler('wattmeter/measure_interval', self.wattmeter_spinBox_measure_interval)
+		self.wattmeter_pushButton_clearGraphs.pressed.connect(self.wattmeter_mereni_clearGraphs)
+
+		self.cfg.add_handler('wattmeter/measure_W', self.wattmeter_checkBox_measure_W)
+		self.wattmeter_checkBox_measure_W.stateChanged.connect(self.wattmeter_checkBox_measure_W_changed)
+		self.wattmeter_checkBox_measure_W_changed() # set initial state from config
+		self.cfg.add_handler('wattmeter/measure_A', self.wattmeter_checkBox_measure_A)
+		self.wattmeter_checkBox_measure_A.stateChanged.connect(self.wattmeter_checkBox_measure_A_changed)
+		self.wattmeter_checkBox_measure_A_changed() # set initial state from config
+		self.cfg.add_handler('wattmeter/measure_V', self.wattmeter_checkBox_measure_V)
+		self.wattmeter_checkBox_measure_V.stateChanged.connect(self.wattmeter_checkBox_measure_V_changed)
+		self.wattmeter_checkBox_measure_V_changed() # set initial state from config
+		self.cfg.add_handler('wattmeter/measure_MATH', self.wattmeter_checkBox_measure_MATH)
+		self.wattmeter_checkBox_measure_MATH.stateChanged.connect(self.wattmeter_checkBox_measure_MATH_changed)
+		self.wattmeter_checkBox_measure_MATH_changed() # set initial state from config
+
+		# setup Wattmeter graphs
+		# plotWidget1 / W
+		self.wattmeter_plotWidget1.setMinimumSize(plotMinW, plotMinH)
+		self.wattmeter_plotWidget1.showGrid(x=True, y=True)
+		wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.wattmeter_plotWidget1.setAxisItems({"bottom": wattmeter_daxis1})
+		self.wattmeter_plotWidget1.setLabel('left', 'Power/P [W]')
+		self.wattmeter_plotWidget1.setCursor(self.cursor)
+		self.wattmeter_plotWidget1_dataLine =  self.wattmeter_plotWidget1.plot([], [],
+			'Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		# plotWidget2 / A
+		self.wattmeter_plotWidget2.setMinimumSize(plotMinW, plotMinH)
+		self.wattmeter_plotWidget2.showGrid(x=True, y=True)
+		wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.wattmeter_plotWidget2.setAxisItems({"bottom": wattmeter_daxis1})
+		self.wattmeter_plotWidget2.setLabel('left', 'Current/I [A]')
+		self.wattmeter_plotWidget2.setCursor(self.cursor)
+		self.wattmeter_plotWidget2_dataLine =  self.wattmeter_plotWidget2.plot([], [],
+			'Current/I [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		# plotWidget3 / U
+		self.wattmeter_plotWidget3.setMinimumSize(plotMinW, plotMinH)
+		self.wattmeter_plotWidget3.showGrid(x=True, y=True)
+		wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.wattmeter_plotWidget3.setAxisItems({"bottom": wattmeter_daxis1})
+		self.wattmeter_plotWidget3.setLabel('left', 'Voltage/U [V]')
+		self.wattmeter_plotWidget3.setCursor(self.cursor)
+		self.wattmeter_plotWidget3_dataLine =  self.wattmeter_plotWidget3.plot([], [],
+			'Voltage/U [V]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		# plotWidget4 / MATH
+		self.wattmeter_plotWidget4.setMinimumSize(plotMinW, plotMinH)
+		self.wattmeter_plotWidget4.showGrid(x=True, y=True)
+		wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		self.wattmeter_plotWidget4.setAxisItems({"bottom": wattmeter_daxis1})
+		self.wattmeter_plotWidget4.setLabel('left', 'AVG Power 10 min./P [W]')
+		self.wattmeter_plotWidget4.setCursor(self.cursor)
+		self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
+			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+
+
 
 
 		# LOAD --------------------
@@ -485,16 +624,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_checkBox_measure_X.stateChanged.connect(self.load_checkBox_measure_X_changed)
 		self.load_checkBox_measure_X_changed() # set initial state from config
 
-		self.load_measuring_finished = True # semaphor for measuring method
+		self.load_mereni_finished = True # semaphor for measuring method
 
 
-		# setup graphs
-		self.penColor = color=(205, 205, 205)
-		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
-		self.cursor = Qt.CursorShape.CrossCursor
-      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
-		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
-		
+		# setup Load graphs
 		self.load_plotWidget1.setMinimumSize(300, 200)
 		self.load_plotWidget1.showGrid(x=True, y=True)
 		#self.load_plotWidget1.setLimits(yMin=-0.1)
@@ -572,34 +705,50 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		# HELP -----------------------------------------------------
 		#include myhelp
 		self.help_textEdit.insertHtml('''
-		<H1>Souhrn</H1>
+<H1>Souhrn</H1>
 		
-		<H1>Záložky</H1>
+<H1>Záložky</H1>
 		
-		<H2>Config</H2>
-		Config je z disku načítán při spuštění aplikace, pak už ne.
-		Config je na disk ukládán při ukončení aplikace.
+	<H2>Config</H2>
+		<P>Config je z disku načítán při spuštění aplikace, pak už ne.</P>
+		<P>Config je na disk ukládán při ukončení aplikace.</P>
+		<P>
 		Default config je použit když:
-		  - jde o první spuštění aplikace
-		  - není načtena uložená konfigurace z disku
-		  - pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.
+		<UL>
+		  <LI> jde o první spuštění aplikace</LI>
+		  <LI> není načtena uložená konfigurace z disku</LI>
+		  <LI> pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.</LI>
+		</UL>
+		<P>
 
-		<H2>VISA</H2>
-		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je zasílán jako Query, pokud ne, je zasílán jako Write.
-				
+	<H2>VISA</H2>
+		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je Command zasílán jako Query, pokud ne, je zasílán jako Write.
 
+		<H2>Test AC/DC adapteru</H2>
+			<P>
+				Vstupy:
+			</P>
+
+		<P>
+			Kroky testu:  
+			<OL>
+				<LI>Měření 10 minutového průměru spotřeby</LI>
+				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%)</LI>
+				<LI>Měření účinnosti při malém zatížení (10%)</LI>
+			</OL>	
+		</P>
 		
-		<H2>Export</H2>
+	<H2>Export</H2>
 		Měření je vždy vkládáno na aktuální pozici kurzoru.
 		Před měřením není obsah mazán.
 
-		<H2>Comments</H2>
+	<H2>Comments</H2>
 		Poznámky a komentáře uživatele.¨
 		Obsah je ukládán na disk při ukončení programu.
 
-		''')
+''')
 
-		#VISA  Pokud 
+	#VISA  Pokud 
 
 
 	# classes for CONFIG ------------------------------------------------
@@ -632,12 +781,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				else:
 					theme = 'light'
 			if theme == 'light':
+				self.wattmeter_plotWidget1.setBackground("w")
+				self.wattmeter_plotWidget2.setBackground("w")
+				self.wattmeter_plotWidget3.setBackground("w")
+				self.wattmeter_plotWidget4.setBackground("w")
 				self.load_plotWidget1.setBackground("w")
 				self.load_plotWidget2.setBackground("w")
 				self.load_plotWidget3.setBackground("w")
 				self.load_plotWidget4.setBackground("w")
 				self.load_plotWidget5.setBackground("w")
 			else:
+				self.wattmeter_plotWidget1.setBackground("k")
+				self.wattmeter_plotWidget2.setBackground("k")
+				self.wattmeter_plotWidget3.setBackground("k")
+				self.wattmeter_plotWidget4.setBackground("k")
 				self.load_plotWidget1.setBackground("k")
 				self.load_plotWidget2.setBackground("k")
 				self.load_plotWidget3.setBackground("k")
@@ -676,6 +833,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			else:
 				self.visa_label_status.setText('Disconnected ')
 				self.visa_label_status.setStyleSheet(None)
+		else:
+			self.visa_label_status.setText('Disconnected ')
+			self.visa_label_status.setStyleSheet(None)
 
 	def visa_send(self):
 		if  self.visa.is_connected() == True:
@@ -685,6 +845,141 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.visa_plainTextEdit_output.appendPlainText(retStr)
 		else:
 			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+
+	# classes for wattmeter ------------------------------
+	def wattmeter_connect(self):
+		if  self.wattmeter.is_connected() == True:
+			return(True)
+		else:
+			self.wattmeter_label_status.setText('Trying to connect...')
+			self.wattmeter_label_status.setStyleSheet('')
+			self.wattmeter.VISAresource = self.cfg.get('wattmeter/VISAresource')
+			retCode, retStr = self.wattmeter.connect()
+			if retCode == False:
+				self.wattmeter_label_status.setText('FAILED to connect, error: ' + retStr)
+				self.wattmeter_label_status.setStyleSheet('color:red')
+				return(False)
+			else:
+				self.wattmeter_label_status.setText('Connected to: ' + retStr)
+				self.wattmeter_label_status.setStyleSheet('color:green')
+				return(True)
+
+	def wattmeter_disconnect(self):
+		if  self.wattmeter.is_connected() == True:
+			self.wattmeter_label_status.setText('Disconnecting...')
+			self.wattmeter_label_status.setStyleSheet(None)
+			ret = self.wattmeter.disconnect()
+			if ret == False:
+				self.wattmeter_label_status.setText('Disconnected, FAILED to nice disconnect')
+				self.wattmeter_label_status.setStyleSheet('color:red')
+			else:
+				self.wattmeter_label_status.setText('Disconnected ')
+				self.wattmeter_label_status.setStyleSheet(None)
+		else:
+			self.wattmeter_label_status.setText('Disconnected ')
+			self.wattmeter_label_status.setStyleSheet(None)
+
+
+	def wattmeter_checkBox_measure_W_changed(self):
+		if self.cfg.get('wattmeter/measure_W'):
+			self.wattmeter_plotWidget1.show()
+		else:
+			self.wattmeter_plotWidget1.hide()
+
+
+	def wattmeter_checkBox_measure_A_changed(self):
+		if self.cfg.get('wattmeter/measure_A'):
+			self.wattmeter_plotWidget2.show()
+		else:
+			self.wattmeter_plotWidget2.hide()
+
+
+	def wattmeter_checkBox_measure_V_changed(self):
+		if self.cfg.get('wattmeter/measure_V'):
+			self.wattmeter_plotWidget3.show()
+		else:
+			self.wattmeter_plotWidget3.hide()
+
+
+	def wattmeter_checkBox_measure_MATH_changed(self):
+		if self.cfg.get('wattmeter/measure_MATH'):
+			self.wattmeter_plotWidget4.show()
+		else:
+			self.wattmeter_plotWidget4.hide()
+
+
+	def wattmeter_mereni_start(self):
+		if  self.load.is_connected() == False:
+			self.wattmeter_connect()
+
+		#self.label_test_zatizeni.setText('Measuring')
+		#self.label_test_zatizeni.setStyleSheet('color:green')
+
+		# schedule Measuring
+		self.timer_wattmeter_mereni = QtCore.QTimer()
+		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
+		self.timer_wattmeter_mereni.timeout.connect(self.wattmeter_mereni_mer)
+		self.timer_wattmeter_mereni.start()
+
+
+	def wattmeter_mereni_stop(self):
+		self.timer_wattmeter_mereni.stop()
+		self.wattmeter_mereni_finished = True
+
+
+	def wattmeter_mereni_mer(self):
+		if self.wattmeter_mereni_finished == False:
+			print('wattmeter_mereni_mer nestiha!!!!!!!!!!')
+			return()
+		self.wattmeter_mereni_finished = False
+		
+		if True: #self.cfg.get('wattmeter/measure_'):
+			W = self.wattmeter.measure('W')
+			data_wattmeter_W.append(W)
+			data_wattmeter_Wtime.append(time.time())
+			self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
+
+		if True: #self.cfg.get('wattmeter/measure_'):
+			A = self.wattmeter.measure('A')
+			data_wattmeter_A.append(A)
+			data_wattmeter_Atime.append(time.time())
+			self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
+
+		if True: #self.cfg.get('wattmeter/measure_'):
+			V = self.wattmeter.measure('V')
+			data_wattmeter_V.append(V)
+			data_wattmeter_Vtime.append(time.time())
+			self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
+
+		if True: #self.cfg.get('wattmeter/measure_'):
+			MATH = self.wattmeter.measure('MATH')
+			if type(MATH) is float:
+				data_wattmeter_MATH.append(MATH)
+				data_wattmeter_MATHtime.append(time.time())
+				self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
+
+		self.wattmeter_mereni_finished = True
+
+
+	def wattmeter_mereni_clearGraphs(self):
+		global data_wattmeter_W, data_wattmeter_Wtime
+		data_wattmeter_W = []
+		data_wattmeter_Wtime = []
+		global data_wattmeter_A, data_wattmeter_Atime
+		data_wattmeter_A = []
+		data_wattmeter_Atime = []
+		global data_wattmeter_V, data_wattmeter_Vtime
+		data_wattmeter_V = []
+		data_wattmeter_Vtime = []
+		global data_wattmeter_MATH, data_wattmeter_MATHtime
+		data_wattmeter_MATH = []
+		data_wattmeter_MATHtime = []
+
+		self.wattmeter_plotWidget1_dataLine.setData([], [])
+		self.wattmeter_plotWidget2_dataLine.setData([], [])
+		self.wattmeter_plotWidget3_dataLine.setData([], [])
+		self.wattmeter_plotWidget4_dataLine.setData([], [])
+
 
 
 	# classes for LOAD ------------------------------
@@ -696,9 +991,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load_label_status.setText('Trying to connect...')
 			self.load_label_status.setStyleSheet('')
 			self.load.VISAresource = self.cfg.get('load/VISAresource')
-			ret = self.load.connect()
-			if ret == False:
-				self.load_label_status.setText('FAILED to connect Load')
+			retCode, retStr = self.load.connect()
+			if retCode == False:
+				self.load_label_status.setText('FAILED to connect: ' + retStr)
 				self.load_label_status.setStyleSheet('color:red')
 				return(False)
 			else:
@@ -717,6 +1012,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			else:
 				self.load_label_status.setText('Disconnected ')
 				self.load_label_status.setStyleSheet(None)
+		else:
+			self.load_label_status.setText('Disconnected ')
+			self.load_label_status.setStyleSheet(None)
 
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
@@ -790,25 +1088,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		# schedule Measuring
 		self.timer_load_mereni = QtCore.QTimer()
 		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
-		self.timer_load_mereni.timeout.connect(self.load_mereni_mereni)
+		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
 		self.timer_load_mereni.start()
 
 
 	def load_mereni_stop(self):
-
 		self.timer_load_mereni.stop()
+		self.load_mereni_finished = True
 
 
-	def load_mereni_mereni(self):
-		if self.load_measuring_finished == False:
+	def load_mereni_mer(self):
+		if self.load_mereni_finished == False:
 			print('load_mereni_mereni-nestiha')
-			#return()
-		self.load_measuring_finished = False
-
-		global data_loadTime
-		tt = time.time()
-		data_loadTime.append(tt)
-
+			return()
+		self.load_mereni_finished = False
 
 		if self.cfg.get('load/measure_A'):
 			global data_loadA
@@ -846,7 +1139,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#	str(loadV)+CSVDELIM+
 		#	str(loadW)
 		#	)
-		self.load_measuring_finished = True
+		self.load_mereni_finished = True
 
 
 	def load_mereni_clearGraphs(self):
