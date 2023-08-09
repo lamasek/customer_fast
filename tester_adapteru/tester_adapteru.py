@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 80
+verbose = 280
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -51,6 +51,9 @@ def lib_check_install(MODULEname, PACKAGEname=None):
 	#pip.main(['install', p]) # old deprecated way
 #--------------------------------------------------------------------
 
+lib_check_install('io')
+import io
+
 lib_check_install('pyvisa')
 import pyvisa #pip install pyvisa pyvisa-py
 
@@ -74,7 +77,8 @@ import mplcursors
 lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 
-from PyQt6.QtCore import QCoreApplication, Qt
+
+from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore
 
 lib_check_install('qdarktheme', 'pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
@@ -436,6 +440,11 @@ class Wattmeter(VisaDevice):
 class TestACDCadapteru():
 	data1 = []
 	data2 = []
+	semaphore = QSemaphore(0) # semafor na testy:
+			# 0 	test is not running
+			# 1		test is running
+			# 2 	do exit from test (e.g. button pressed)
+
 
 	def do_measure(	self,
 			wm: Wattmeter,
@@ -443,10 +452,23 @@ class TestACDCadapteru():
 			exportTextEdit: QtWidgets.QTextEdit, 
 			plot1: pyqtgraph.PlotWidget, 
 			plot2: pyqtgraph.PlotWidget,
-			statusLabel: QtWidgets.QLabel
+			statusLabel: QtWidgets.QLabel,
 			):
-		statusLabel.setText = 'Started'
+		statusLabel.setText('Started')
 		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1>')
+		if verbose > 150:
+			print('TestACDCadapteru-->do_measure Test started')
+		while self.semaphore.available() == 1:
+			print(time.time())
+			QtTest.QTest.qWait(1000)
+			#return by finished
+		
+		#finished by user stop
+		self.semaphore.acquire(2)
+		statusLabel.setText('Stopped')
+		if verbose > 150:
+			print('TestACDCadapteru-->do_measure Test stopped')
+
 	
 	
 
@@ -484,6 +506,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		qiconlogo = QtGui.QIcon('images\logo_charger_white.png')
 		self.setWindowIcon(qiconlogo)
 
+		self.stop = False  #stop semaphore for running tests
+
 		# for all pyqt graphs in this app:
 		self.penColor = color=(205, 205, 205)
 		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
@@ -494,7 +518,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
 
 
-		# CONFIG ----------------------------
+		#region CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
 		self.cfg = QSettingsManager()
 		self.cfg.updated.connect(self.config_show)
@@ -517,9 +541,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
 		
 		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
+		#endregion
 
-
-		# VISA ------------------------------------------------------------------------
+		#region VISA ------------------------------------------------------------------------
 		self.visa = VisaDevice()
 		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
 		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
@@ -527,11 +551,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('VISA/SCPIcommand', self.visa_lineEdit_SCPIcommand)
 		self.visa_lineEdit_SCPIcommand.returnPressed.connect(self.visa_send)
 		self.visa_pushButton_send.pressed.connect(self.visa_send)
+		#endregion
+
 
 		# CONSOLE -------------------------------------------------------------------
 
 
-		# WATTMETER -----------------------------------------------------------------
+		#region WATTMETER -----------------------------------------------------------------
 		self.wattmeter = Wattmeter()
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
@@ -594,11 +620,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget4.setCursor(self.cursor)
 		self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		#endregion
 
-
-
-
-		# LOAD --------------------
+		#region LOAD 
 		self.load = Load()
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load.setDemo(self.cfg.get('load/demo'))
@@ -606,7 +630,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
-
 		
 		# LOAD Rem. Ctrl.
 		self.load_radioButton_Mode_CC.pressed.connect(self.load.setFunctionCurrent)
@@ -695,13 +718,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget5.setLabel('left', '?? [X]')
 		self.load_plotWidget5.setCursor(self.cursor)
+		#endregion
 
 
-		# testACDCadapteru ----------------------------------------------
+		#region testACDCadapteru ----------------------------------------------
 		self.testACDCadapteru = TestACDCadapteru()
-		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
+			
 
-		# TEST ZATIZENI -----------------------------------
+		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
+		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
+		#endregion
+
+
+		#region TEST ZATIZENI -----------------------------------
 		self.mplWidget1.myinit()
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
@@ -709,76 +738,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni_start.pressed.connect(self.test_zatizeni_start)
 		self.pushButton_test_zatizeni_stop.pressed.connect(self.test_zatizeni_stop)
+		#endregion
 
-
-		# EXPORTS -----------------------
+		#region EXPORTS -----------------------
 		self.export_textEdit1.setPlaceholderText('nothing measured yet...')
 		self.export_textEdit1.clear()
 		self.export_pushButton_clear.pressed.connect(self.export_textEdit1.clear)
-
+		#endregion
 
 		# COMMENTS -------------------------------
 		self.cfg.add_handler('comments/text', self.comments_plainTextEdit)
 
 
-		# HELP -----------------------------------------------------
-		#include myhelp
-		self.help_textEdit.insertHtml('''
-<H1>Souhrn</H1>
-		
-	<P> Měření a ovládání na Wattmetru Yokogawa WT310E a DC zátěže Rigol DL 3000.</P>
-				
-	
-				
-<H1>Záložky</H1>
-		
-	<H2>Config</H2>
-		<P>Config je z disku načítán při spuštění aplikace, pak už ne.</P>
-		<P>Config je na disk ukládán při ukončení aplikace.</P>
-		<P>
-		Default config je použit když:
-		<UL>
-		  <LI> jde o první spuštění aplikace</LI>
-		  <LI> není načtena uložená konfigurace z disku</LI>
-		  <LI> pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.</LI>
-		</UL>
-		<P>
-
-	<H2>VISA</H2>
-		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je Command zasílán jako Query, pokud ne, je zasílán jako Write.
-
-		<H2>Test AC/DC adapteru</H2>
-			<P>
-				Vstupy:
-			</P>
-
-		<P>
-			Kroky testu:  
-			<OL>
-				<LI>Měření standby spotřeby - 10 minutového průměru příkonu bez zátěže - <B>Pstb</B></LI>
-				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%) - <B>Pa</B></LI>
-				<LI>Měření účinnosti při malém zatížení (10%) -<B>P10</B></LI>
-				<LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
-				<LI>VA charakteristika a časový průběh U a I při přetížení</LI>
-				<LI>Test ochrany proti zkratu</LI>
-				<LI>Zátěž 1 hodina max. výkon</LI>
-			</OL>	
-		</P>
-		
-	<H2>Export</H2>
-		Měření je vždy vkládáno na aktuální pozici kurzoru.
-		Před měřením není obsah mazán.
-
-	<H2>Comments</H2>
-		Poznámky a komentáře uživatele.¨
-		Obsah je ukládán na disk při ukončení programu.
-
-''')
-
-	#VISA  Pokud 
+		#region HELP -----------------------------------------------------
+		f = io.open("tester_adapteru/help/help.html", mode="r", encoding="utf-8")
+		#f.open(QIODevice.ReadOnly | QIODevice.Text)
+		#f.open(QFile.ReadOnly | QFile.Text)
+		#f.open()
+		#istream = QTextStream(f)
+		str = ''
+		for x in f:
+			str += x
+		self.help_textEdit.setHtml(str)
+		#endregion 
 
 
-	# classes for CONFIG ------------------------------------------------
+
+	#region CONFIG ------------------------------------------------
 	def config_show(self):
 		self.config_plainTextEdit.clear()
 		d = self.cfg.as_dict()
@@ -829,8 +815,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_plotWidget5.setBackground("k")
 		except:
 			None
+	#endregion
 
-	# classes for VISA ------------------------------
+
+	#region VISA ---------------------------------------------------------
 	def visa_connect(self):
 		if  self.visa.is_connected() == True:
 			return(True)
@@ -872,8 +860,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.visa_plainTextEdit_output.appendPlainText(retStr)
 		else:
 			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+	#endregion VISA
 
-	# classes for wattmeter ------------------------------
+
+	#region classes for wattmeter ------------------------------
 	def wattmeter_connect(self):
 		if  self.wattmeter.is_connected() == True:
 			return(True)
@@ -1006,10 +996,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget2_dataLine.setData([], [])
 		self.wattmeter_plotWidget3_dataLine.setData([], [])
 		self.wattmeter_plotWidget4_dataLine.setData([], [])
+	#endregion
 
 
-
-	# classes for LOAD ------------------------------
+	#region classes for LOAD ------------------------------
 
 	def load_connect(self):
 		if  self.load.is_connected() == True:
@@ -1188,20 +1178,40 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget3_dataLine.setData([], [])
 		self.load_plotWidget4_dataLine.setData([], [])
 		self.load_plotWidget5_dataLine.setData([], [])
+	#endregion
 
 
-	# testACDCadapteru ------------------------------------------------------
+	#region testACDCadapteru ------------------------------------------------------
 	def testACDCadapteru_start(self):
-		self.testACDCadapteru.do_measure(
-			wm = self.wattmeter,
-			ld = self.load, 
-			exportTextEdit = self.export_textEdit1, 
-			plot1 = self.testACDCadapteru_plotWidget1,
-			plot2 = self.testACDCadapteru_plotWidget2,
-			statusLabel = self.testACDCadapteru_label_status
-		)
+		if verbose > 150:
+			print('testACDCadapteru_start - Start button pressed')
+		#self.testACDCadapteru_label_status.setText('xxx')
+		if self.testACDCadapteru.semaphore.available() == 0:
+			self.testACDCadapteru.semaphore.release(1)
+			self.testACDCadapteru.do_measure(
+				wm = self.wattmeter,
+				ld = self.load, 
+				exportTextEdit = self.export_textEdit1, 
+				plot1 = self.testACDCadapteru_plotWidget1,
+				plot2 = self.testACDCadapteru_plotWidget2,
+				statusLabel = self.testACDCadapteru_label_status,
+			)
+		else:
+			if verbose > 150:
+				print('testACDCadapteru_start - Start button pressed, already running')
 
-	# TEST_ZATIZENI ----------------------------------------------------------------
+
+
+	def testACDCadapteru_stop(self):
+		if verbose > 150:
+			print('testACDCadapteru_stop - Stop button pressed')
+		if self.testACDCadapteru.semaphore.available() == 1:
+			self.testACDCadapteru.semaphore.release(1)
+
+
+	#endregion
+
+	#region TEST_ZATIZENI ----------------------------------------------------------------
 	def test_zatizeni_start(self):
 		if self.test_zatizeni_running == True: # test already running
 			return()
@@ -1336,7 +1346,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			# self.mplWidget1.plotItem.plot(data_test_zatizeni_V)
 			self.export_textEdit1.append('#--------------------------------------')
 			self.export_textEdit1.append('')
-
+	#endregion
 
 
 def main():

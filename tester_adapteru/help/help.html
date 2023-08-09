@@ -1,0 +1,50 @@
+<!-- HTML 4.0 document with no body text and in utf-8 encoding for QTextEdit for Qt6 -->
+
+<H1>Souhrn</H1>
+		
+	<P> Měření a ovládání na Wattmetru Yokogawa WT310E a DC zátěže Rigol DL 3000.</P>
+				
+	
+				
+<H1>Záložky</H1>
+		
+	<H2>Config</H2>
+		<P>Config je z disku načítán při spuštění aplikace, pak už ne.</P>
+		<P>Config je na disk ukládán při ukončení aplikace.</P>
+		<P>
+		Default config je použit když:
+		<UL>
+		  <LI> jde o první spuštění aplikace</LI>
+		  <LI> není načtena uložená konfigurace z disku</LI>
+		  <LI> pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.</LI>
+		</UL>
+		<P>
+
+	<H2>VISA</H2>
+		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je Command zasílán jako Query, pokud ne, je zasílán jako Write.
+
+		<H2>Test AC/DC adapteru</H2>
+			<P>
+				Vstupy:
+			</P>
+
+		<P>
+			Kroky testu:  
+			<OL>
+				<LI>Měření standby spotřeby - 10 minutového průměru příkonu bez zátěže - <B>Pstb</B></LI>
+				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%) - <B>Pa</B></LI>
+				<LI>Měření účinnosti při malém zatížení (10%) -<B>P10</B></LI>
+				<LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
+				<LI>VA charakteristika a časový průběh U a I při přetížení</LI>
+				<LI>Test ochrany proti zkratu</LI>
+				<LI>Zátěž 1 hodina max. výkon</LI>
+			</OL>	
+		</P>
+		
+	<H2>Export</H2>
+		Měření je vždy vkládáno na aktuální pozici kurzoru.
+		Před měřením není obsah mazán.
+
+	<H2>Comments</H2>
+		Poznámky a komentáře uživatele.¨
+		Obsah je ukládán na disk při ukončení programu.
