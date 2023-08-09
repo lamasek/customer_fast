@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 280
+verbose = 180
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
