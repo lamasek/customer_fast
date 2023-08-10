@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 80
+verbose = 280
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -406,25 +406,42 @@ class Wattmeter(VisaDevice):
 		#self.connected = True
 
 	def measure(self, varName):
+		# return float | False -error durinq query | None - device answered NAN or not float
 		global verbose
 		verbose -= 100
 		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
 		if varName == 'MATH':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
 			verbose += 100
-			return(float(retString.strip()))
+			f = float(retString.strip())
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
 		elif varName == 'V':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
 			verbose += 100
-			return(float(retString.strip()))
+			f = float(retString.strip())
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
 		elif varName == 'A':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
 			verbose += 100
-			return(float(retString.strip()))
+			f = float(retString.strip())
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
 		elif varName == 'W':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
 			verbose += 100
-			return(float(retString.strip()))
+			f = float(retString.strip())
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
 		else:
 			return(False)
 
@@ -486,6 +503,14 @@ class TestACDCadapteru():
 		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
 
 		load.setStateOn(False)
+		wmeter.write(':INTEGrate:STARt')
+		while self.semaphore.available() == 1:
+			print(time.time())
+			QtTest.QTest.qWait(1000)
+			
+			#check if integration finished
+
+
 
 
 		#endregion
@@ -496,10 +521,10 @@ class TestACDCadapteru():
 			return()
 
 
-		while self.semaphore.available() == 1:
-			print(time.time())
-			QtTest.QTest.qWait(1000)
-			#return by finished
+		#while self.semaphore.available() == 1:
+		#	print(time.time())
+		#	QtTest.QTest.qWait(1000)
+		#	#return by finished
 		
 		#finished by user stop
 		self.semaphore.tryAcquire(2)
