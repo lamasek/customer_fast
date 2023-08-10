@@ -79,9 +79,8 @@ import mplcursors
 
 lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
-
-
-from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore
+from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
+from PyQt6.QtGui import QImage, QTextCursor
 
 lib_check_install('qdarktheme', 'pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
@@ -99,6 +98,7 @@ from pyqtconfig import QSettingsManager
 lib_check_install('pyqtgraph')
 import pyqtgraph # pip install pyqtgraph
 from pyqtgraph import mkPen
+import pyqtgraph.exporters
 
 
 # MS windows only
@@ -125,6 +125,8 @@ from MainWindow import Ui_MainWindow
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
 					'plots/theme': 'auto',
+					'plots/minWidth': 300,
+					'plots/minHeight': 200,
 					'VISA/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
 					'VISA/demo': False,
 					'VISA/SCPIcommand' : '*IDN?',
@@ -407,11 +409,27 @@ class Wattmeter(VisaDevice):
 
 	def measure(self, varName):
 		# return float | False -error durinq query | None - device answered NAN or not float
+		if  self.demo == True:
+			i = 100*math.sin( # sinus, period 5s in time
+					(time.time()%5) / 5 * 2*3.1415
+				)
+			if i < 0: #only positive part
+				i = 0
+			return( i )
+		
 		global verbose
 		verbose -= 100
 		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
 		if varName == 'MATH':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
+			verbose += 100
+			f = float(retString.strip())
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
+		if varName == 'TIME':
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 2")
 			verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
@@ -460,8 +478,16 @@ class TestACDCadapteru():
 			# 1		test is running
 			# 2 	do exit from test (e.g. button pressed)
 
-	#def nice_exit(self):
-	#	self.semaphore.tryAcquire(1)
+	def check_exit(self, statusLabel):
+		if self.semaphore.available() > 1: #stop the test and exit
+			if verbose > 150:
+				print('TestACDCadapteru-->do_measure Test stopped by user')
+			statusLabel.setText('Stopped by user')
+			self.semaphore.tryAcquire(2)
+			return(True)
+		else:
+			return(False)
+
 
 	def do_measure(	self,
 			wmeter: Wattmeter,
@@ -469,7 +495,9 @@ class TestACDCadapteru():
 			exportTextEdit: QtWidgets.QTextEdit, 
 			plot1: pyqtgraph.PlotWidget, 
 			plot2: pyqtgraph.PlotWidget,
+			plot3: pyqtgraph.PlotWidget,
 			statusLabel: QtWidgets.QLabel,
+			cfg: QSettingsManager,
 			):
 		statusLabel.setText('Started')
 		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1><BR></BR>')
@@ -498,27 +526,111 @@ class TestACDCadapteru():
 		rc, rs = wmeter.query('*IDN?')
 		exportTextEdit.insertHtml('<P>Wattmeter IDN: ' + rs + '</P><BR></BR>')
 
-		#region Pstb ------------------------------------------------------------------------------------
+
+		#region for all pyqt graphs in this app:
+		self.penColor = color=(205, 205, 205)
+		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
+		self.cursor = Qt.CursorShape.CrossCursor
+      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
+		#endregion
+
+
+		plot1.hide()
+		plot2.hide()
+		plot3.hide()
+
+		#region test_Pstb ------------------------------------------------------------------------------------
 		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - Pstb</H2><BR></BR>')
 		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
 
+		plot1.show()
+		plot1.clear()
+		plot1.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
+		#plot1.showGrid(x=True, y=True)
+		daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		plot1.setAxisItems({"bottom": daxis1})
+		plot1.setLabel('left', 'Power/P [W]')
+		#plot1.setCursor(self.cursor)
+		plot1_dataLine =  plot1.plot([], [],
+			'Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		
+		plot2.show()
+		plot2.clear()
+		plot2.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
+		#plot1.showGrid(x=True, y=True)
+		daxis2 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		plot2.setAxisItems({"bottom": daxis2})
+		plot2.setLabel('left', 'Power/P [W]')
+		#plot1.setCursor(self.cursor)
+		plot2_dataLine =  plot2.plot([], [],
+			'MATH - Avg Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+
+		plot3.show()
+		plot3.clear()
+		plot3.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
+		#plot1.showGrid(x=True, y=True)
+		daxis3 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+		plot3.setAxisItems({"bottom": daxis3})
+		plot3.setLabel('left', 'Power/P [W]')
+		#plot1.setCursor(self.cursor)
+		plot3_dataLine =  plot3.plot([], [],
+			'MATH Time [h:m:s]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+
+
 		load.setStateOn(False)
-		wmeter.write(':INTEGrate:STARt')
+		ldata_wattmeter_W = []
+		ldata_wattmeter_Wtime = []
+		ldata_wattmeter_MATH = []
+		ldata_wattmeter_MATHtime = []
+		ldata_wattmeter_TIME = []
+		ldata_wattmeter_TIMEtime = []
+		
+		wmeter.integrateStart()
+
 		while self.semaphore.available() == 1:
-			print(time.time())
-			QtTest.QTest.qWait(1000)
-			
+
+			W = wmeter.measure('W')
+			ldata_wattmeter_W.append(W)
+			ldata_wattmeter_Wtime.append(time.time())
+			plot1_dataLine.setData(ldata_wattmeter_Wtime, ldata_wattmeter_W)
+
+			MATH = wmeter.measure('MATH')
+			ldata_wattmeter_MATH.append(MATH)
+			ldata_wattmeter_MATHtime.append(time.time())
+			plot2_dataLine.setData(ldata_wattmeter_MATHtime, ldata_wattmeter_MATH)
+
+			TIME = wmeter.measure('TIME')
+			ldata_wattmeter_TIME.append(TIME)
+			ldata_wattmeter_TIMEtime.append(time.time())
+			plot3_dataLine.setData(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME)
+
 			#check if integration finished
+			if TIME > 10:
+				break
+			
+			QtTest.QTest.qWait(200)
+			if self.check_exit(statusLabel): #stop the test and exit
+				return()
 
+		#bimage = QByteArray; //contains image file contents
+		exporter = pyqtgraph.exporters.ImageExporter(plot1.plotItem)
+		exporter.parameters()['width'] = 1000   # (note this also affects height parameter)
+		byteArr = QByteArray
+		img = QImage
+		img = exporter.export(toBytes = True)
+		print(byteArr)
+		print(type(byteArr))
+		
+		#img = QImage
+		#success = 
+		#img.loadFromData(byteArr)
+		cursor = QTextCursor(exportTextEdit.document())
+		cursor.movePosition(QTextCursor.MoveOperation.End)
+		cursor.insertImage(img)
 
-
-
+		Pstb = ldata_wattmeter_MATH[-1]
+		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - Pstb: ' + str(Pstb) + ' W</H3><BR></BR>')
 		#endregion
-		if self.semaphore.available() > 1: #stop the test and exit
-			if verbose > 150:
-				print('TestACDCadapteru-->do_measure Test stopped')
-			statusLabel.setText('Stopped')
-			return()
 
 
 		#while self.semaphore.available() == 1:
@@ -527,7 +639,8 @@ class TestACDCadapteru():
 		#	#return by finished
 		
 		#finished by user stop
-		self.semaphore.tryAcquire(2)
+		self.semaphore.tryAcquire(1) #normal exit
+		self.semaphore.tryAcquire(1) #user stopped during normal exit
 		statusLabel.setText('Stopped')
 		if verbose > 150:
 			print('TestACDCadapteru-->do_measure Test stopped')
@@ -571,16 +684,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.stop = False  #stop semaphore for running tests
 
-		# for all pyqt graphs in this app:
-		self.penColor = color=(205, 205, 205)
-		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
-		self.cursor = Qt.CursorShape.CrossCursor
-		plotMinW = 300
-		plotMinH = 150
-      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
-		#graphvars = [symbol ='o', symbolSize = 5, symbolBrush =(0, 114, 189)]
-
-
 		#region CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
 		self.cfg = QSettingsManager()
@@ -604,6 +707,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
 		
 		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
+		#endregion
+
+		#region for all pyqt graphs in this app:
+		self.penColor = color=(205, 205, 205)
+		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
+		self.cursor = Qt.CursorShape.CrossCursor
+		plotMinW = self.cfg.get('plots/minWidth')
+		plotMinH = self.cfg.get('plots/minHeight')
+      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
 		#endregion
 
 		#region VISA ------------------------------------------------------------------------
@@ -880,6 +992,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_plotWidget3.setBackground("w")
 				self.load_plotWidget4.setBackground("w")
 				self.load_plotWidget5.setBackground("w")
+				self.testACDCadapteru_plotWidget1.setBackground("w")
+				self.testACDCadapteru_plotWidget2.setBackground("w")
+				self.testACDCadapteru_plotWidget3.setBackground("w")
 			else:
 				self.wattmeter_plotWidget1.setBackground("k")
 				self.wattmeter_plotWidget2.setBackground("k")
@@ -890,6 +1005,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_plotWidget3.setBackground("k")
 				self.load_plotWidget4.setBackground("k")
 				self.load_plotWidget5.setBackground("k")
+				self.testACDCadapteru_plotWidget1.setBackground("k")
+				self.testACDCadapteru_plotWidget2.setBackground("k")
+				self.testACDCadapteru_plotWidget3.setBackground("k")
 		except:
 			None
 	#endregion
@@ -1013,7 +1131,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def wattmeter_mereni_start(self):
-		if  self.load.is_connected() == False:
+		if  self.wattmeter.is_connected() == False:
 			self.wattmeter_connect()
 
 		#self.label_test_zatizeni.setText('Measuring')
@@ -1286,7 +1404,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				exportTextEdit = self.export_textEdit1, 
 				plot1 = self.testACDCadapteru_plotWidget1,
 				plot2 = self.testACDCadapteru_plotWidget2,
+				plot3 = self.testACDCadapteru_plotWidget3,
 				statusLabel = self.testACDCadapteru_label_status,
+				cfg = self.cfg,
 			)
 		else:
 			if verbose > 150:

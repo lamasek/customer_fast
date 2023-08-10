@@ -12,7 +12,6 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(732, 525)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -174,7 +173,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 714, 393))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 714, 324))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_15 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_15.setObjectName("verticalLayout_15")
@@ -462,16 +461,19 @@ class Ui_MainWindow(object):
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollArea_3.setObjectName("scrollArea_3")
         self.scrollAreaWidgetContents_3 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 714, 396))
+        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 714, 327))
         self.scrollAreaWidgetContents_3.setObjectName("scrollAreaWidgetContents_3")
         self.verticalLayout_17 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout_17.setObjectName("verticalLayout_17")
-        self.testACDCadapteru_plotWidget1 = QtWidgets.QWidget(parent=self.scrollAreaWidgetContents_3)
+        self.testACDCadapteru_plotWidget1 = PlotWidget(parent=self.scrollAreaWidgetContents_3)
         self.testACDCadapteru_plotWidget1.setObjectName("testACDCadapteru_plotWidget1")
         self.verticalLayout_17.addWidget(self.testACDCadapteru_plotWidget1)
-        self.testACDCadapteru_plotWidget2 = QtWidgets.QWidget(parent=self.scrollAreaWidgetContents_3)
+        self.testACDCadapteru_plotWidget2 = PlotWidget(parent=self.scrollAreaWidgetContents_3)
         self.testACDCadapteru_plotWidget2.setObjectName("testACDCadapteru_plotWidget2")
         self.verticalLayout_17.addWidget(self.testACDCadapteru_plotWidget2)
+        self.testACDCadapteru_plotWidget3 = PlotWidget(parent=self.scrollAreaWidgetContents_3)
+        self.testACDCadapteru_plotWidget3.setObjectName("testACDCadapteru_plotWidget3")
+        self.verticalLayout_17.addWidget(self.testACDCadapteru_plotWidget3)
         self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_3)
         self.verticalLayout_16.addWidget(self.scrollArea_3)
         self.tabWidget.addTab(self.tab_test_ACDCadapteru, "")
@@ -618,7 +620,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(4)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

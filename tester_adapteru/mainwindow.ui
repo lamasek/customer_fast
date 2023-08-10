@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>732</width>
-    <height>525</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Tester Adapteru</string>
   </property>
@@ -39,7 +31,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -318,7 +310,7 @@
              <x>0</x>
              <y>0</y>
              <width>714</width>
-             <height>393</height>
+             <height>324</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -900,15 +892,18 @@
              <x>0</x>
              <y>0</y>
              <width>714</width>
-             <height>396</height>
+             <height>327</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
             <item>
-             <widget class="QWidget" name="testACDCadapteru_plotWidget1" native="true"/>
+             <widget class="PlotWidget" name="testACDCadapteru_plotWidget1" native="true"/>
             </item>
             <item>
-             <widget class="QWidget" name="testACDCadapteru_plotWidget2" native="true"/>
+             <widget class="PlotWidget" name="testACDCadapteru_plotWidget2" native="true"/>
+            </item>
+            <item>
+             <widget class="PlotWidget" name="testACDCadapteru_plotWidget3" native="true"/>
             </item>
            </layout>
           </widget>
@@ -1194,7 +1189,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>
