@@ -107,6 +107,9 @@ class Ui_MainWindow(object):
         self.wattmeter_lineEdit_VISAresource = QtWidgets.QLineEdit(parent=self.tab_Wattmeter)
         self.wattmeter_lineEdit_VISAresource.setObjectName("wattmeter_lineEdit_VISAresource")
         self.horizontalLayout_12.addWidget(self.wattmeter_lineEdit_VISAresource)
+        self.wattmeter_checkBox_demo = QtWidgets.QCheckBox(parent=self.tab_Wattmeter)
+        self.wattmeter_checkBox_demo.setObjectName("wattmeter_checkBox_demo")
+        self.horizontalLayout_12.addWidget(self.wattmeter_checkBox_demo)
         self.wattmeter_pushButton_connect = QtWidgets.QPushButton(parent=self.tab_Wattmeter)
         self.wattmeter_pushButton_connect.setObjectName("wattmeter_pushButton_connect")
         self.horizontalLayout_12.addWidget(self.wattmeter_pushButton_connect)
@@ -121,7 +124,7 @@ class Ui_MainWindow(object):
         self.wattmeter_label_status.setObjectName("wattmeter_label_status")
         self.horizontalLayout_12.addWidget(self.wattmeter_label_status)
         self.horizontalLayout_12.setStretch(1, 5)
-        self.horizontalLayout_12.setStretch(5, 10)
+        self.horizontalLayout_12.setStretch(6, 10)
         self.verticalLayout_14.addLayout(self.horizontalLayout_12)
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
@@ -615,7 +618,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(4)
+        self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -633,6 +636,7 @@ class Ui_MainWindow(object):
         self.visa_pushButton_send.setText(_translate("MainWindow", "Send"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_VISA), _translate("MainWindow", "VISA"))
         self.label_22.setText(_translate("MainWindow", "VISA Resource:"))
+        self.wattmeter_checkBox_demo.setText(_translate("MainWindow", "Demo"))
         self.wattmeter_pushButton_connect.setText(_translate("MainWindow", "Connect"))
         self.wattmeter_pushButton_disconnect.setText(_translate("MainWindow", "Disconnect"))
         self.label_23.setText(_translate("MainWindow", "Status:"))
