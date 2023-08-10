@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -162,7 +162,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,0,0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,10">
+         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_22">
             <property name="text">
@@ -172,6 +172,13 @@
           </item>
           <item>
            <widget class="QLineEdit" name="wattmeter_lineEdit_VISAresource"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="wattmeter_checkBox_demo">
+            <property name="text">
+             <string>Demo</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_connect">
@@ -1187,7 +1194,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_BATT_range"/>
   <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
  </buttongroups>
 </ui>

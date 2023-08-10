@@ -61,6 +61,9 @@ lib_check_install(None, 'pyvisa-py')
 
 import time
 
+lib_check_install('datetime')
+from datetime import datetime, timezone
+
 import sys
 
 import math
@@ -123,6 +126,7 @@ CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
 					'plots/theme': 'auto',
 					'VISA/VISAresource': 'TCPIP0::10.10.134.5::INSTR',
+					'VISA/demo': False,
 					'VISA/SCPIcommand' : '*IDN?',
 					'wattmeter/VISAresource' : 'TCPIP0::10.10.134.6::INSTR',
 					'wattmeter/measure_interval' : 1000, #ms
@@ -188,17 +192,33 @@ data_test_zatizeni_W = []
 
 ###############################
 class VisaDevice():
-	def __init__(self):
-		None
+	
+	def __init__(self, VISAresource: str, demo: bool):
+		self. VISAresource = VISAresource
+		self.demo = demo
+
+	demo = False	# if True, it does not connect to real device, it provide fake demo values
+	#demo_connected = False
+	
+	def setDemo(self, d: bool): #pokud demo, tak dela sinusovku co 10s a jen kladnou
+		self.demo = d
+	
 
 	VISAresource = ''
 	connected = False
 
 	def is_connected(self):
 		return(self.connected)
+	
+	def setVISAresource(self, Vr: str):
+		self.VISAresource = Vr
 
 	def connect(self):
 		# return retCode=True/False, retString=Error str/IDN of device
+		if  self.demo == True:
+			self.connected = True
+			return(True, 'Demo connected')
+
 		if self.connected:
 			return(True, 'Already connected')
 		self.rm = pyvisa.ResourceManager()
@@ -225,14 +245,16 @@ class VisaDevice():
 		return(True, IDNreply)
 
 	def disconnect(self):
-		# return(True/False)
+		if  self.demo == True:
+			self.connected = False
+			return(True)
+
 		if verbose > 70:
 			print('Load disconnecting...')
 		self.rm.close() 
 		#TODO check
 		self.connected = False
 		return(True)
-
 
 	def send(self, commandi):
 		if  self.connected == True:
@@ -258,6 +280,8 @@ class VisaDevice():
 			return(False, 'Not connected')
 
 	def write(self, commandi):
+		if  self.demo == True:
+			return(True, 'Demo')
 		if  self.connected == True:
 			command = commandi.strip()
 			if command =='':
@@ -277,6 +301,10 @@ class VisaDevice():
 			return(False, 'Not connected')
 
 	def query(self, commandi):
+		#return(retCode = True/False, retString)
+		if  self.demo == True:
+			return(True, 'Demo')
+
 		if  self.connected == True:
 			command = commandi.strip()
 			if command =='':
@@ -297,28 +325,6 @@ class VisaDevice():
 
 
 class Load(VisaDevice):
-
-	demo = False	# if True, it does not connect to real device, it provide fake demo values
-	#demo_connected = False
-	
-	def setDemo(self, d): #pokud demo, tak dela sinusovku co 10s a jen kladnou
-		self.demo = d
-	
-	def connect(self):
-		if  self.demo == True:
-			#self.demo_connected = True
-			return(True, 'Demo connected')
-		else:
-			r, s = VisaDevice.connect(self)
-			return(r, s)
-			#self.connected = True
-	
-	def disconnect(self):
-		if  self.demo == True:
-			#VisaDevice.connected = False
-			return(True)
-		else:
-			VisaDevice.disconnect(self) 
 
 	def measure(self, varName):
 		if  self.demo == True:
@@ -363,11 +369,10 @@ class Load(VisaDevice):
 
 
 	def setStateOn(self, state = False): #True = ON, False=OFF
-		if self.demo:
-			None
+		if self.demo == True:
 			return()
 		
-		if state:
+		if state  == True:
 			return(VisaDevice.write(self, ":SOURCE:INPUT:STATE On"))    # Enable electronic load
 		else:
 			return(VisaDevice.write(self, ":SOURCE:INPUT:STATE Off"))
@@ -388,7 +393,8 @@ class Wattmeter(VisaDevice):
 		r, s = VisaDevice.connect(self)
 		if r == False:
 			return(r, s)
-
+		if self.demo == True:
+			return(r, s)
 		VisaDevice.write(self, ':NUM:FORM ASCII')
 		#todo check ze je ok
 
@@ -396,12 +402,8 @@ class Wattmeter(VisaDevice):
 		#:integ?
 		#kontrolovat ze to je spravne na NORM;0,10,0
 
-
 		return(r, s)
 		#self.connected = True
-
-
-
 
 	def measure(self, varName):
 		global verbose
@@ -433,10 +435,6 @@ class Wattmeter(VisaDevice):
 		retCode, retString = VisaDevice.query(self, ":MEASURE:WATThours?")
 
 
-
-	def integrateStart(self):
-		return(VisaDevice.write(self, ":INTEGrate:STARt"))
-
 class TestACDCadapteru():
 	data1 = []
 	data2 = []
@@ -445,26 +443,66 @@ class TestACDCadapteru():
 			# 1		test is running
 			# 2 	do exit from test (e.g. button pressed)
 
+	#def nice_exit(self):
+	#	self.semaphore.tryAcquire(1)
 
 	def do_measure(	self,
-			wm: Wattmeter,
-			ld: Load, 
+			wmeter: Wattmeter,
+			load: Load, 
 			exportTextEdit: QtWidgets.QTextEdit, 
 			plot1: pyqtgraph.PlotWidget, 
 			plot2: pyqtgraph.PlotWidget,
 			statusLabel: QtWidgets.QLabel,
 			):
 		statusLabel.setText('Started')
-		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1>')
+		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1><BR></BR>')
+		now  = datetime.now()
+		now_utc = datetime.now(timezone.utc)
+		exportTextEdit.insertHtml('<P>Datum: ' + now_utc.isoformat() + '</P><BR></BR>')
 		if verbose > 150:
 			print('TestACDCadapteru-->do_measure Test started')
+
+		if load.is_connected() == False:
+			retCode, retString = load.connect()
+			if not retCode:
+				statusLabel.setText('Failed to connect Load')
+				self.semaphore.tryAcquire(1)
+				return(False)
+		rc, rs = load.query('*IDN?')
+		exportTextEdit.insertHtml('<P>Load IDN: ' + rs + '</P><BR></BR>')
+
+
+		if wmeter.is_connected() == False:
+			retCode, retString = wmeter.connect()
+			if not retCode:
+				statusLabel.setText('Failed to connect Wattmeter')
+				self.semaphore.tryAcquire(1)
+				return(False)
+		rc, rs = wmeter.query('*IDN?')
+		exportTextEdit.insertHtml('<P>Wattmeter IDN: ' + rs + '</P><BR></BR>')
+
+		#region Pstb ------------------------------------------------------------------------------------
+		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - Pstb</H2><BR></BR>')
+		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
+
+		load.setStateOn(False)
+
+
+		#endregion
+		if self.semaphore.available() > 1: #stop the test and exit
+			if verbose > 150:
+				print('TestACDCadapteru-->do_measure Test stopped')
+			statusLabel.setText('Stopped')
+			return()
+
+
 		while self.semaphore.available() == 1:
 			print(time.time())
 			QtTest.QTest.qWait(1000)
 			#return by finished
 		
 		#finished by user stop
-		self.semaphore.acquire(2)
+		self.semaphore.tryAcquire(2)
 		statusLabel.setText('Stopped')
 		if verbose > 150:
 			print('TestACDCadapteru-->do_measure Test stopped')
@@ -544,8 +582,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#endregion
 
 		#region VISA ------------------------------------------------------------------------
-		self.visa = VisaDevice()
+		self.visa = VisaDevice(
+			VISAresource=self.cfg.get('VISA/VISAresource')
+			, demo = self.cfg.get('VISA/demo'))
 		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
+		self.visa_lineEdit_VISAresource.textChanged.connect(self.visa_VISAresource_changed)
 		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
 		self.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
 		self.cfg.add_handler('VISA/SCPIcommand', self.visa_lineEdit_SCPIcommand)
@@ -558,8 +599,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#region WATTMETER -----------------------------------------------------------------
-		self.wattmeter = Wattmeter()
+		self.wattmeter = Wattmeter(
+			VISAresource=self.cfg.get('wattmeter/VISAresource'),
+			demo=self.cfg.get('wattmeter/demo')
+		)
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
+		self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
+		self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
+		self.wattmeter_checkBox_demo.stateChanged.connect(self.wattmeter_demo_pressed)
 		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
 		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter_disconnect)
 
@@ -622,10 +669,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		#endregion
 
-		#region LOAD 
-		self.load = Load()
+		#region LOAD -----------------------------------------------------
+		self.load = Load(
+			VISAresource=self.cfg.get('load/VISAresource'),
+			demo=self.cfg.get('load/demo')
+		)
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
-		self.load.setDemo(self.cfg.get('load/demo'))
+		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
+		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
+		self.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
 		self.load_pushButton_connect.pressed.connect(self.load_connect)
 		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
@@ -751,7 +803,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#region HELP -----------------------------------------------------
-		f = io.open("tester_adapteru/help/help.html", mode="r", encoding="utf-8")
+		f = io.open("help/help.html", mode="r", encoding="utf-8")
 		#f.open(QIODevice.ReadOnly | QIODevice.Text)
 		#f.open(QFile.ReadOnly | QFile.Text)
 		#f.open()
@@ -819,13 +871,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	#region VISA ---------------------------------------------------------
+	def visa_VISAresource_changed(self):
+		self.visa.setVISAresource(self.cfg.get('VISA/VISAresource'))
+
 	def visa_connect(self):
 		if  self.visa.is_connected() == True:
 			return(True)
 		else:
 			self.visa_label_status.setText('Trying to connect...')
 			self.visa_label_status.setStyleSheet('')
-			self.visa.VISAresource = self.cfg.get('VISA/VISAresource')
 			ret, retStr = self.visa.connect()
 			self.visa_plainTextEdit_output.appendPlainText(retStr)
 			if ret == False:
@@ -864,13 +918,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	#region classes for wattmeter ------------------------------
+	def wattmeter_VISAresource_changed(self):
+		self.wattmeter.setVISAresource(self.cfg.get('wattmeter/VISAresource'))
+
+	def wattmeter_demo_pressed(self):
+		self.wattmeter.disconnect()
+		self.wattmeter_label_status.setText('Disconnected')
+		self.wattmeter_label_status.setStyleSheet('')
+		self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
+
 	def wattmeter_connect(self):
 		if  self.wattmeter.is_connected() == True:
 			return(True)
 		else:
 			self.wattmeter_label_status.setText('Trying to connect...')
 			self.wattmeter_label_status.setStyleSheet('')
-			self.wattmeter.VISAresource = self.cfg.get('wattmeter/VISAresource')
 			retCode, retStr = self.wattmeter.connect()
 			if retCode == False:
 				self.wattmeter_label_status.setText('FAILED to connect, error: ' + retStr)
@@ -1000,6 +1062,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	#region classes for LOAD ------------------------------
+	def load_VISAresource_changed(self):
+			self.load.setVISAresource(self.cfg.get('load/VISAresource'))
+
+	def load_demo_pressed(self):
+		self.load.disconnect()
+		self.load_label_status.setText('Disconnected')
+		self.load_label_status.setStyleSheet('')
+		self.load.setDemo(self.cfg.get('load/demo'))
 
 	def load_connect(self):
 		if  self.load.is_connected() == True:
@@ -1007,7 +1077,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		else:
 			self.load_label_status.setText('Trying to connect...')
 			self.load_label_status.setStyleSheet('')
-			self.load.VISAresource = self.cfg.get('load/VISAresource')
 			retCode, retStr = self.load.connect()
 			if retCode == False:
 				self.load_label_status.setText('FAILED to connect: ' + retStr)
@@ -1095,10 +1164,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def load_mereni_start(self):
-		#self.load.setDemo(self.cfg.get('load/demo'))
 		if  self.load.is_connected() == False:
 			self.load_connect()
-
 		#self.label_test_zatizeni.setText('Measuring')
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
@@ -1189,8 +1256,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		if self.testACDCadapteru.semaphore.available() == 0:
 			self.testACDCadapteru.semaphore.release(1)
 			self.testACDCadapteru.do_measure(
-				wm = self.wattmeter,
-				ld = self.load, 
+				wmeter = self.wattmeter,
+				load = self.load, 
 				exportTextEdit = self.export_textEdit1, 
 				plot1 = self.testACDCadapteru_plotWidget1,
 				plot2 = self.testACDCadapteru_plotWidget2,
