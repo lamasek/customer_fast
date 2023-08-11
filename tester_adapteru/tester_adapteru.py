@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 280
+verbose = 80
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -81,6 +81,8 @@ lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
 from PyQt6.QtGui import QImage, QTextCursor
+from PyQt6.QtPrintSupport  import QPrinter
+from PyQt6.QtWidgets import QFileDialog
 
 lib_check_install('qdarktheme', 'pyqtdarktheme')
 import qdarktheme ### FIX it by: pip install pyqtdarktheme
@@ -315,6 +317,7 @@ class VisaDevice():
 				if verbose>70:
 					print('Command:' + command)
 				reply = self.PVdevice.query(command)
+				reply.strip()
 				if verbose>50:
 					print(reply)
 				return(True, reply)
@@ -463,11 +466,33 @@ class Wattmeter(VisaDevice):
 		else:
 			return(False)
 
+	# procedure how to make integrate measure on Wattmeter:
+	# :INTEG:RESET
+	# volitelne
+	#	:INTEG:TIME 0,10,10
+	#	check math, mod, rms, ...
+	# :INTEG:START
+	# periodicalluy check :INTEGrate:STATe?
+	# 	if is STARTt - wait
+	# 	if TIMeup - finished, take results
+	#	 if other - measuring failed
+
 	def integrateStart(self):
 		return(VisaDevice.write(self, ":INTEGrate:STARt"))
 
-	def integrateCheck(self):
-		retCode, retString = VisaDevice.query(self, ":MEASURE:WATThours?")
+	def integrateReset(self):
+		VisaDevice.write(self, ":INTEGrate:RESet")
+		VisaDevice.write(self, ":INTEGrate:STOP") #in case is running, RESet does not work
+		VisaDevice.write(self, ":INTEGrate:RESet")
+
+	def integrateState(self):
+		# returns:
+		# 	STAR[t] pocita
+		# 	TIM[eup] normalni konec vypoctu
+		#	ERRor
+		# 	RESet	normalni po resetu a spusteni pristroje - tohle je v klidu bez chyb
+		# 	STOP
+		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
 
 
 class TestACDCadapteru():
@@ -540,6 +565,8 @@ class TestACDCadapteru():
 		plot3.hide()
 
 		#region test_Pstb ------------------------------------------------------------------------------------
+		statusLabel.setText('Test Pstb Started')
+
 		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - Pstb</H2><BR></BR>')
 		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
 
@@ -560,7 +587,7 @@ class TestACDCadapteru():
 		#plot1.showGrid(x=True, y=True)
 		daxis2 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
 		plot2.setAxisItems({"bottom": daxis2})
-		plot2.setLabel('left', 'Power/P [W]')
+		plot2.setLabel('left', 'MATH - Avg Power/P [W]')
 		#plot1.setCursor(self.cursor)
 		plot2_dataLine =  plot2.plot([], [],
 			'MATH - Avg Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
@@ -571,7 +598,7 @@ class TestACDCadapteru():
 		#plot1.showGrid(x=True, y=True)
 		daxis3 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
 		plot3.setAxisItems({"bottom": daxis3})
-		plot3.setLabel('left', 'Power/P [W]')
+		plot3.setLabel('left', 'MATH Time [h:m:s]')
 		#plot1.setCursor(self.cursor)
 		plot3_dataLine =  plot3.plot([], [],
 			'MATH Time [h:m:s]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
@@ -584,10 +611,14 @@ class TestACDCadapteru():
 		ldata_wattmeter_MATHtime = []
 		ldata_wattmeter_TIME = []
 		ldata_wattmeter_TIMEtime = []
-		
-		wmeter.integrateStart()
 
-		while self.semaphore.available() == 1:
+		wmeter.integrateReset()
+		wmeter.integrateStart()
+		QtTest.QTest.qWait(1000)
+		retCode, iState = wmeter.integrateState()
+		statusLabel.setText('Test Pstb - Measuring')
+
+		while iState.startswith('STAR'):
 
 			W = wmeter.measure('W')
 			ldata_wattmeter_W.append(W)
@@ -604,22 +635,32 @@ class TestACDCadapteru():
 			ldata_wattmeter_TIMEtime.append(time.time())
 			plot3_dataLine.setData(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME)
 
-			#check if integration finished
-			if TIME > 10:
-				break
+			retCode, iState = wmeter.integrateState()
 			
 			QtTest.QTest.qWait(200)
 			if self.check_exit(statusLabel): #stop the test and exit
+				exportTextEdit.insertHtml('<H2>Měření Pstb přerušeno uživatelem</H2><BR></BR>')
+				statusLabel.setText('Test Pstb - Stopped by user')
+				wmeter.integrateReset()
 				return()
 
+		if not iState.startswith('TIM'):
+			exportTextEdit.insertHtml('<H2>Měření Pstb selhalo</H2><BR></BR>')
+			statusLabel.setText('Test Pstb - Failed')
+			wmeter.integrateReset()
+			self.semaphore.tryAcquire(1) #normal exit
+			self.semaphore.tryAcquire(1) #user stopped during normal exit
+			return(False)
+			
 		#bimage = QByteArray; //contains image file contents
+		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření</P><BR></BR>')
 		exporter = pyqtgraph.exporters.ImageExporter(plot1.plotItem)
 		exporter.parameters()['width'] = 1000   # (note this also affects height parameter)
-		byteArr = QByteArray
+		#byteArr = QByteArray
 		img = QImage
 		img = exporter.export(toBytes = True)
-		print(byteArr)
-		print(type(byteArr))
+		#print(byteArr)
+		#print(type(byteArr))
 		
 		#img = QImage
 		#success = 
@@ -628,8 +669,11 @@ class TestACDCadapteru():
 		cursor.movePosition(QTextCursor.MoveOperation.End)
 		cursor.insertImage(img)
 
-		Pstb = ldata_wattmeter_MATH[-1]
+		#Pstb = ldata_wattmeter_MATH[-1]
+		Pstb = wmeter.measure('MATH')
+		wmeter.integrateReset()
 		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - Pstb: ' + str(Pstb) + ' W</H3><BR></BR>')
+		statusLabel.setText('Test Pstb - Finished')
 		#endregion
 
 
@@ -929,10 +973,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.pushButton_test_zatizeni_stop.pressed.connect(self.test_zatizeni_stop)
 		#endregion
 
-		#region EXPORTS -----------------------
+		#region EXPORT -----------------------
 		self.export_textEdit1.setPlaceholderText('nothing measured yet...')
 		self.export_textEdit1.clear()
 		self.export_pushButton_clear.pressed.connect(self.export_textEdit1.clear)
+		self.export_pushButton_save_as_pdf.pressed.connect(self.export_save_as_pdf)
 		#endregion
 
 		# COMMENTS -------------------------------
@@ -1560,6 +1605,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.export_textEdit1.append('')
 	#endregion
 
+	#region export
+	def export_save_as_pdf(self):
+		dlg = QFileDialog()
+		#dlg.
+		fileName, fileType = dlg.getSaveFileName()
+		print(fileName)
+		if fileName == '':
+			return
+		printer = QPrinter()
+		#printer.setPageSize(QPrinter.Letter)
+		#printer.setPageSize(QPrinter.Unit.Millimeter)
+		#printer.setPageSize(QPrinter.)
+		printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+		printer.setOutputFileName(fileName)
+		#paint = QPainter(printer)
+		self.export_textEdit1.print(printer)
+	#endregion
 
 def main():
 	global data
