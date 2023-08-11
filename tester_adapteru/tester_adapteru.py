@@ -73,6 +73,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import (NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
+import matplotlib.dates
 
 lib_check_install('mplcursors')
 import mplcursors
@@ -80,7 +81,7 @@ import mplcursors
 lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
-from PyQt6.QtGui import QImage, QTextCursor
+from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter
 from PyQt6.QtPrintSupport  import QPrinter
 from PyQt6.QtWidgets import QFileDialog
 
@@ -477,10 +478,17 @@ class Wattmeter(VisaDevice):
 	# 	if TIMeup - finished, take results
 	#	 if other - measuring failed
 
+	integrate = 0 #demo integrate
+
 	def integrateStart(self):
+		if  self.demo == True:
+			self.integrate = 10
+			return(True)
 		return(VisaDevice.write(self, ":INTEGrate:STARt"))
 
 	def integrateReset(self):
+		if  self.demo == True:
+			self.integrate = 0
 		VisaDevice.write(self, ":INTEGrate:RESet")
 		VisaDevice.write(self, ":INTEGrate:STOP") #in case is running, RESet does not work
 		VisaDevice.write(self, ":INTEGrate:RESet")
@@ -492,7 +500,55 @@ class Wattmeter(VisaDevice):
 		#	ERRor
 		# 	RESet	normalni po resetu a spusteni pristroje - tohle je v klidu bez chyb
 		# 	STOP
+		if  self.demo == True:
+			if self.integrate > 0:
+				self.integrate -= 1
+				return(True, 'STAR')
+			else:
+				return(True, 'TIM')
 		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
+
+def plotWidget2qimage(plot: pyqtgraph.PlotWidget):
+		#verze s exportem pyqtgraph do qimage
+		plot.setMinimumSize(400, 400)
+		exporter = pyqtgraph.exporters.ImageExporter(plot.plotItem)
+		exporter.parameters()['width'] = 600   # (note this also affects height parameter)
+		#byteArr = QByteArray
+		img = QImage
+		img = exporter.export(toBytes = True)
+		return(img)
+
+def data2plot2qimg(dataX, dataY, width = 600, height=400, label='', formatXasTime = False, **kwargs):
+	#prevede data na matplotlib obrazek a z nej udela Qimage
+	fig = Figure()
+	canvas = FigureCanvas(fig)
+	canvas.setFixedHeight(height)
+	canvas.setFixedWidth(width)
+	ax1 = fig.add_subplot()
+	#plt.rc('figure', dpi=200)
+	#fig.tight_layout()
+	canvas.draw()
+	#ax1.cla()  # Clear the canvas.
+	linesA = ax1.plot(dataX, dataY, marker='o', label=label)
+	ax1.set(ylim=(0, None))
+	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
+	ax1.legend(loc='best', shadow=True)
+
+
+	# show dataX in unix timestamps to string dates
+	#  https://rowannicholls.github.io/python/graphs/time_data.html
+	#ax=plt.gca()
+	if formatXasTime:
+		fmt = matplotlib.ticker.FuncFormatter(lambda x, pos: time.strftime('%H:%M:%S', time.localtime(x)))
+		ax1.xaxis.set_major_formatter(fmt)
+
+	#https://saturncloud.io/blog/python-matplotlib-pyqt-plotting-to-qpixmap/
+	pixmap = QPixmap(width, height)
+	painter = QPainter(pixmap)
+	canvas.render(painter)
+	painter.end()
+	img = pixmap.toImage()
+	return img
 
 
 class TestACDCadapteru():
@@ -526,7 +582,7 @@ class TestACDCadapteru():
 			):
 		statusLabel.setText('Started')
 		exportTextEdit.insertHtml('<H1>Test AC/DC adaptéru</H1><BR></BR>')
-		now  = datetime.now()
+		#now  = datetime.now()
 		now_utc = datetime.now(timezone.utc)
 		exportTextEdit.insertHtml('<P>Datum: ' + now_utc.isoformat() + '</P><BR></BR>')
 		if verbose > 150:
@@ -564,7 +620,7 @@ class TestACDCadapteru():
 		plot2.hide()
 		plot3.hide()
 
-		#region test_Pstb ------------------------------------------------------------------------------------
+		#region test_Pstb -------------------------------------------------------------------
 		statusLabel.setText('Test Pstb Started')
 
 		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - Pstb</H2><BR></BR>')
@@ -604,7 +660,7 @@ class TestACDCadapteru():
 			'MATH Time [h:m:s]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 
 
-		load.setStateOn(False)
+		load.setStateOn(False) #no Load
 		ldata_wattmeter_W = []
 		ldata_wattmeter_Wtime = []
 		ldata_wattmeter_MATH = []
@@ -614,7 +670,8 @@ class TestACDCadapteru():
 
 		wmeter.integrateReset()
 		wmeter.integrateStart()
-		QtTest.QTest.qWait(1000)
+		if wmeter.demo != True:
+			QtTest.QTest.qWait(1000)
 		retCode, iState = wmeter.integrateState()
 		statusLabel.setText('Test Pstb - Measuring')
 
@@ -637,14 +694,18 @@ class TestACDCadapteru():
 
 			retCode, iState = wmeter.integrateState()
 			
-			QtTest.QTest.qWait(200)
+			if wmeter.demo != True:
+				QtTest.QTest.qWait(200)
+			else:
+				QtTest.QTest.qWait(100)
+
 			if self.check_exit(statusLabel): #stop the test and exit
 				exportTextEdit.insertHtml('<H2>Měření Pstb přerušeno uživatelem</H2><BR></BR>')
 				statusLabel.setText('Test Pstb - Stopped by user')
 				wmeter.integrateReset()
 				return()
 
-		if not iState.startswith('TIM'):
+		if not iState.startswith('TIM'): # failed to measure
 			exportTextEdit.insertHtml('<H2>Měření Pstb selhalo</H2><BR></BR>')
 			statusLabel.setText('Test Pstb - Failed')
 			wmeter.integrateReset()
@@ -652,37 +713,23 @@ class TestACDCadapteru():
 			self.semaphore.tryAcquire(1) #user stopped during normal exit
 			return(False)
 			
-		#bimage = QByteArray; //contains image file contents
 		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření</P><BR></BR>')
-		exporter = pyqtgraph.exporters.ImageExporter(plot1.plotItem)
-		exporter.parameters()['width'] = 1000   # (note this also affects height parameter)
-		#byteArr = QByteArray
-		img = QImage
-		img = exporter.export(toBytes = True)
-		#print(byteArr)
-		#print(type(byteArr))
-		
-		#img = QImage
-		#success = 
-		#img.loadFromData(byteArr)
+
 		cursor = QTextCursor(exportTextEdit.document())
 		cursor.movePosition(QTextCursor.MoveOperation.End)
+		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, label='Power [W]', formatXasTime=True)
 		cursor.insertImage(img)
+		exportTextEdit.insertHtml('<BR></BR>')
 
-		#Pstb = ldata_wattmeter_MATH[-1]
+		#Pstb = ldata_wattmeter_MATH[-1] 
 		Pstb = wmeter.measure('MATH')
 		wmeter.integrateReset()
 		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - Pstb: ' + str(Pstb) + ' W</H3><BR></BR>')
 		statusLabel.setText('Test Pstb - Finished')
-		#endregion
+		#endregion -------------------------------------------------------------
 
-
-		#while self.semaphore.available() == 1:
-		#	print(time.time())
-		#	QtTest.QTest.qWait(1000)
-		#	#return by finished
 		
-		#finished by user stop
+		#finished with no errors
 		self.semaphore.tryAcquire(1) #normal exit
 		self.semaphore.tryAcquire(1) #user stopped during normal exit
 		statusLabel.setText('Stopped')
@@ -1614,9 +1661,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		if fileName == '':
 			return
 		printer = QPrinter()
-		#printer.setPageSize(QPrinter.Letter)
+		#printer.setPageSize(QPageSize.PageSizeId.A4)
 		#printer.setPageSize(QPrinter.Unit.Millimeter)
-		#printer.setPageSize(QPrinter.)
+		printer.setResolution(600)
 		printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
 		printer.setOutputFileName(fileName)
 		#paint = QPainter(printer)
