@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>732</width>
+    <height>456</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Tester Adapteru</string>
   </property>
@@ -813,12 +821,15 @@
           <item>
            <widget class="QLabel" name="label_26">
             <property name="text">
-             <string>Po:</string>
+             <string>Po [W]:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="testACDCadapteru_doubleSpinBo_Po">
+           <widget class="QDoubleSpinBox" name="testACDCadapteru_doubleSpinBox_Po">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nominální/maximální výkon adaptéru&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="minimum">
              <double>0.100000000000000</double>
             </property>

@@ -285,8 +285,9 @@ class VisaDevice():
 			return(False, 'Not connected')
 
 	def write(self, commandi):
+		#return(bool (True = OK), <string with error message | ''>)
 		if  self.demo == True:
-			return(True, 'Demo')
+			return(True, '')
 		if  self.connected == True:
 			command = commandi.strip()
 			if command =='':
@@ -363,15 +364,33 @@ class Load(VisaDevice):
 				return(False)
 			
 
-	def setFunctionCurrent(self):
+	def setFunction(self, mode: str):
+		#modes
+		# 	CC	Constant Current
+		# 	CV 	Constant Voltage
+		# 	CR	Constant Resistance
+		# 	CP	Constant Power
 		if  self.demo == True:
 			return()
-		VisaDevice.write(self, ":SOURCE:FUNCTION CURRent")    # Set to  mode CURRent
+
+		if mode == 'CC':
+			cmd = 'CURRent'
+		elif mode == 'CV':
+			cmd = 'VOLTage'
+		elif mode == 'CR':
+			cmd = 'POWer'
+		elif mode == 'CP':
+			cmd = 'RESistance'
+		else:
+			return(False, 'Unknown function')
+			
+		return(VisaDevice.write(self, ":SOURCE:FUNCTION " + cmd))    # Set to  mode CURRent
+		
 
 	def setModeBATT(self):
 		if  self.demo == True:
 			return()
-		VisaDevice.write(self, ":SOUR:FUNC:MODE BATT")    # Set to  mode BATTery
+		return(VisaDevice.write(self, ":SOUR:FUNC:MODE BATT"))    # Set to  mode BATTery
 
 
 	def setStateOn(self, state = False): #True = ON, False=OFF
@@ -388,6 +407,15 @@ class Load(VisaDevice):
 			return()
 		else:
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
+			if verbose > 100:
+				print('PVcommand = '+PVcommand)
+			VisaDevice.write(self, PVcommand)
+
+	def setPower(self, current):
+		if  self.demo == True:
+			return()
+		else:
+			PVcommand = ':SOURCE:POWer:LEVEL:IMMEDIATE ' + str(current)
 			if verbose > 100:
 				print('PVcommand = '+PVcommand)
 			VisaDevice.write(self, PVcommand)
@@ -466,7 +494,28 @@ class Wattmeter(VisaDevice):
 				return(None)
 		else:
 			return(False)
+	
+	def measureNoNAN(self, varName):
+		# if measure returns NaN, perform again, max 100 times
+		for i in range(100):
+			ret = self.measure(varName)
+			if ret is not None:
+				return(ret)
+		return(False)
+	
+	def measure10Avg(self, varName):
+		# measure 10 times and return avg
+		sum = 0
+		for i in range(10):
+			ret = self.measureNoNAN(varName)
+			if verbose > 170:
+				print('measure10Avg:' + str(ret))
+			if ret is not None:
+				sum += ret
+		return(sum / 10)
 
+
+	# Integrate ------------------------------------
 	# procedure how to make integrate measure on Wattmeter:
 	# :INTEG:RESET
 	# volitelne
@@ -508,6 +557,8 @@ class Wattmeter(VisaDevice):
 				return(True, 'TIM')
 		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
 
+
+
 def plotWidget2qimage(plot: pyqtgraph.PlotWidget):
 		#verze s exportem pyqtgraph do qimage
 		plot.setMinimumSize(400, 400)
@@ -517,6 +568,31 @@ def plotWidget2qimage(plot: pyqtgraph.PlotWidget):
 		img = QImage
 		img = exporter.export(toBytes = True)
 		return(img)
+
+def textEditAppendImg(te: QtWidgets.QTextEdit, img: QImage):
+	cursor = QTextCursor(te.document())
+	cursor.movePosition(QTextCursor.MoveOperation.End)
+	cursor.insertImage(img)
+	te.insertHtml('<BR></BR>')
+	te.insertHtml('<BR></BR>')
+
+def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, *kwargs):
+	penColor = color=(205, 205, 205)
+	pen = pyqtgraph.mkPen(penColor, width=1)
+	cursor = Qt.CursorShape.CrossCursor
+	# https://www.geeksforgeeks.org/pyqtgraph-symbols/
+
+	plot.show()
+	plot.clear()
+	plot.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
+	#plot1.showGrid(x=True, y=True)
+	daxis = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+	plot.setAxisItems({"bottom": daxis})
+	plot.setLabel('left', labelY)
+	#plot.setCursor(self.cursor)
+	plot_dataLine =  plot.plot([], [],
+		labelY, symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=pen)
+	return(plot_dataLine)
 
 def data2plot2qimg(dataX, dataY, width = 600, height=400, label='', formatXasTime = False, **kwargs):
 	#prevede data na matplotlib obrazek a z nej udela Qimage
@@ -608,13 +684,6 @@ class TestACDCadapteru():
 		exportTextEdit.insertHtml('<P>Wattmeter IDN: ' + rs + '</P><BR></BR>')
 
 
-		#region for all pyqt graphs in this app:
-		self.penColor = color=(205, 205, 205)
-		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
-		self.cursor = Qt.CursorShape.CrossCursor
-      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
-		#endregion
-
 
 		plot1.hide()
 		plot2.hide()
@@ -623,42 +692,13 @@ class TestACDCadapteru():
 		#region test_Pstb -------------------------------------------------------------------
 		statusLabel.setText('Test Pstb Started')
 
-		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - Pstb</H2><BR></BR>')
+		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - <B>Pstb</B></H2><BR></BR>')
 		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
 
-		plot1.show()
-		plot1.clear()
-		plot1.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
-		#plot1.showGrid(x=True, y=True)
-		daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-		plot1.setAxisItems({"bottom": daxis1})
-		plot1.setLabel('left', 'Power/P [W]')
-		#plot1.setCursor(self.cursor)
-		plot1_dataLine =  plot1.plot([], [],
-			'Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		plot1_dataLine = plot_prepare(cfg, plot1, 'Power/P [W]')
+		plot2_dataLine = plot_prepare(cfg, plot2, 'MATH - Avg Power/P [W]')
+		plot3_dataLine = plot_prepare(cfg, plot3, 'MATH Time [h:m:s]')
 		
-		plot2.show()
-		plot2.clear()
-		plot2.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
-		#plot1.showGrid(x=True, y=True)
-		daxis2 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-		plot2.setAxisItems({"bottom": daxis2})
-		plot2.setLabel('left', 'MATH - Avg Power/P [W]')
-		#plot1.setCursor(self.cursor)
-		plot2_dataLine =  plot2.plot([], [],
-			'MATH - Avg Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-
-		plot3.show()
-		plot3.clear()
-		plot3.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
-		#plot1.showGrid(x=True, y=True)
-		daxis3 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-		plot3.setAxisItems({"bottom": daxis3})
-		plot3.setLabel('left', 'MATH Time [h:m:s]')
-		#plot1.setCursor(self.cursor)
-		plot3_dataLine =  plot3.plot([], [],
-			'MATH Time [h:m:s]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-
 
 		load.setStateOn(False) #no Load
 		ldata_wattmeter_W = []
@@ -713,22 +753,150 @@ class TestACDCadapteru():
 			self.semaphore.tryAcquire(1) #user stopped during normal exit
 			return(False)
 			
-		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření</P><BR></BR>')
+		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
+		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
+				label='Power [W]', formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
 
-		cursor = QTextCursor(exportTextEdit.document())
-		cursor.movePosition(QTextCursor.MoveOperation.End)
-		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, label='Power [W]', formatXasTime=True)
-		cursor.insertImage(img)
-		exportTextEdit.insertHtml('<BR></BR>')
+		exportTextEdit.insertHtml('<P>Průběh Pstb během měření (hodí se pro vizuální kontrolu ' +
+				'chyb v měření):<BR></BR>')
+		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_MATH, 
+				label='MATH = AVG Power [W]', height=200, formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
+
+		exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
+			    'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
+		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, label='MATH Time [H:M:S]',
+		        height=200, formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
 
 		#Pstb = ldata_wattmeter_MATH[-1] 
-		Pstb = wmeter.measure('MATH')
+		vPstb = wmeter.measureNoNAN('MATH')
 		wmeter.integrateReset()
-		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - Pstb: ' + str(Pstb) + ' W</H3><BR></BR>')
+		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - <B>Pstb</B>: ' + str(vPstb) + ' W</H3><BR></BR>')
+		exportTextEdit.insertHtml('<BR></BR>')
 		statusLabel.setText('Test Pstb - Finished')
 		#endregion -------------------------------------------------------------
 
-		
+		#region test Pa -------------------------------------------------------------
+		# ucinnost v aktivnim rezimu - pri 25, 50, 75 a 100%
+		statusLabel.setText('Test Pa Started')
+
+		exportTextEdit.insertHtml('<H2>Měření účinnosti v aktivním režimu  - <B>Pa</B></H2><BR></BR>')
+		exportTextEdit.insertHtml('<P>Měří se účinnost adaptéru (příkon na wattmetru děleno výkonem na zátěži)' +
+			    'při 25%, 50%, 75%, 100% zatížení z maxima, z toho aritmetický průměr.</P><BR></BR>')
+		exportTextEdit.insertHtml('<P>Na zátěži je nastaven mód Constant Power, měřená účinnost bude ' + 
+			    'horší díky ztrátám napětí na měřících kabelech a konektorech</P><BR></BR>')
+		load.setStateOn(False)
+		load.setFunction('CP')
+		vPo = cfg.get('testACDCadapteru/Po')
+		exportTextEdit.insertHtml('<H3>Nominální/maximální výkon adaptéru - <B>Po = ' + str(vPo) + 
+			    ' W</B></H3><BR></BR>')
+
+		load.setPower(vPo*0.1)
+		load.setStateOn(True)
+		if wmeter.demo == True:
+			QtTest.QTest.qWait(100)
+		else:
+			QtTest.QTest.qWait(1000)
+		wmeterW10 = wmeter.measure10Avg('W')
+		loadW10 = load.measure('W')
+		statusLabel.setText('Power in 10%')
+
+		load.setPower(vPo*0.25)
+		if wmeter.demo == True:
+			QtTest.QTest.qWait(100)
+		else:
+			QtTest.QTest.qWait(1000)
+		wmeterW25 = wmeter.measure10Avg('W')
+		loadW25 = load.measure('W')
+		statusLabel.setText('P in 25%')
+
+		load.setPower(vPo*0.5)
+		if wmeter.demo == True:
+			QtTest.QTest.qWait(100)
+		else:
+			QtTest.QTest.qWait(1000)
+		wmeterW50 = wmeter.measure10Avg('W')
+		loadW50 = load.measure('W')
+		statusLabel.setText('P in 50%')
+
+		load.setPower(vPo+0.75)
+		if wmeter.demo == True:
+			QtTest.QTest.qWait(100)
+		else:
+			QtTest.QTest.qWait(1000)
+		wmeterW75 = wmeter.measure10Avg('W')
+		loadW75 = load.measure('W')
+		statusLabel.setText('P in 75%')
+
+		load.setPower(vPo)
+		if wmeter.demo == True:
+			QtTest.QTest.qWait(100)
+		else:
+			QtTest.QTest.qWait(1000)
+		wmeterW100 = wmeter.measure10Avg('W')
+		loadW100 = load.measure('W')
+		statusLabel.setText('P in 100%')
+
+		try:
+			xP25 = loadW25/wmeterW25
+		except:
+			xP25 = 0
+		try:
+			xP50 = loadW50/wmeterW50
+		except:
+			xP50 = 0
+		try:
+			xP75 = loadW75/wmeterW75
+		except:
+			xP75 = 0
+		try:
+			xP100 = loadW100/wmeterW100
+		except:
+			xP100 = 0
+
+		vPa = (xP25 + xP50 + xP75 + xP100)/4
+		exportTextEdit.insertHtml('<H4>Průměrná účinnost při malém zatížení (10%) - <B>P10 = </B>' +
+			    str(wmeterW10) + '</H4><BR></BR>')
+		exportTextEdit.insertHtml(
+			'<TABLE BORDER="1">' +
+				'<TR><TH>% z Po</TH><TH>Požadovaný P [W]</TH><TH>Naměřený P na zátěži [W]</TH>' +
+					'<TH>Naměřený P na wattmetru [W]</TH><TH>Vypočtená účinnost [0-1]</TH></TR>' +
+				'<TR><TD>25%</TD><TD>' + str(vPo*0.25) + '</TD><TD>' + str(loadW25) + '</TD>' +
+				 	'<TD>' + str(wmeterW25) + '</TD><TD>' + str(xP25) + '</TD></TR>'
+				'<TR><TD>50%</TD><TD>' + str(vPo*0.5) + '</TD><TD>' + str(loadW50) + '</TD>' +
+				 	'<TD>' + str(wmeterW50) + '</TD><TD>' + str(xP50) + '</TD></TR>'
+				'<TR><TD>75%</TD><TD>' + str(vPo*0.75) + '</TD><TD>' + str(loadW75) + '</TD>' +
+				 	'<TD>' + str(wmeterW75) + '</TD><TD>' + str(xP75) + '</TD></TR>'
+				'<TR><TD>100%</TD><TD>' + str(vPo) + '</TD><TD>' + str(loadW100) + '</TD>' +
+				 	'<TD>' + str(wmeterW100) + '</TD><TD>' + str(xP100) + '</TD></TR>'
+			 '</TABLE><BR></BR>')
+		exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu - <B>Pa = </B>' +
+			    str(vPa) + '</H3><BR></BR>')
+		exportTextEdit.insertHtml('<BR></BR>')
+
+		load.setStateOn(False)
+		statusLabel.setText('Test Pa finished.')
+		#endregion -------------------------------------------------------------
+
+		#region test VA charakteristika-------------------------------------------------------------
+
+		#plot1_dataLine = plot_prepare(cfg, plot1, 'Load Req. I [A]')
+		#plot2_dataLine = plot_prepare(cfg, plot1, 'Load I [A]')
+		#plot3_dataLine = plot_prepare(cfg, plot1, 'Load U [V]')
+
+
+		# <LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
+
+
+		#endregion -------------------------------------------------------------
+
+
+
 		#finished with no errors
 		self.semaphore.tryAcquire(1) #normal exit
 		self.semaphore.tryAcquire(1) #user stopped during normal exit
@@ -912,7 +1080,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
 		
 		# LOAD Rem. Ctrl.
-		self.load_radioButton_Mode_CC.pressed.connect(self.load.setFunctionCurrent)
+		self.load_radioButton_Mode_CC.pressed.connect(self.load_radioButton_Mode_CC_pressed)
 		self.load_radioButton_Mode_BATT.pressed.connect(self.load.setModeBATT)
 		self.load_doubleSpinBox_BATT_current.valueChanged.connect(self.load_doubleSpinBox_BATT_current_changed)
 		self.load_radioButton_BATT_range_6A.pressed.connect( self.load_radioButton_BATT_range_6A_connect )
@@ -1003,8 +1171,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		#region testACDCadapteru ----------------------------------------------
 		self.testACDCadapteru = TestACDCadapteru()
-			
-
+		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
+		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
 		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
 		#endregion
@@ -1337,6 +1505,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.load_label_status.setText('Disconnected ')
 			self.load_label_status.setStyleSheet(None)
 
+	def load_radioButton_Mode_CC_pressed(self):
+		self.load.load.setFunction('CC')
+
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
 		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
@@ -1552,7 +1723,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.test_zatizeni_running = True
 
 		self.loadReqmA = 0
-		self.load.setFunctionCurrent()
+		self.load.setFunction('CC')
 		self.load.setCurrent(0)
 		self.load.setStateOn(True)
 
