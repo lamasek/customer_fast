@@ -118,9 +118,7 @@ except all:
 
 
 
-
 from MainWindow import Ui_MainWindow
-
 
 
 ###### GLOBAL variables - config ####################################################
@@ -149,6 +147,7 @@ CONFIG_DEFAULT = {
 					'load/measure_Wh': False,
 					'load/measure_X': False,
 					'testACDCadapteru/Po':  1, #W
+					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -160,13 +159,12 @@ CONFIG_DEFAULT = {
 
 # GLOBAL VARIABLES ##################################################################
 
-data = { # all measured data
-	#item_name : { #item is added when new
-	#   data: (value1, value2, ...)
-	#   time:   (time1, time2, ...)
-	#   graphID: graphID
-}
-#configCurrent = config['cfgs'][config['curID']]
+#data = { # all measured data
+#	#item_name : { #item is added when new
+#	#   data: (value1, value2, ...)
+#	#   time:   (time1, time2, ...)
+#	#   graphID: graphID
+#}
 
 
 data_loadA = []
@@ -334,6 +332,7 @@ class VisaDevice():
 class Load(VisaDevice):
 
 	def measure(self, varName):
+		#return(False | float)
 		if  self.demo == True:
 			i = math.sin( # sinus, period 5s in time
 					(time.time()%5) / 5 * 2*3.1415
@@ -883,15 +882,80 @@ class TestACDCadapteru():
 		statusLabel.setText('Test Pa finished.')
 		#endregion -------------------------------------------------------------
 
-		#region test VA charakteristika-------------------------------------------------------------
+		#region test  charakteristika zdroje -------------------------------------------------------------
+		load.setStateOn(False)
+		load.setFunction('CP')
+		load.setPower(0)
+		QtTest.QTest.qWait(100)
+		load.setStateOn(True)
 
-		#plot1_dataLine = plot_prepare(cfg, plot1, 'Load Req. I [A]')
-		#plot2_dataLine = plot_prepare(cfg, plot1, 'Load I [A]')
-		#plot3_dataLine = plot_prepare(cfg, plot1, 'Load U [V]')
+
+		dataLoadA = []
+		dataLoadAtime = []
+		dataLoadV = []
+		dataLoadVtime = []
+		dataLoadW = []
+		dataLoadWtime = []
+		dataLoadReqW = []
+		dataLoadReqWtime = []
+
+		dataWmeterW = []
+		dataWmeterWtime = []
+
+		plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+		plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+		plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
+
+		xPo = cfg.get('testACDCadapteru/Po')
+		loadReqW = 0
+		while loadReqW < xPo*1.1:
+			load.setPower(loadReqW)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(1)
+			else:
+				QtTest.QTest.qWait(100)
+			
+			dataLoadA.append(load.measure('A'))
+			dataLoadAtime.append(time.time())
+			dataLoadV.append(load.measure('V'))
+			dataLoadVtime.append(time.time())
+			dataLoadW.append(load.measure('W'))
+			dataLoadWtime.append(time.time())
+			dataLoadReqW.append(loadReqW)
+			dataLoadReqWtime.append(time.time())
+
+			dataWmeterW.append(wmeter.measure('W'))
+			dataWmeterWtime.append(time)
+
+			plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+			plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+			plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
+
+			loadReqW += xPo/600 # merime 1,1 minutu
 
 
-		# <LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
+		exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
+		img = data2plot2qimg(dataLoadA, dataLoadV, label='Voltage [V]', height=400)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
 
+		exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
+			    'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, label='Requested P [W]',
+		        height=200, formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
+
+		dataUcinnostP = []
+		for i in range(len(dataLoadW)):
+			try:
+				dataUcinnostP.append(dataLoadW[i]/dataWmeterW[i])
+			except:
+				dataUcinnostP.append(0)
+		exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
+		img = data2plot2qimg(dataLoadW, dataUcinnostP, label='Účinnost [0-1]', height=400)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
 
 		#endregion -------------------------------------------------------------
 
