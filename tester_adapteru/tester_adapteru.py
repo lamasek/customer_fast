@@ -593,18 +593,24 @@ def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, *kwargs):
 		labelY, symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=pen)
 	return(plot_dataLine)
 
-def data2plot2qimg(dataX, dataY, width = 600, height=400, label='', formatXasTime = False, **kwargs):
+def data2plot2qimg_old(dataX, dataY, width = 600, height=400, 
+		   xlabel='', 
+		   ylabel = '', 
+		   title = '',
+		   formatXasTime = False, # on X axis is unix timestamps and will be converted as H:M:S
+		   **kwargs):
 	#prevede data na matplotlib obrazek a z nej udela Qimage
 	fig = Figure()
 	canvas = FigureCanvas(fig)
 	canvas.setFixedHeight(height)
 	canvas.setFixedWidth(width)
+	
 	ax1 = fig.add_subplot()
 	#plt.rc('figure', dpi=200)
-	#fig.tight_layout()
+	#fig.tight_layout() # radeji nepouzivat casto mizi popisky
 	canvas.draw()
 	#ax1.cla()  # Clear the canvas.
-	linesA = ax1.plot(dataX, dataY, marker='o', label=label)
+	linesA = ax1.plot(dataX, dataY, marker='o', label=ylabel)
 	ax1.set(ylim=(0, None))
 	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
 	ax1.legend(loc='best', shadow=True)
@@ -624,6 +630,64 @@ def data2plot2qimg(dataX, dataY, width = 600, height=400, label='', formatXasTim
 	painter.end()
 	img = pixmap.toImage()
 	return img
+
+
+def data2plot2qimg(
+		dataX, dataY,
+		width = 600,
+		height = 400, 
+		xlabel ='', 
+		ylabel = '', 
+		title = '',
+		formatXasTime = False, # on X axis is unix timestamps and will be converted as H:M:S
+		**kwargs):
+	#prevede data na matplotlib obrazek a z nej udela Qimage
+
+	plt.clf()
+	#plt.figure().set_figwidth(str(width)+'*px')
+	#plt.figure().set_figheight(str(height)+'*px')
+	#plt.rcParams['figure.figsize'] = [4, 4] # 4x4 inche
+
+
+	fig, ax = plt.subplots()
+	#plt.rc('figure', dpi=200)
+	#fig.tight_layout() # radeji nepouzivat casto mizi popisky
+
+	linesA, = ax.plot(dataX, dataY, marker='o')
+	#linesA = ax.plot(dataX, dataY, marker='o', label=ylabel)
+	print(linesA)
+
+	if xlabel != '': 
+		ax.set(xlabel=xlabel)
+	if xlabel =='' and formatXasTime == True:
+		ax.set(xlabel='Time [H:M:S]')
+	if ylabel != '': 
+		ax.set(ylabel=ylabel)
+	if title != '': 
+		ax.set(title=title)
+
+	ax.set(ylim=(0, None))
+	#axs[0].tick_linesArams(axis='y', colors=linesA.get_color())
+	#plt.legend(loc='best', shadow=True)
+
+
+	# show dataX in unix timestamps to string dates
+	#  https://rowannicholls.github.io/python/graphs/time_data.html
+	#ax=plt.gca()
+	if formatXasTime:
+		fmt = matplotlib.ticker.FuncFormatter(lambda x, pos: time.strftime('%H:%M:%S', time.localtime(x)))
+		ax.xaxis.set_major_formatter(fmt)
+
+	bIO = io.BytesIO()
+	plt.savefig(bIO, format='png', dpi=100)
+	#plt.savefig('test.png')
+	plt.close()
+	bIO.seek(0)
+	data = bIO.read()
+	img = QImage()
+	img.loadFromData(data, format='png')
+
+	return(img)
 
 
 class TestACDCadapteru():
@@ -754,20 +818,20 @@ class TestACDCadapteru():
 			
 		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
 		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
-				label='Power [W]', formatXasTime=True)
+				ylabel='Power [W]', xlabel='Time [H:M:S]', formatXasTime=True, width=1200)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
 
 		exportTextEdit.insertHtml('<P>Průběh Pstb během měření (hodí se pro vizuální kontrolu ' +
 				'chyb v měření):<BR></BR>')
 		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_MATH, 
-				label='MATH = AVG Power [W]', height=200, formatXasTime=True)
+				ylabel='MATH = AVG Power [W]', height=200, formatXasTime=True, width=1200)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
 
 		exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
 			    'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
-		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, label='MATH Time [H:M:S]',
+		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, ylabel='MATH Time [H:M:S]',
 		        height=200, formatXasTime=True)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
@@ -882,13 +946,20 @@ class TestACDCadapteru():
 		statusLabel.setText('Test Pa finished.')
 		#endregion -------------------------------------------------------------
 
-		#region test  charakteristika zdroje -------------------------------------------------------------
+		#region test VA charakteristika  -------------------------------------------------------------
+		exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky</B> při normálním zatížení</H2><BR></BR>')
+		exportTextEdit.insertHtml('''
+					<UL>
+						<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
+						<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
+						<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
+					</UL><BR></BR>''')
+
 		load.setStateOn(False)
 		load.setFunction('CP')
 		load.setPower(0)
 		QtTest.QTest.qWait(100)
 		load.setStateOn(True)
-
 
 		dataLoadA = []
 		dataLoadAtime = []
@@ -931,17 +1002,20 @@ class TestACDCadapteru():
 			plot2_dataLine.setData(dataLoadVtime, dataLoadV)
 			plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
 
-			loadReqW += xPo/600 # merime 1,1 minutu
+			if load.demo == True:
+				loadReqW += xPo/60 # merime 0,1 minutu
+			else:
+				loadReqW += xPo/600 # merime 1,1 minutu
 
 
 		exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadA, dataLoadV, label='Voltage [V]', height=400)
+		img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', height=400)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
 
 		exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
 			    'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
-		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, label='Requested P [W]',
+		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
 		        height=200, formatXasTime=True)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
@@ -953,11 +1027,91 @@ class TestACDCadapteru():
 			except:
 				dataUcinnostP.append(0)
 		exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadW, dataUcinnostP, label='Účinnost [0-1]', height=400)
+		img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', height=400)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
+		#endregion
+
+		#region Měření VA charakteristiky při přetížení------------------------------
+		exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky při přetížení</B></H2><BR></BR>')
+		exportTextEdit.insertHtml('Měří se časový průběh U a I při zátěži od 80% Po' + 
+			    'až do přetížení plus 1 minuta nebo 10*Pa')
+
+		load.setStateOn(False)
+		load.setFunction('CP')
+		load.setPower(0)
+		QtTest.QTest.qWait(100)
+		load.setStateOn(True)
+
+		dataLoadA = []
+		dataLoadAtime = []
+		dataLoadV = []
+		dataLoadVtime = []
+		dataLoadW = []
+		dataLoadWtime = []
+		dataLoadReqW = []
+		dataLoadReqWtime = []
+
+		dataWmeterW = []
+		dataWmeterWtime = []
+
+		plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+		plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+		plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
+
+		xPo = cfg.get('testACDCadapteru/Po')
+		loadReqW = xPo*0.8
+		overloadedAttempts = 600 #1 minuta
+		while loadReqW < xPo*10:
+			load.setPower(loadReqW)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(1)
+			else:
+				QtTest.QTest.qWait(100)
+			
+			dataLoadA.append(load.measure('A'))
+			dataLoadAtime.append(time.time())
+			dataLoadV.append(load.measure('V'))
+			dataLoadVtime.append(time.time())
+			loadW = load.measure('W')
+			dataLoadW.append(loadW)
+			dataLoadWtime.append(time.time())
+			dataLoadReqW.append(loadReqW)
+			dataLoadReqWtime.append(time.time())
+
+			plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+			plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+			plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
+
+			if load.demo == True:
+				loadReqW += xPo/60 # merime 0,1 minutu
+			else:
+				loadReqW += xPo/600 # merime 1,1 minutu
+			if loadW < loadReqW*0.1:
+				overloadedAttempts += 1
+			if overloadedAttempts < 0:
+				break
+
+
+		exportTextEdit.insertHtml('<P>Průběh proudu při přetížení' + '<BR></BR>')
+		img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
 		textEditAppendImg(exportTextEdit, img)
 		exportTextEdit.insertHtml('</P>')
 
-		#endregion -------------------------------------------------------------
+		exportTextEdit.insertHtml('<P>Průběh napětí při přetížení' + '<BR></BR>')
+		img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
+
+		exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
+			    'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
+		        height=200, formatXasTime=True)
+		textEditAppendImg(exportTextEdit, img)
+		exportTextEdit.insertHtml('</P>')
+
+
+		#endregion Měření VA charakteristiky při přetížení - VA charakteristika a časový průběh U a I
 
 
 
