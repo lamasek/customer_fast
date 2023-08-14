@@ -381,9 +381,9 @@ class Load(VisaDevice):
 		elif mode == 'CV':
 			cmd = 'VOLTage'
 		elif mode == 'CR':
-			cmd = 'POWer'
-		elif mode == 'CP':
 			cmd = 'RESistance'
+		elif mode == 'CP':
+			cmd = 'POWer'
 		else:
 			return(False, 'Unknown function')
 			
