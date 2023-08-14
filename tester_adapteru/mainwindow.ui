@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>732</width>
-    <height>456</height>
+    <width>894</width>
+    <height>587</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -317,8 +317,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>714</width>
-             <height>324</height>
+             <width>870</width>
+             <height>429</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -750,8 +750,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>704</width>
-             <height>1028</height>
+             <width>856</width>
+             <height>1042</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -851,11 +851,21 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,10">
+         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_30">
             <property name="text">
              <string>Mereni:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="testACDCadapteru_comboBox_test">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>0</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -902,8 +912,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>714</width>
-             <height>327</height>
+             <width>870</width>
+             <height>429</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1176,8 +1186,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>732</width>
-     <height>17</height>
+     <width>894</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -1200,7 +1210,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_BATT_range"/>
   <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
  </buttongroups>
 </ui>

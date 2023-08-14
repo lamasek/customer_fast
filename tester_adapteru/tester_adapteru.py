@@ -148,6 +148,7 @@ CONFIG_DEFAULT = {
 					'load/measure_X': False,
 					'testACDCadapteru/Po':  1, #W
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
+					'testACDCadapteru/test': 'All',
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -254,7 +255,10 @@ class VisaDevice():
 
 		if verbose > 70:
 			print('Load disconnecting...')
-		self.rm.close() 
+		try:
+			self.rm.close() 
+		except:
+			None
 		#TODO check
 		self.connected = False
 		return(True)
@@ -514,6 +518,7 @@ class Wattmeter(VisaDevice):
 		return(sum / 10)
 
 
+
 	# Integrate ------------------------------------
 	# procedure how to make integrate measure on Wattmeter:
 	# :INTEG:RESET
@@ -655,7 +660,6 @@ def data2plot2qimg(
 
 	linesA, = ax.plot(dataX, dataY, marker='o')
 	#linesA = ax.plot(dataX, dataY, marker='o', label=ylabel)
-	print(linesA)
 
 	if xlabel != '': 
 		ax.set(xlabel=xlabel)
@@ -753,362 +757,379 @@ class TestACDCadapteru():
 		plot3.hide()
 
 		#region test_Pstb -------------------------------------------------------------------
-		statusLabel.setText('Test Pstb Started')
+		if cfg.get('testACDCadapteru/test') in {'All', 'Pstb'}: 
+			statusLabel.setText('Test Pstb Started')
 
-		exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - <B>Pstb</B></H2><BR></BR>')
-		exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
+			exportTextEdit.insertHtml('<H2>Standby příkon adaptéru - <B>Pstb</B></H2><BR></BR>')
+			exportTextEdit.insertHtml('<P>Měří se 10 minutový průměr příkonu adaptéru bez zátěže - Pstb.</P><BR></BR>')
 
-		plot1_dataLine = plot_prepare(cfg, plot1, 'Power/P [W]')
-		plot2_dataLine = plot_prepare(cfg, plot2, 'MATH - Avg Power/P [W]')
-		plot3_dataLine = plot_prepare(cfg, plot3, 'MATH Time [h:m:s]')
-		
-
-		load.setStateOn(False) #no Load
-		ldata_wattmeter_W = []
-		ldata_wattmeter_Wtime = []
-		ldata_wattmeter_MATH = []
-		ldata_wattmeter_MATHtime = []
-		ldata_wattmeter_TIME = []
-		ldata_wattmeter_TIMEtime = []
-
-		wmeter.integrateReset()
-		wmeter.integrateStart()
-		if wmeter.demo != True:
-			QtTest.QTest.qWait(1000)
-		retCode, iState = wmeter.integrateState()
-		statusLabel.setText('Test Pstb - Measuring')
-
-		while iState.startswith('STAR'):
-
-			W = wmeter.measure('W')
-			ldata_wattmeter_W.append(W)
-			ldata_wattmeter_Wtime.append(time.time())
-			plot1_dataLine.setData(ldata_wattmeter_Wtime, ldata_wattmeter_W)
-
-			MATH = wmeter.measure('MATH')
-			ldata_wattmeter_MATH.append(MATH)
-			ldata_wattmeter_MATHtime.append(time.time())
-			plot2_dataLine.setData(ldata_wattmeter_MATHtime, ldata_wattmeter_MATH)
-
-			TIME = wmeter.measure('TIME')
-			ldata_wattmeter_TIME.append(TIME)
-			ldata_wattmeter_TIMEtime.append(time.time())
-			plot3_dataLine.setData(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME)
-
-			retCode, iState = wmeter.integrateState()
+			plot1_dataLine = plot_prepare(cfg, plot1, 'Power/P [W]')
+			plot2_dataLine = plot_prepare(cfg, plot2, 'MATH - Avg Power/P [W]')
+			plot3_dataLine = plot_prepare(cfg, plot3, 'MATH Time [h:m:s]')
 			
-			if wmeter.demo != True:
-				QtTest.QTest.qWait(200)
-			else:
-				QtTest.QTest.qWait(100)
 
-			if self.check_exit(statusLabel): #stop the test and exit
-				exportTextEdit.insertHtml('<H2>Měření Pstb přerušeno uživatelem</H2><BR></BR>')
-				statusLabel.setText('Test Pstb - Stopped by user')
-				wmeter.integrateReset()
-				return()
+			load.setStateOn(False) #no Load
+			ldata_wattmeter_W = []
+			ldata_wattmeter_Wtime = []
+			ldata_wattmeter_MATH = []
+			ldata_wattmeter_MATHtime = []
+			ldata_wattmeter_TIME = []
+			ldata_wattmeter_TIMEtime = []
 
-		if not iState.startswith('TIM'): # failed to measure
-			exportTextEdit.insertHtml('<H2>Měření Pstb selhalo</H2><BR></BR>')
-			statusLabel.setText('Test Pstb - Failed')
 			wmeter.integrateReset()
-			self.semaphore.tryAcquire(1) #normal exit
-			self.semaphore.tryAcquire(1) #user stopped during normal exit
-			return(False)
-			
-		exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
-		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
-				ylabel='Power [W]', xlabel='Time [H:M:S]', formatXasTime=True, width=1200)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			wmeter.integrateStart()
+			if wmeter.demo != True:
+				QtTest.QTest.qWait(1000)
+			retCode, iState = wmeter.integrateState()
+			statusLabel.setText('Test Pstb - Measuring')
 
-		exportTextEdit.insertHtml('<P>Průběh Pstb během měření (hodí se pro vizuální kontrolu ' +
-				'chyb v měření):<BR></BR>')
-		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_MATH, 
-				ylabel='MATH = AVG Power [W]', height=200, formatXasTime=True, width=1200)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			while iState.startswith('STAR'):
 
-		exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
-			    'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
-		img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, ylabel='MATH Time [H:M:S]',
-		        height=200, formatXasTime=True)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+				W = wmeter.measure('W')
+				ldata_wattmeter_W.append(W)
+				ldata_wattmeter_Wtime.append(time.time())
+				plot1_dataLine.setData(ldata_wattmeter_Wtime, ldata_wattmeter_W)
 
-		#Pstb = ldata_wattmeter_MATH[-1] 
-		vPstb = wmeter.measureNoNAN('MATH')
-		wmeter.integrateReset()
-		exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - <B>Pstb</B>: ' + str(vPstb) + ' W</H3><BR></BR>')
-		exportTextEdit.insertHtml('<BR></BR>')
-		statusLabel.setText('Test Pstb - Finished')
+				MATH = wmeter.measure('MATH')
+				ldata_wattmeter_MATH.append(MATH)
+				ldata_wattmeter_MATHtime.append(time.time())
+				plot2_dataLine.setData(ldata_wattmeter_MATHtime, ldata_wattmeter_MATH)
+
+				TIME = wmeter.measure('TIME')
+				ldata_wattmeter_TIME.append(TIME)
+				ldata_wattmeter_TIMEtime.append(time.time())
+				plot3_dataLine.setData(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME)
+
+				retCode, iState = wmeter.integrateState()
+				
+				if wmeter.demo != True:
+					QtTest.QTest.qWait(200)
+				else:
+					QtTest.QTest.qWait(10)
+
+				if self.check_exit(statusLabel): #stop the test and exit
+					exportTextEdit.insertHtml('<H2>Měření Pstb přerušeno uživatelem</H2><BR></BR>')
+					statusLabel.setText('Test Pstb - Stopped by user')
+					wmeter.integrateReset()
+					return()
+
+			if not iState.startswith('TIM'): # failed to measure
+				exportTextEdit.insertHtml('<H2>Měření Pstb selhalo</H2><BR></BR>')
+				statusLabel.setText('Test Pstb - Failed')
+				wmeter.integrateReset()
+				self.semaphore.tryAcquire(1) #normal exit
+				self.semaphore.tryAcquire(1) #user stopped during normal exit
+				return(False)
+				
+			exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
+			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
+					ylabel='Power [W]', xlabel='Time [H:M:S]', formatXasTime=True, width=1200)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh Pstb během měření (hodí se pro vizuální kontrolu ' +
+					'chyb v měření):<BR></BR>')
+			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_MATH, 
+					ylabel='MATH = AVG Power [W]', height=200, formatXasTime=True, width=1200)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
+					'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
+			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, ylabel='MATH Time [H:M:S]',
+					height=200, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			#Pstb = ldata_wattmeter_MATH[-1] 
+			vPstb = wmeter.measureNoNAN('MATH')
+			wmeter.integrateReset()
+			exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - <B>Pstb</B>: ' + str(vPstb) + ' W</H3><BR></BR>')
+			exportTextEdit.insertHtml('<BR></BR>')
+			statusLabel.setText('Test Pstb - Finished')
 		#endregion -------------------------------------------------------------
 
 		#region test Pa -------------------------------------------------------------
 		# ucinnost v aktivnim rezimu - pri 25, 50, 75 a 100%
-		statusLabel.setText('Test Pa Started')
+		if cfg.get('testACDCadapteru/test') in {'All', 'Pa'}: 
+			statusLabel.setText('Test Pa Started')
 
-		exportTextEdit.insertHtml('<H2>Měření účinnosti v aktivním režimu  - <B>Pa</B></H2><BR></BR>')
-		exportTextEdit.insertHtml('<P>Měří se účinnost adaptéru (příkon na wattmetru děleno výkonem na zátěži)' +
-			    'při 25%, 50%, 75%, 100% zatížení z maxima, z toho aritmetický průměr.</P><BR></BR>')
-		exportTextEdit.insertHtml('<P>Na zátěži je nastaven mód Constant Power, měřená účinnost bude ' + 
-			    'horší díky ztrátám napětí na měřících kabelech a konektorech</P><BR></BR>')
-		load.setStateOn(False)
-		load.setFunction('CP')
-		vPo = cfg.get('testACDCadapteru/Po')
-		exportTextEdit.insertHtml('<H3>Nominální/maximální výkon adaptéru - <B>Po = ' + str(vPo) + 
-			    ' W</B></H3><BR></BR>')
+			exportTextEdit.insertHtml('<H2>Měření účinnosti v aktivním režimu  - <B>Pa</B></H2><BR></BR>')
+			exportTextEdit.insertHtml('<P>Měří se účinnost adaptéru (příkon na wattmetru děleno výkonem na zátěži)' +
+					'při 25%, 50%, 75%, 100% zatížení z maxima, z toho aritmetický průměr.</P><BR></BR>')
+			exportTextEdit.insertHtml('<P>Na zátěži je nastaven mód Constant Power, měřená účinnost bude ' + 
+					'horší díky ztrátám napětí na měřících kabelech a konektorech</P><BR></BR>')
+			load.setStateOn(False)
+			load.setFunction('CP')
+			vPo = cfg.get('testACDCadapteru/Po')
+			exportTextEdit.insertHtml('<H3>Nominální/maximální výkon adaptéru - <B>Po = ' + str(vPo) + 
+					' W</B></H3><BR></BR>')
 
-		load.setPower(vPo*0.1)
-		load.setStateOn(True)
-		if wmeter.demo == True:
-			QtTest.QTest.qWait(100)
-		else:
-			QtTest.QTest.qWait(1000)
-		wmeterW10 = wmeter.measure10Avg('W')
-		loadW10 = load.measure('W')
-		statusLabel.setText('Power in 10%')
+			load.setPower(vPo*0.1)
+			load.setStateOn(True)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(100)
+			else:
+				QtTest.QTest.qWait(1000)
+			wmeterW10 = wmeter.measure10Avg('W')
+			loadW10 = load.measure('W')
+			statusLabel.setText('Power in 10%')
 
-		load.setPower(vPo*0.25)
-		if wmeter.demo == True:
-			QtTest.QTest.qWait(100)
-		else:
-			QtTest.QTest.qWait(1000)
-		wmeterW25 = wmeter.measure10Avg('W')
-		loadW25 = load.measure('W')
-		statusLabel.setText('P in 25%')
+			load.setPower(vPo*0.25)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(100)
+			else:
+				QtTest.QTest.qWait(1000)
+			wmeterW25 = wmeter.measure10Avg('W')
+			loadW25 = load.measure('W')
+			statusLabel.setText('P in 25%')
 
-		load.setPower(vPo*0.5)
-		if wmeter.demo == True:
-			QtTest.QTest.qWait(100)
-		else:
-			QtTest.QTest.qWait(1000)
-		wmeterW50 = wmeter.measure10Avg('W')
-		loadW50 = load.measure('W')
-		statusLabel.setText('P in 50%')
+			load.setPower(vPo*0.5)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(100)
+			else:
+				QtTest.QTest.qWait(1000)
+			wmeterW50 = wmeter.measure10Avg('W')
+			loadW50 = load.measure('W')
+			statusLabel.setText('P in 50%')
 
-		load.setPower(vPo+0.75)
-		if wmeter.demo == True:
-			QtTest.QTest.qWait(100)
-		else:
-			QtTest.QTest.qWait(1000)
-		wmeterW75 = wmeter.measure10Avg('W')
-		loadW75 = load.measure('W')
-		statusLabel.setText('P in 75%')
+			load.setPower(vPo+0.75)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(100)
+			else:
+				QtTest.QTest.qWait(1000)
+			wmeterW75 = wmeter.measure10Avg('W')
+			loadW75 = load.measure('W')
+			statusLabel.setText('P in 75%')
 
-		load.setPower(vPo)
-		if wmeter.demo == True:
-			QtTest.QTest.qWait(100)
-		else:
-			QtTest.QTest.qWait(1000)
-		wmeterW100 = wmeter.measure10Avg('W')
-		loadW100 = load.measure('W')
-		statusLabel.setText('P in 100%')
+			load.setPower(vPo)
+			if wmeter.demo == True:
+				QtTest.QTest.qWait(100)
+			else:
+				QtTest.QTest.qWait(1000)
+			wmeterW100 = wmeter.measure10Avg('W')
+			loadW100 = load.measure('W')
+			statusLabel.setText('P in 100%')
 
-		try:
-			xP25 = loadW25/wmeterW25
-		except:
-			xP25 = 0
-		try:
-			xP50 = loadW50/wmeterW50
-		except:
-			xP50 = 0
-		try:
-			xP75 = loadW75/wmeterW75
-		except:
-			xP75 = 0
-		try:
-			xP100 = loadW100/wmeterW100
-		except:
-			xP100 = 0
+			try:
+				xP25 = loadW25/wmeterW25
+			except:
+				xP25 = 0
+			try:
+				xP50 = loadW50/wmeterW50
+			except:
+				xP50 = 0
+			try:
+				xP75 = loadW75/wmeterW75
+			except:
+				xP75 = 0
+			try:
+				xP100 = loadW100/wmeterW100
+			except:
+				xP100 = 0
 
-		vPa = (xP25 + xP50 + xP75 + xP100)/4
-		exportTextEdit.insertHtml('<H4>Průměrná účinnost při malém zatížení (10%) - <B>P10 = </B>' +
-			    str(wmeterW10) + '</H4><BR></BR>')
-		exportTextEdit.insertHtml(
-			'<TABLE BORDER="1">' +
-				'<TR><TH>% z Po</TH><TH>Požadovaný P [W]</TH><TH>Naměřený P na zátěži [W]</TH>' +
-					'<TH>Naměřený P na wattmetru [W]</TH><TH>Vypočtená účinnost [0-1]</TH></TR>' +
-				'<TR><TD>25%</TD><TD>' + str(vPo*0.25) + '</TD><TD>' + str(loadW25) + '</TD>' +
-				 	'<TD>' + str(wmeterW25) + '</TD><TD>' + str(xP25) + '</TD></TR>'
-				'<TR><TD>50%</TD><TD>' + str(vPo*0.5) + '</TD><TD>' + str(loadW50) + '</TD>' +
-				 	'<TD>' + str(wmeterW50) + '</TD><TD>' + str(xP50) + '</TD></TR>'
-				'<TR><TD>75%</TD><TD>' + str(vPo*0.75) + '</TD><TD>' + str(loadW75) + '</TD>' +
-				 	'<TD>' + str(wmeterW75) + '</TD><TD>' + str(xP75) + '</TD></TR>'
-				'<TR><TD>100%</TD><TD>' + str(vPo) + '</TD><TD>' + str(loadW100) + '</TD>' +
-				 	'<TD>' + str(wmeterW100) + '</TD><TD>' + str(xP100) + '</TD></TR>'
-			 '</TABLE><BR></BR>')
-		exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu - <B>Pa = </B>' +
-			    str(vPa) + '</H3><BR></BR>')
-		exportTextEdit.insertHtml('<BR></BR>')
+			vPa = (xP25 + xP50 + xP75 + xP100)/4
+			exportTextEdit.insertHtml('<H4>Průměrná účinnost při malém zatížení (10%) - <B>P10 = </B>' +
+					str(wmeterW10) + '</H4><BR></BR>')
+			exportTextEdit.insertHtml(
+				'<TABLE BORDER="1">' +
+					'<TR><TH>% z Po</TH><TH>Požadovaný P [W]</TH><TH>Naměřený P na zátěži [W]</TH>' +
+						'<TH>Naměřený P na wattmetru [W]</TH><TH>Vypočtená účinnost [0-1]</TH></TR>' +
+					'<TR><TD>25%</TD><TD>' + str(vPo*0.25) + '</TD><TD>' + str(loadW25) + '</TD>' +
+						'<TD>' + str(wmeterW25) + '</TD><TD>' + str(xP25) + '</TD></TR>'
+					'<TR><TD>50%</TD><TD>' + str(vPo*0.5) + '</TD><TD>' + str(loadW50) + '</TD>' +
+						'<TD>' + str(wmeterW50) + '</TD><TD>' + str(xP50) + '</TD></TR>'
+					'<TR><TD>75%</TD><TD>' + str(vPo*0.75) + '</TD><TD>' + str(loadW75) + '</TD>' +
+						'<TD>' + str(wmeterW75) + '</TD><TD>' + str(xP75) + '</TD></TR>'
+					'<TR><TD>100%</TD><TD>' + str(vPo) + '</TD><TD>' + str(loadW100) + '</TD>' +
+						'<TD>' + str(wmeterW100) + '</TD><TD>' + str(xP100) + '</TD></TR>'
+				'</TABLE><BR></BR>')
+			exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu - <B>Pa = </B>' +
+					str(vPa) + '</H3><BR></BR>')
+			exportTextEdit.insertHtml('<BR></BR>')
 
-		load.setStateOn(False)
-		statusLabel.setText('Test Pa finished.')
+			load.setStateOn(False)
+			statusLabel.setText('Test Pa finished.')
 		#endregion -------------------------------------------------------------
 
 		#region test VA charakteristika  -------------------------------------------------------------
-		exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky</B> při normálním zatížení</H2><BR></BR>')
-		exportTextEdit.insertHtml('''
-					<UL>
-						<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
-						<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
-						<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
-					</UL><BR></BR>''')
+		if cfg.get('testACDCadapteru/test') in {'All', 'VA char.'}: 
+			exportTextEdit.insertHtml('<P><H2>Měření <B>VA charakteristiky</B> při normálním zatížení</H2>')
+			exportTextEdit.insertHtml('''
+						<UL>
+							<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
+							<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
+							<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
+						</UL></P><BR></BR>''')
 
-		load.setStateOn(False)
-		load.setFunction('CP')
-		load.setPower(0)
-		QtTest.QTest.qWait(100)
-		load.setStateOn(True)
+			load.setStateOn(False)
+			load.setFunction('CP')
+			load.setPower(0)
+			QtTest.QTest.qWait(100)
+			load.setStateOn(True)
 
-		dataLoadA = []
-		dataLoadAtime = []
-		dataLoadV = []
-		dataLoadVtime = []
-		dataLoadW = []
-		dataLoadWtime = []
-		dataLoadReqW = []
-		dataLoadReqWtime = []
+			dataLoadA = []
+			dataLoadAtime = []
+			dataLoadV = []
+			dataLoadVtime = []
+			dataLoadW = []
+			dataLoadWtime = []
+			dataLoadReqW = []
+			dataLoadReqWtime = []
 
-		dataWmeterW = []
-		dataWmeterWtime = []
+			dataWmeterW = []
+			dataWmeterWtime = []
 
-		plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
-		plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
-		plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
+			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+			plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
 
-		xPo = cfg.get('testACDCadapteru/Po')
-		loadReqW = 0
-		while loadReqW < xPo*1.1:
-			load.setPower(loadReqW)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(1)
-			else:
-				QtTest.QTest.qWait(100)
-			
-			dataLoadA.append(load.measure('A'))
-			dataLoadAtime.append(time.time())
-			dataLoadV.append(load.measure('V'))
-			dataLoadVtime.append(time.time())
-			dataLoadW.append(load.measure('W'))
-			dataLoadWtime.append(time.time())
-			dataLoadReqW.append(loadReqW)
-			dataLoadReqWtime.append(time.time())
+			xPo = cfg.get('testACDCadapteru/Po')
+			loadReqW = 0
+			while loadReqW < xPo*1.1:
+				load.setPower(loadReqW)
+				if wmeter.demo == True:
+					QtTest.QTest.qWait(1)
+				else:
+					QtTest.QTest.qWait(100)
+				
+				dataLoadA.append(load.measure('A'))
+				dataLoadAtime.append(time.time())
+				dataLoadV.append(load.measure('V'))
+				dataLoadVtime.append(time.time())
+				dataLoadW.append(load.measure('W'))
+				dataLoadWtime.append(time.time())
+				dataLoadReqW.append(loadReqW)
+				dataLoadReqWtime.append(time.time())
 
-			dataWmeterW.append(wmeter.measure('W'))
-			dataWmeterWtime.append(time)
+				dataWmeterW.append(wmeter.measure('W'))
+				dataWmeterWtime.append(time)
 
-			plot1_dataLine.setData(dataLoadAtime, dataLoadA)
-			plot2_dataLine.setData(dataLoadVtime, dataLoadV)
-			plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
+				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+				plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
 
-			if load.demo == True:
-				loadReqW += xPo/60 # merime 0,1 minutu
-			else:
-				loadReqW += xPo/600 # merime 1,1 minutu
+				if load.demo == True:
+					loadReqW += xPo/60 # merime 0,1 minutu
+				else:
+					loadReqW += xPo/600 # merime 1,1 minutu
+
+				if self.check_exit(statusLabel): #stop the test and exit
+					exportTextEdit.insertHtml('<H2>Měření VA charky přerušeno uživatelem</H2><BR></BR>')
+					statusLabel.setText('Test VA char - Stopped by user')
+					load.setStateOn(False)
+					return()
 
 
-		exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', height=400)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', height=400)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 
-		exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
-			    'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
-		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
-		        height=200, formatXasTime=True)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
+					'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
+					height=200, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 
-		dataUcinnostP = []
-		for i in range(len(dataLoadW)):
-			try:
-				dataUcinnostP.append(dataLoadW[i]/dataWmeterW[i])
-			except:
-				dataUcinnostP.append(0)
-		exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', height=400)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			dataUcinnostP = []
+			for i in range(len(dataLoadW)):
+				try:
+					dataUcinnostP.append(dataLoadW[i]/dataWmeterW[i])
+				except:
+					dataUcinnostP.append(0)
+			exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', height=400)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 		#endregion
 
 		#region Měření VA charakteristiky při přetížení------------------------------
-		exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky při přetížení</B></H2><BR></BR>')
-		exportTextEdit.insertHtml('Měří se časový průběh U a I při zátěži od 80% Po' + 
-			    'až do přetížení plus 1 minuta nebo 10*Pa')
+		if cfg.get('testACDCadapteru/test') in {'All', 'VA char. overcur.'}: 
+			exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky při přetížení</B></H2><BR></BR>')
+			exportTextEdit.insertHtml('Měří se časový průběh U a I při zátěži od 80% Po' + 
+					'až do přetížení plus 1 minuta nebo 10*Pa')
 
-		load.setStateOn(False)
-		load.setFunction('CP')
-		load.setPower(0)
-		QtTest.QTest.qWait(100)
-		load.setStateOn(True)
+			load.setStateOn(False)
+			load.setFunction('CP')
+			load.setPower(0)
+			QtTest.QTest.qWait(100)
+			load.setStateOn(True)
 
-		dataLoadA = []
-		dataLoadAtime = []
-		dataLoadV = []
-		dataLoadVtime = []
-		dataLoadW = []
-		dataLoadWtime = []
-		dataLoadReqW = []
-		dataLoadReqWtime = []
+			dataLoadA = []
+			dataLoadAtime = []
+			dataLoadV = []
+			dataLoadVtime = []
+			dataLoadW = []
+			dataLoadWtime = []
+			dataLoadReqW = []
+			dataLoadReqWtime = []
 
-		dataWmeterW = []
-		dataWmeterWtime = []
+			dataWmeterW = []
+			dataWmeterWtime = []
 
-		plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
-		plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
-		plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
+			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+			plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
 
-		xPo = cfg.get('testACDCadapteru/Po')
-		loadReqW = xPo*0.8
-		overloadedAttempts = 600 #1 minuta
-		while loadReqW < xPo*10:
-			load.setPower(loadReqW)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(1)
-			else:
-				QtTest.QTest.qWait(100)
-			
-			dataLoadA.append(load.measure('A'))
-			dataLoadAtime.append(time.time())
-			dataLoadV.append(load.measure('V'))
-			dataLoadVtime.append(time.time())
-			loadW = load.measure('W')
-			dataLoadW.append(loadW)
-			dataLoadWtime.append(time.time())
-			dataLoadReqW.append(loadReqW)
-			dataLoadReqWtime.append(time.time())
+			xPo = cfg.get('testACDCadapteru/Po')
+			loadReqW = xPo*0.8
+			overloadedAttempts = 600 #1 minuta
+			while loadReqW < xPo*10:
+				load.setPower(loadReqW)
+				if wmeter.demo == True:
+					QtTest.QTest.qWait(1)
+				else:
+					QtTest.QTest.qWait(100)
+				
+				dataLoadA.append(load.measure('A'))
+				dataLoadAtime.append(time.time())
+				dataLoadV.append(load.measure('V'))
+				dataLoadVtime.append(time.time())
+				loadW = load.measure('W')
+				dataLoadW.append(loadW)
+				dataLoadWtime.append(time.time())
+				dataLoadReqW.append(loadReqW)
+				dataLoadReqWtime.append(time.time())
 
-			plot1_dataLine.setData(dataLoadAtime, dataLoadA)
-			plot2_dataLine.setData(dataLoadVtime, dataLoadV)
-			plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
+				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+				plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
 
-			if load.demo == True:
-				loadReqW += xPo/60 # merime 0,1 minutu
-			else:
-				loadReqW += xPo/600 # merime 1,1 minutu
-			if loadW < loadReqW*0.1:
-				overloadedAttempts += 1
-			if overloadedAttempts < 0:
-				break
+				if load.demo == True:
+					loadReqW += xPo/60 # merime 0,1 minutu
+				else:
+					loadReqW += xPo/600 # merime 1,1 minutu
+				if loadW < loadReqW*0.1:
+					overloadedAttempts += 1
+				if overloadedAttempts < 0:
+					break
+
+				if self.check_exit(statusLabel): #stop the test and exit
+					exportTextEdit.insertHtml('<H2>Měření VA charky při přetížení přerušeno uživatelem</H2><BR></BR>')
+					statusLabel.setText('Test VA char overload - Stopped by user')
+					load.setStateOn(False)
+					return()
 
 
-		exportTextEdit.insertHtml('<P>Průběh proudu při přetížení' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
 
-		exportTextEdit.insertHtml('<P>Průběh napětí při přetížení' + '<BR></BR>')
-		img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			exportTextEdit.insertHtml('<P>Průběh proudu při přetížení' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 
-		exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
-			    'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
-		img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
-		        height=200, formatXasTime=True)
-		textEditAppendImg(exportTextEdit, img)
-		exportTextEdit.insertHtml('</P>')
+			exportTextEdit.insertHtml('<P>Průběh napětí při přetížení' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
+					'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
+					height=200, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 
 
 		#endregion Měření VA charakteristiky při přetížení - VA charakteristika a časový průběh U a I
@@ -1161,9 +1182,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.stop = False  #stop semaphore for running tests
 
+		self.cfg = QSettingsManager()
+
 		#region CONFIG ----------------------------
 		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
-		self.cfg = QSettingsManager()
 		self.cfg.updated.connect(self.config_show)
 		self.cfg.set_defaults(CONFIG_DEFAULT)
 		self.config_show()
@@ -1393,6 +1415,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
 		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
+		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', '1 hour load'])
+		self.cfg.add_handler('testACDCadapteru/test', self.testACDCadapteru_comboBox_test)
 		#endregion
 
 
@@ -1635,21 +1659,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		
 		if True: #self.cfg.get('wattmeter/measure_'):
 			W = self.wattmeter.measure('W')
-			data_wattmeter_W.append(W)
-			data_wattmeter_Wtime.append(time.time())
-			self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
+			if W is float:
+				data_wattmeter_W.append(W)
+				data_wattmeter_Wtime.append(time.time())
+				self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			A = self.wattmeter.measure('A')
-			data_wattmeter_A.append(A)
-			data_wattmeter_Atime.append(time.time())
-			self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
+			if A is float:
+				data_wattmeter_A.append(A)
+				data_wattmeter_Atime.append(time.time())
+				self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			V = self.wattmeter.measure('V')
-			data_wattmeter_V.append(V)
-			data_wattmeter_Vtime.append(time.time())
-			self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
+			if V is float:
+				data_wattmeter_V.append(V)
+				data_wattmeter_Vtime.append(time.time())
+				self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			MATH = self.wattmeter.measure('MATH')

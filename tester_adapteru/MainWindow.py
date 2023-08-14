@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(732, 456)
+        MainWindow.resize(894, 587)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -174,7 +174,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 714, 324))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 870, 429))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_15 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_15.setObjectName("verticalLayout_15")
@@ -390,7 +390,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 704, 1028))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 856, 1042))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_9.setObjectName("verticalLayout_9")
@@ -443,6 +443,10 @@ class Ui_MainWindow(object):
         self.label_30 = QtWidgets.QLabel(parent=self.tab_test_ACDCadapteru)
         self.label_30.setObjectName("label_30")
         self.horizontalLayout_15.addWidget(self.label_30)
+        self.testACDCadapteru_comboBox_test = QtWidgets.QComboBox(parent=self.tab_test_ACDCadapteru)
+        self.testACDCadapteru_comboBox_test.setMinimumSize(QtCore.QSize(150, 0))
+        self.testACDCadapteru_comboBox_test.setObjectName("testACDCadapteru_comboBox_test")
+        self.horizontalLayout_15.addWidget(self.testACDCadapteru_comboBox_test)
         self.testACDCadapteru_pushButton_start = QtWidgets.QPushButton(parent=self.tab_test_ACDCadapteru)
         self.testACDCadapteru_pushButton_start.setObjectName("testACDCadapteru_pushButton_start")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_pushButton_start)
@@ -456,13 +460,13 @@ class Ui_MainWindow(object):
         self.testACDCadapteru_label_status.setWordWrap(True)
         self.testACDCadapteru_label_status.setObjectName("testACDCadapteru_label_status")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_label_status)
-        self.horizontalLayout_15.setStretch(4, 10)
+        self.horizontalLayout_15.setStretch(5, 10)
         self.verticalLayout_16.addLayout(self.horizontalLayout_15)
         self.scrollArea_3 = QtWidgets.QScrollArea(parent=self.tab_test_ACDCadapteru)
         self.scrollArea_3.setWidgetResizable(True)
         self.scrollArea_3.setObjectName("scrollArea_3")
         self.scrollAreaWidgetContents_3 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 714, 327))
+        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 870, 429))
         self.scrollAreaWidgetContents_3.setObjectName("scrollAreaWidgetContents_3")
         self.verticalLayout_17 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_3)
         self.verticalLayout_17.setObjectName("verticalLayout_17")
@@ -613,7 +617,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.tabWidget)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 732, 17))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 894, 21))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
@@ -715,3 +719,13 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_help), _translate("MainWindow", "Help"))
 from mplwidget import MplWidget
 from pyqtgraph import PlotWidget
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec())
