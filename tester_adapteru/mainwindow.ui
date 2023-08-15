@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>894</width>
-    <height>587</height>
+    <width>980</width>
+    <height>611</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -237,6 +237,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="wattmeter_pushButton_export">
+            <property name="text">
+             <string>Export</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="wattmeter_pushButton_clearGraphs">
             <property name="text">
              <string>Clear Graphs</string>
@@ -267,6 +274,13 @@
            <widget class="Line" name="line_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox">
+            <property name="text">
+             <string>X A Range</string>
             </property>
            </widget>
           </item>
@@ -317,8 +331,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>870</width>
-             <height>429</height>
+             <width>956</width>
+             <height>453</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -651,6 +665,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pushButton">
+              <property name="text">
+               <string>Export</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="load_pushButton_clearGraphs">
               <property name="text">
                <string>Clear Graphs</string>
@@ -750,7 +771,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>856</width>
+             <width>942</width>
              <height>1042</height>
             </rect>
            </property>
@@ -912,8 +933,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>870</width>
-             <height>429</height>
+             <width>956</width>
+             <height>453</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1186,7 +1207,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>894</width>
+     <width>980</width>
      <height>21</height>
     </rect>
    </property>

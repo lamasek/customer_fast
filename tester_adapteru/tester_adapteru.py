@@ -1251,6 +1251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_pushButton_start.pressed.connect(self.wattmeter_mereni_start)
 		self.wattmeter_pushButton_stop.pressed.connect(self.wattmeter_mereni_stop)
 		self.cfg.add_handler('wattmeter/measure_interval', self.wattmeter_spinBox_measure_interval)
+		self.wattmeter_pushButton_export.pressed.connect(self.wattmeter_mereni_export)
 		self.wattmeter_pushButton_clearGraphs.pressed.connect(self.wattmeter_mereni_clearGraphs)
 
 		self.cfg.add_handler('wattmeter/measure_W', self.wattmeter_checkBox_measure_W)
@@ -1686,6 +1687,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
 
 		self.wattmeter_mereni_finished = True
+
+	def wattmeter_mereni_export_pressed(self):
+		# TODO vylejt vsechno z dat do exports
+		#foreach i in data_wattmeter_A
+		None
 
 
 	def wattmeter_mereni_clearGraphs(self):
