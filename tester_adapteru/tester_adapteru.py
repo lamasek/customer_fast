@@ -81,7 +81,7 @@ import mplcursors
 lib_check_install('PyQt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
-from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter
+from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter, QCloseEvent
 from PyQt6.QtPrintSupport  import QPrinter
 from PyQt6.QtWidgets import QFileDialog
 
@@ -125,6 +125,7 @@ from MainWindow import Ui_MainWindow
 
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
+					'GUI/lastTabIndex' : 1,
 					'plots/theme': 'auto',
 					'plots/minWidth': 300,
 					'plots/minHeight': 200,
@@ -560,6 +561,162 @@ class Wattmeter(VisaDevice):
 				return(True, 'TIM')
 		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
 
+#region Tab_Config -----------------------------------------------------
+class Tab_Config():
+	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager):
+		self.cfg = cfg
+		self.mw = mw
+		self.mw.config_plainTextEdit.setPlaceholderText('Config not read yet...')
+		self.cfg.updated.connect(self.config_show)
+		self.config_show()
+		self.mw.config_pushButton_ClearToDefault.clicked.connect(self.config_set_to_default)
+
+		self.mw.config_comboBox_GUItheme.addItems(('auto', 'dark', 'light'))
+		self.cfg.add_handler('GUI/theme', self.mw.config_comboBox_GUItheme)
+		self.config_GUItheme_changed()
+		mw.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_changed)
+
+	def config_show(self):
+		self.mw.config_plainTextEdit.clear()
+		try:
+			d = self.cfg.as_dict()
+			for key in d:
+				self.mw.config_plainTextEdit.appendPlainText(str(key)+': \t'+ str(d[key]))
+		except:
+			print('config_show: problem to load previous config, clearing all config.')
+			QtCore.QSettings().clear()
+			print('config_show: Pls. exit from app. and run it again.')
+			
+
+		self.mw.config_plainTextEdit.appendPlainText('')
+		self.mw.config_plainTextEdit.appendPlainText('DEFAULT config: -----------------------')
+		d = CONFIG_DEFAULT
+		for key in d:
+			self.mw.config_plainTextEdit.appendPlainText(str(key)+': \t'+ str(d[key]))
+
+	def config_set_to_default(self):
+		for key in CONFIG_DEFAULT:
+			self.cfg.set(key, CONFIG_DEFAULT[key])
+
+	def config_GUItheme_changed(self):
+		if verbose > 80:
+			print('GUI Theme changed')
+		theme = self.cfg.get('GUI/theme')
+		try:
+			qdarktheme.setup_theme(theme)
+		except:
+			None
+		try:
+			if theme == 'auto':
+				if darkdetect.isDark():
+					theme = 'dark'
+				else:
+					theme = 'light'
+			if theme == 'light':
+				self.mw.wattmeter_plotWidget1.setBackground("w")
+				self.mw.wattmeter_plotWidget2.setBackground("w")
+				self.mw.wattmeter_plotWidget3.setBackground("w")
+				self.mw.wattmeter_plotWidget4.setBackground("w")
+				self.mw.load_plotWidget1.setBackground("w")
+				self.mw.load_plotWidget2.setBackground("w")
+				self.mw.load_plotWidget3.setBackground("w")
+				self.mw.load_plotWidget4.setBackground("w")
+				self.mw.testACDCadapteru_plotWidget1.setBackground("w")
+				self.mw.testACDCadapteru_plotWidget2.setBackground("w")
+				self.mw.testACDCadapteru_plotWidget3.setBackground("w")
+			else:
+				self.mw.wattmeter_plotWidget1.setBackground("k")
+				self.mw.wattmeter_plotWidget2.setBackground("k")
+				self.mw.wattmeter_plotWidget3.setBackground("k")
+				self.mw.wattmeter_plotWidget4.setBackground("k")
+				self.mw.load_plotWidget1.setBackground("k")
+				self.mw.load_plotWidget2.setBackground("k")
+				self.mw.load_plotWidget3.setBackground("k")
+				self.mw.load_plotWidget4.setBackground("k")
+				self.mw.testACDCadapteru_plotWidget1.setBackground("k")
+				self.mw.testACDCadapteru_plotWidget2.setBackground("k")
+				self.mw.testACDCadapteru_plotWidget3.setBackground("k")
+		except:
+			None
+	#endregion
+
+
+
+#region Tab_VISA -----------------------------------------------------
+class Tab_VISA():
+	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, visa: VisaDevice):
+		self.visa = visa
+		self.cfg = cfg
+		self.mw = mw
+		cfg.add_handler('VISA/VISAresource', mw.visa_lineEdit_VISAresource)
+		mw.visa_lineEdit_VISAresource.textChanged.connect(self.visa_VISAresource_changed)
+		self.mw.visa_pushButton_connect.pressed.connect(self.visa_connect)
+		mw.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
+		cfg.add_handler('VISA/SCPIcommand', mw.visa_lineEdit_SCPIcommand)
+		mw.visa_lineEdit_SCPIcommand.returnPressed.connect(self.visa_send)
+		mw.visa_pushButton_send.pressed.connect(self.visa_send)
+
+
+	def visa_VISAresource_changed(self):
+		self.visa.setVISAresource(self.cfg.get('VISA/VISAresource'))
+
+	def visa_connect(self):
+		if  self.visa.is_connected() == True:
+			return(True)
+		else:
+			self.mw.visa_label_status.setText('Trying to connect...')
+			self.mw.visa_label_status.setStyleSheet('')
+			ret, retStr = self.visa.connect()
+			self.mw.visa_plainTextEdit_output.appendPlainText(retStr)
+			if ret == False:
+				self.mw.visa_label_status.setText('FAILED to connect')
+				self.mw.visa_label_status.setStyleSheet('color:red')
+				return(False)
+			else:
+				self.mw.visa_label_status.setText('Connected')
+				self.mw.visa_label_status.setStyleSheet('color:green')
+				return(True)
+
+	def visa_disconnect(self):
+		if  self.visa.is_connected() == True:
+			self.mw.visa_label_status.setText('Disconnecting...')
+			self.mw.visa_label_status.setStyleSheet(None)
+			ret = self.visa.disconnect()
+			if ret == False:
+				self.mw.visa_label_status.setText('Disconnected, FAILED to nice disconnect')
+				self.mw.visa_label_status.setStyleSheet('color:red')
+			else:
+				self.mw.visa_label_status.setText('Disconnected ')
+				self.mw.visa_label_status.setStyleSheet(None)
+		else:
+			self.mw.visa_label_status.setText('Disconnected ')
+			self.mw.visa_label_status.setStyleSheet(None)
+
+	def visa_send(self):
+		if  self.visa.is_connected() == True:
+			command = self.visa_lineEdit_SCPIcommand.text()
+			self.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
+			retCode, retStr = self.visa.send(command)
+			self.visa_plainTextEdit_output.appendPlainText(retStr)
+		else:
+			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+
+#endregion --------------------------------------------------------
+
+
+#region Tab_help -----------------------------------------------------
+class Tab_help(Ui_MainWindow):
+	def __init__(self, mw: Ui_MainWindow):
+		f = io.open("help/help.html", mode="r", encoding="utf-8")
+		#f.open(QIODevice.ReadOnly | QIODevice.Text)
+		#f.open(QFile.ReadOnly | QFile.Text)
+		#f.open()
+		#istream = QTextStream(f)
+		str = ''
+		for x in f:
+			str += x
+		mw.help_textEdit.setHtml(str)
+#endregion 
 
 
 def plotWidget2qimage(plot: pyqtgraph.PlotWidget):
@@ -1304,17 +1461,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.cfg = QSettingsManager()
 
-		#region CONFIG ----------------------------
-		self.config_plainTextEdit.setPlaceholderText('Config not read yet...')
-		self.cfg.updated.connect(self.config_show)
 		self.cfg.set_defaults(CONFIG_DEFAULT)
-		self.config_show()
-		self.config_pushButton_ClearToDefault.clicked.connect(self.config_set_to_default)
+		self.tab_Config = Tab_Config(self, self.cfg)
 
-		self.config_comboBox_GUItheme.addItems(('auto', 'dark', 'light'))
-		self.cfg.add_handler('GUI/theme', self.config_comboBox_GUItheme)
-		self.config_GUItheme_change()
-		self.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_change)
+		self.tabWidget.setCurrentIndex(self.cfg.get('GUI/lastTabIndex'))
+
+		#region CONFIG ----------------------------
 
 		#self.config_init()
 		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
@@ -1337,22 +1489,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
       # https://www.geeksforgeeks.org/pyqtgraph-symbols/
 		#endregion
 
-		#region VISA ------------------------------------------------------------------------
 		self.visa = VisaDevice(
 			VISAresource=self.cfg.get('VISA/VISAresource')
 			, demo = self.cfg.get('VISA/demo'))
-		self.cfg.add_handler('VISA/VISAresource', self.visa_lineEdit_VISAresource)
-		self.visa_lineEdit_VISAresource.textChanged.connect(self.visa_VISAresource_changed)
-		self.visa_pushButton_connect.pressed.connect(self.visa_connect)
-		self.visa_pushButton_disconnect.pressed.connect(self.visa_disconnect)
-		self.cfg.add_handler('VISA/SCPIcommand', self.visa_lineEdit_SCPIcommand)
-		self.visa_lineEdit_SCPIcommand.returnPressed.connect(self.visa_send)
-		self.visa_pushButton_send.pressed.connect(self.visa_send)
-		#endregion
-
-
-		# CONSOLE -------------------------------------------------------------------
-
+		self.tab_visa = Tab_VISA(self, self.cfg, self.visa)
 
 		#region WATTMETER -----------------------------------------------------------------
 		self.wattmeter = Wattmeter(
@@ -1566,123 +1706,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('comments/text', self.comments_plainTextEdit)
 
 
-		#region HELP -----------------------------------------------------
-		f = io.open("help/help.html", mode="r", encoding="utf-8")
-		#f.open(QIODevice.ReadOnly | QIODevice.Text)
-		#f.open(QFile.ReadOnly | QFile.Text)
-		#f.open()
-		#istream = QTextStream(f)
-		str = ''
-		for x in f:
-			str += x
-		self.help_textEdit.setHtml(str)
-		#endregion 
+		tab_help = Tab_help(self)
 
 
-
-	#region CONFIG ------------------------------------------------
-	def config_show(self):
-		self.config_plainTextEdit.clear()
-		d = self.cfg.as_dict()
-		for key in d:
-			self.config_plainTextEdit.appendPlainText(str(key)+': \t'+ str(d[key]))
-
-		self.config_plainTextEdit.appendPlainText('')
-		self.config_plainTextEdit.appendPlainText('DEFAULT config: -----------------------')
-		d = CONFIG_DEFAULT
-		for key in d:
-			self.config_plainTextEdit.appendPlainText(str(key)+': \t'+ str(d[key]))
-
-	def config_set_to_default(self):
-		for key in CONFIG_DEFAULT:
-			self.cfg.set(key, CONFIG_DEFAULT[key])
-
-	def config_GUItheme_change(self):
-		theme = self.cfg.get('GUI/theme')
-		try:
-			qdarktheme.setup_theme(theme)
-		except:
-			None
-		try:
-			if theme == 'auto':
-				if darkdetect.isDark():
-					theme = 'dark'
-				else:
-					theme = 'light'
-			if theme == 'light':
-				self.wattmeter_plotWidget1.setBackground("w")
-				self.wattmeter_plotWidget2.setBackground("w")
-				self.wattmeter_plotWidget3.setBackground("w")
-				self.wattmeter_plotWidget4.setBackground("w")
-				self.load_plotWidget1.setBackground("w")
-				self.load_plotWidget2.setBackground("w")
-				self.load_plotWidget3.setBackground("w")
-				self.load_plotWidget4.setBackground("w")
-				self.testACDCadapteru_plotWidget1.setBackground("w")
-				self.testACDCadapteru_plotWidget2.setBackground("w")
-				self.testACDCadapteru_plotWidget3.setBackground("w")
-			else:
-				self.wattmeter_plotWidget1.setBackground("k")
-				self.wattmeter_plotWidget2.setBackground("k")
-				self.wattmeter_plotWidget3.setBackground("k")
-				self.wattmeter_plotWidget4.setBackground("k")
-				self.load_plotWidget1.setBackground("k")
-				self.load_plotWidget2.setBackground("k")
-				self.load_plotWidget3.setBackground("k")
-				self.load_plotWidget4.setBackground("k")
-				self.testACDCadapteru_plotWidget1.setBackground("k")
-				self.testACDCadapteru_plotWidget2.setBackground("k")
-				self.testACDCadapteru_plotWidget3.setBackground("k")
-		except:
-			None
-	#endregion
-
-
-	#region VISA ---------------------------------------------------------
-	def visa_VISAresource_changed(self):
-		self.visa.setVISAresource(self.cfg.get('VISA/VISAresource'))
-
-	def visa_connect(self):
-		if  self.visa.is_connected() == True:
-			return(True)
-		else:
-			self.visa_label_status.setText('Trying to connect...')
-			self.visa_label_status.setStyleSheet('')
-			ret, retStr = self.visa.connect()
-			self.visa_plainTextEdit_output.appendPlainText(retStr)
-			if ret == False:
-				self.visa_label_status.setText('FAILED to connect')
-				self.visa_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.visa_label_status.setText('Connected')
-				self.visa_label_status.setStyleSheet('color:green')
-				return(True)
-
-	def visa_disconnect(self):
-		if  self.visa.is_connected() == True:
-			self.visa_label_status.setText('Disconnecting...')
-			self.visa_label_status.setStyleSheet(None)
-			ret = self.visa.disconnect()
-			if ret == False:
-				self.visa_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.visa_label_status.setStyleSheet('color:red')
-			else:
-				self.visa_label_status.setText('Disconnected ')
-				self.visa_label_status.setStyleSheet(None)
-		else:
-			self.visa_label_status.setText('Disconnected ')
-			self.visa_label_status.setStyleSheet(None)
-
-	def visa_send(self):
-		if  self.visa.is_connected() == True:
-			command = self.visa_lineEdit_SCPIcommand.text()
-			self.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
-			retCode, retStr = self.visa.send(command)
-			self.visa_plainTextEdit_output.appendPlainText(retStr)
-		else:
-			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
-	#endregion VISA
+	def closeEvent(self, event: QCloseEvent):
+		if verbose > 100:
+			print('GUI closeEvent...')
+		self.cfg.set('GUI/lastTabIndex', self.tabWidget.currentIndex())
 
 
 	#region classes for wattmeter ------------------------------
@@ -2055,8 +2085,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.load_mereni_finished = True
 
-
-	#region
 	def load_mereni_export(self):
 		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot zátěže</H1><BR></BR>')
 		CSVDELIM = self.cfg.get('export/CSVDELIM')
