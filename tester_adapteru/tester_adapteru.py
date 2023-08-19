@@ -145,7 +145,6 @@ CONFIG_DEFAULT = {
 					'load/measure_V': True,
 					'load/measure_W': True,
 					'load/measure_Wh': False,
-					'load/measure_X': False,
 					'testACDCadapteru/Po':  1, #W
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
@@ -1134,6 +1133,127 @@ class TestACDCadapteru():
 
 		#endregion Měření VA charakteristiky při přetížení - VA charakteristika a časový průběh U a I
 
+		#region test zkrat ---------------------------------------------------
+		if cfg.get('testACDCadapteru/test') in {'All', 'Short'}: 
+			exportTextEdit.insertHtml('<H2>Měření charakteristik při <B>zkratu (Short)</B></H2><BR></BR>')
+			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon 60A TODO nebo zkrat a měří se časový průběh I')
+
+			load.setStateOn(False)
+			load.setFunction('CC')
+			load.setPower(60) #maximal current of Rigol DL3031
+			QtTest.QTest.qWait(100)
+			load.setStateOn(True)
+
+			dataLoadA = []
+			dataLoadAtime = []
+			dataLoadV = []
+			dataLoadVtime = []
+
+			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+
+			if load.demo == True:
+				tstop = time.time() + 10 # 10 seconds
+			else:
+				tstop = time.time() + 60 # 1 minute
+			
+			while time.time() < tstop:
+				if wmeter.demo == True:
+					QtTest.QTest.qWait(1)
+				else:
+					QtTest.QTest.qWait(100)
+				
+				loadA = load.measure('A')
+				if loadA > 50:
+					load.setStateOn(False)
+					exportTextEdit.insertHtml('<H2>Test zkratu přerušen - I je větší než 50 A - hrozí poškození zátěže.</H2><BR></BR>')
+					statusLabel.setText('Short test stopped - current over 50A')
+					break
+
+				dataLoadA.append()
+				dataLoadAtime.append(time.time())
+				dataLoadV.append(load.measure('V'))
+				dataLoadVtime.append(time.time())
+
+				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+
+
+				if self.check_exit(statusLabel): #stop the test and exit
+					exportTextEdit.insertHtml('<H2>Test zkratu přerušen uživatelem</H2><BR></BR>')
+					statusLabel.setText('Short test stopped - current over 50A')
+					load.setStateOn(False)
+					return()
+
+
+
+			exportTextEdit.insertHtml('<P>Průběh proudu při zkratu' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh napětí při zkratu' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+		#endregion test zkrat
+
+
+		#region zátěž 1 hodina max.  ---------------------------------------------------
+		if cfg.get('testACDCadapteru/test') in {'All', '1 hour load'}: 
+			exportTextEdit.insertHtml('<H2>Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
+			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon adaptéru a měří se časový průběh I, U a P')
+
+			load.setStateOn(False)
+			load.setFunction('CP')
+			load.setPower(cfg.get('testACDCadapteru/Po'))
+			QtTest.QTest.qWait(100)
+			load.setStateOn(True)
+
+			dataLoadA = []
+			dataLoadAtime = []
+			dataLoadV = []
+			dataLoadVtime = []
+
+			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
+			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+
+			if load.demo == True:
+				tstop = time.time() + 60*10 # 10 seconds
+			else:
+				tstop = time.time() + 60*60 # 1 hour
+			
+			while time.time() < tstop:
+				
+				dataLoadA.append(load.measure('A'))
+				dataLoadAtime.append(time.time())
+				dataLoadV.append(load.measure('V'))
+				dataLoadVtime.append(time.time())
+
+				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+
+				#if self.check_exit(statusLabel): #stop the test and exit
+				#	exportTextEdit.insertHtml('<H2>Test zkratu přerušen uživatelem</H2><BR></BR>')
+				#	statusLabel.setText('Short test stopped - current over 50A')
+				#	load.setStateOn(False)
+				#	return()
+
+			statusLabel.setText('Test 1 hour max. finished')
+
+
+			exportTextEdit.insertHtml('<P>Průběh proudu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh napětí při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+		#endregion 
 
 
 		#finished with no errors
@@ -1251,6 +1371,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_pushButton_start.pressed.connect(self.wattmeter_mereni_start)
 		self.wattmeter_pushButton_stop.pressed.connect(self.wattmeter_mereni_stop)
 		self.cfg.add_handler('wattmeter/measure_interval', self.wattmeter_spinBox_measure_interval)
+		#self.cfg.add_handler('wattmeter/autorange', self.wattmeter_checkBox_autorange)
 		self.wattmeter_pushButton_export.pressed.connect(self.wattmeter_mereni_export)
 		self.wattmeter_pushButton_clearGraphs.pressed.connect(self.wattmeter_mereni_clearGraphs)
 
@@ -1277,6 +1398,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget1.setCursor(self.cursor)
 		self.wattmeter_plotWidget1_dataLine =  self.wattmeter_plotWidget1.plot([], [],
 			'Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		#line2 contains just 0 to force autorange go from 0
+		self.wattmeter_plotWidget1_dataLine2 = self.wattmeter_plotWidget1.plot([], [], symbol='+', symbolSize = 0)
+
 		# plotWidget2 / A
 		self.wattmeter_plotWidget2.setMinimumSize(plotMinW, plotMinH)
 		self.wattmeter_plotWidget2.showGrid(x=True, y=True)
@@ -1286,6 +1410,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget2.setCursor(self.cursor)
 		self.wattmeter_plotWidget2_dataLine =  self.wattmeter_plotWidget2.plot([], [],
 			'Current/I [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		self.wattmeter_plotWidget2_dataLine2 = self.wattmeter_plotWidget2.plot([], [], symbol='+', symbolSize = 0)
+
 		# plotWidget3 / U
 		self.wattmeter_plotWidget3.setMinimumSize(plotMinW, plotMinH)
 		self.wattmeter_plotWidget3.showGrid(x=True, y=True)
@@ -1295,6 +1421,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget3.setCursor(self.cursor)
 		self.wattmeter_plotWidget3_dataLine =  self.wattmeter_plotWidget3.plot([], [],
 			'Voltage/U [V]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		self.wattmeter_plotWidget3_dataLine2 = self.wattmeter_plotWidget3.plot([], [], symbol='+', symbolSize = 0)
+		
 		# plotWidget4 / MATH
 		self.wattmeter_plotWidget4.setMinimumSize(plotMinW, plotMinH)
 		self.wattmeter_plotWidget4.showGrid(x=True, y=True)
@@ -1304,7 +1432,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget4.setCursor(self.cursor)
 		self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-		#endregion
+		self.wattmeter_plotWidget4_dataLine2 = self.wattmeter_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
+#endregion
 
 		#region LOAD -----------------------------------------------------
 		self.load = Load(
@@ -1331,7 +1460,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		# LOAD Measure
 		self.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
 		self.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
-		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
+		self.load_pushButton_export.pressed.connect(self.load_mereni_export)
+
 		self.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
 		self.cfg.add_handler('load/measure_interval', self.load_spinBox_measure_interval)
 		self.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
@@ -1348,9 +1478,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.add_handler('load/measure_Wh', self.load_checkBox_measure_Wh)
 		self.load_checkBox_measure_Wh.stateChanged.connect(self.load_checkBox_measure_Wh_changed)
 		self.load_checkBox_measure_Wh_changed() # set initial state from config
-		self.cfg.add_handler('load/measure_X', self.load_checkBox_measure_X)
-		self.load_checkBox_measure_X.stateChanged.connect(self.load_checkBox_measure_X_changed)
-		self.load_checkBox_measure_X_changed() # set initial state from config
 
 		self.load_mereni_finished = True # semaphor for measuring method
 
@@ -1367,6 +1494,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget1.setCursor(self.cursor)
 		self.load_plotWidget1_dataLine =  self.load_plotWidget1.plot([], [],
 			'Current [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
+		self.load_plotWidget1_dataLine2 = self.load_plotWidget1.plot([], [], symbol='+', symbolSize = 0)
 
 		self.load_plotWidget2.setMinimumSize(300, 200)
 		self.load_plotWidget2.showGrid(x=True, y=True)
@@ -1376,6 +1504,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget2.setLabel('left', 'Voltage/U [V]')
 		self.load_plotWidget2.setCursor(self.cursor)
+		self.load_plotWidget2_dataLine2 = self.load_plotWidget2.plot([], [], symbol='+', symbolSize = 0)
 		#self.load_plotWidget2.autoRange(item)
 		#self.load_plotWidget2.enableAutoRange(x=True, y=True)
 		#self.load_plotWidget2.setAutoVisible(x=True, y=True) # Set whether automatic range uses only visible data when determining the range to show.
@@ -1389,6 +1518,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189))
 		self.load_plotWidget3.setLabel('left', 'Power/P [W]')
 		self.load_plotWidget3.setCursor(self.cursor)
+		self.load_plotWidget3_dataLine2 = self.load_plotWidget3.plot([], [], symbol='+', symbolSize = 0)
 
 		self.load_plotWidget4.setMinimumSize(300, 200)
 		self.load_plotWidget4.showGrid(x=True, y=True)
@@ -1398,15 +1528,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.load_plotWidget4.setLabel('left', 'Capacity [Wh]')
 		self.load_plotWidget4.setCursor(self.cursor)
+		self.load_plotWidget4_dataLine2 = self.load_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
 
-		self.load_plotWidget5.setMinimumSize(300, 200)
-		self.load_plotWidget5.showGrid(x=True, y=True)
-		daxis5 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-		self.load_plotWidget5.setAxisItems({"bottom": daxis5})
-		self.load_plotWidget5_dataLine =  self.load_plotWidget5.plot([], [],
-			symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-		self.load_plotWidget5.setLabel('left', '?? [X]')
-		self.load_plotWidget5.setCursor(self.cursor)
 		#endregion
 
 
@@ -1416,7 +1539,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
 		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
-		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', '1 hour load'])
+		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', 'Short', '1 hour load'])
 		self.cfg.add_handler('testACDCadapteru/test', self.testACDCadapteru_comboBox_test)
 		#endregion
 
@@ -1435,6 +1558,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.export_textEdit1.setPlaceholderText('nothing measured yet...')
 		self.export_textEdit1.clear()
 		self.export_pushButton_clear.pressed.connect(self.export_textEdit1.clear)
+		self.export_pushButton_save_as_text.pressed.connect(self.export_save_as_text)
 		self.export_pushButton_save_as_pdf.pressed.connect(self.export_save_as_pdf)
 		#endregion
 
@@ -1494,7 +1618,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_plotWidget2.setBackground("w")
 				self.load_plotWidget3.setBackground("w")
 				self.load_plotWidget4.setBackground("w")
-				self.load_plotWidget5.setBackground("w")
 				self.testACDCadapteru_plotWidget1.setBackground("w")
 				self.testACDCadapteru_plotWidget2.setBackground("w")
 				self.testACDCadapteru_plotWidget3.setBackground("w")
@@ -1507,7 +1630,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 				self.load_plotWidget2.setBackground("k")
 				self.load_plotWidget3.setBackground("k")
 				self.load_plotWidget4.setBackground("k")
-				self.load_plotWidget5.setBackground("k")
 				self.testACDCadapteru_plotWidget1.setBackground("k")
 				self.testACDCadapteru_plotWidget2.setBackground("k")
 				self.testACDCadapteru_plotWidget3.setBackground("k")
@@ -1640,6 +1762,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.label_test_zatizeni.setText('Measuring')
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
+		#self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
+
 		# schedule Measuring
 		self.timer_wattmeter_mereni = QtCore.QTimer()
 		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
@@ -1660,38 +1784,94 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		
 		if True: #self.cfg.get('wattmeter/measure_'):
 			W = self.wattmeter.measure('W')
-			if W is float:
+			if type(W) is float or int:
 				data_wattmeter_W.append(W)
 				data_wattmeter_Wtime.append(time.time())
 				self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
+				if len(data_wattmeter_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+					self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
+
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			A = self.wattmeter.measure('A')
-			if A is float:
+			if type(A) is float or int:
 				data_wattmeter_A.append(A)
 				data_wattmeter_Atime.append(time.time())
 				self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
+				if len(data_wattmeter_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+					self.wattmeter_plotWidget2_dataLine2.setData([time.time()], [0])
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			V = self.wattmeter.measure('V')
-			if V is float:
+			if type(V) is float or int:
 				data_wattmeter_V.append(V)
 				data_wattmeter_Vtime.append(time.time())
 				self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
+				if len(data_wattmeter_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+					self.wattmeter_plotWidget3_dataLine2.setData([time.time()], [0])
 
 		if True: #self.cfg.get('wattmeter/measure_'):
 			MATH = self.wattmeter.measure('MATH')
-			if type(MATH) is float:
+			if type(MATH) is float or int:
 				data_wattmeter_MATH.append(MATH)
 				data_wattmeter_MATHtime.append(time.time())
 				self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
+				if len(data_wattmeter_MATH) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+					self.wattmeter_plotWidget4_dataLine2.setData([time.time()], [0])
 
 		self.wattmeter_mereni_finished = True
 
-	def wattmeter_mereni_export_pressed(self):
-		# TODO vylejt vsechno z dat do exports
-		#foreach i in data_wattmeter_A
-		None
+	#region wattmeter_mereni_export
+	def wattmeter_mereni_export(self):
+		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot wattmetrem</H1><BR></BR>')
+		CSVDELIM = self.cfg.get('export/CSVDELIM')
+		if self.cfg.get('wattmeter/measure_W'):
+			self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
+			for i in range(len(data_wattmeter_W)):
+				self.export_textEdit1.append(
+					str(data_wattmeter_Wtime[i])+CSVDELIM+
+					str(data_wattmeter_W[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+
+		if self.cfg.get('wattmeter/measure_A'):
+			self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
+			for i in range(len(data_wattmeter_A)):
+				self.export_textEdit1.append(
+					str(data_wattmeter_Atime[i])+CSVDELIM+
+					str(data_wattmeter_A[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+		if self.cfg.get('wattmeter/measure_V'):
+			self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
+			for i in range(len(data_wattmeter_V)):
+				self.export_textEdit1.append(
+					str(data_wattmeter_Vtime[i])+CSVDELIM+
+					str(data_wattmeter_V[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+		if self.cfg.get('wattmeter/measure_MATH'):
+			data_wattmeter_MATH
+			data_wattmeter_MATHtime
+			self.export_textEdit1.insertHtml('<H2>MATH - Energie [W]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}MATH [W]')
+			for i in range(len(data_wattmeter_MATH)):
+				self.export_textEdit1.append(
+					str(data_wattmeter_MATHtime[i])+CSVDELIM+
+					str(data_wattmeter_MATH[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+	#endregion wattmeter_mereni_export
 
 
 	def wattmeter_mereni_clearGraphs(self):
@@ -1813,13 +1993,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		else:
 			self.load_plotWidget4.hide()
 
-	def load_checkBox_measure_X_changed(self):
-		if self.cfg.get('load/measure_X'):
-			self.load_plotWidget5.show()
-		else:
-			self.load_plotWidget5.hide()
-
-
 	def load_mereni_start(self):
 		if  self.load.is_connected() == False:
 			self.load_connect()
@@ -1850,6 +2023,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadA.append(loadA)
 			data_loadAtime.append(time.time())
 			self.load_plotWidget1_dataLine.setData(data_loadAtime, data_loadA)
+			if len(data_loadA) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+				self.load_plotWidget1_dataLine2.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_V'):
 			global data_loadV
@@ -1857,6 +2032,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadV.append(loadV)
 			data_loadVtime.append(time.time())
 			self.load_plotWidget2_dataLine.setData(data_loadVtime, data_loadV)
+			if len(data_loadV) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+				self.load_plotWidget2_dataLine2.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_W'):
 			global data_loadW
@@ -1864,6 +2041,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadW.append(loadW)
 			data_loadWtime.append(time.time())
 			self.load_plotWidget3_dataLine.setData(data_loadWtime, data_loadW)
+			if len(data_loadW) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+				self.load_plotWidget3_dataLine2.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_Wh'):
 			global data_loadWh
@@ -1871,17 +2050,60 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			data_loadWh.append(loadWh)
 			data_loadWhtime.append(time.time())
 			self.load_plotWidget4_dataLine.setData(data_loadWhtime, data_loadWh)
+			if len(data_loadWh) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+				self.load_plotWidget4_dataLine2.setData([time.time()], [0])
 
-
-		#Update exports
-		#self.export_textEdit1.append(
-		#	str(tt)+CSVDELIM+
-		#	str(loadA)+CSVDELIM+
-		#	str(loadV)+CSVDELIM+
-		#	str(loadW)
-		#	)
 		self.load_mereni_finished = True
 
+
+	#region
+	def load_mereni_export(self):
+		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot zátěže</H1><BR></BR>')
+		CSVDELIM = self.cfg.get('export/CSVDELIM')
+
+		if self.cfg.get('load/measure_A'):
+			self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
+			for i in range(len(data_loadA)):
+				self.export_textEdit1.append(
+					str(data_loadAtime[i])+CSVDELIM+
+					str(data_loadA[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+		if self.cfg.get('load/measure_V'):
+			self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
+			for i in range(len(data_loadV)):
+				self.export_textEdit1.append(
+					str(data_loadVtime[i])+CSVDELIM+
+					str(data_loadV[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+		if self.cfg.get('load/measure_W'):
+			self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
+			for i in range(len(data_loadW)):
+				self.export_textEdit1.append(
+					str(data_loadWtime[i])+CSVDELIM+
+					str(data_loadW[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
+
+		if self.cfg.get('load/measure_Wh'):
+			self.export_textEdit1.insertHtml('<H2>Energie [Wh]</H2><BR></BR>')
+			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM} [Wh]')
+			for i in range(len(data_loadWh)):
+				self.export_textEdit1.append(
+					str(data_loadWhtime[i])+CSVDELIM+
+					str(data_loadWh[i])
+				)
+			self.export_textEdit1.append('')
+			self.export_textEdit1.insertHtml('<BR></BR>')
 
 	def load_mereni_clearGraphs(self):
 		global data_loadA, data_loadAtime
@@ -1901,7 +2123,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_plotWidget2_dataLine.setData([], [])
 		self.load_plotWidget3_dataLine.setData([], [])
 		self.load_plotWidget4_dataLine.setData([], [])
-		self.load_plotWidget5_dataLine.setData([], [])
 	#endregion
 
 
@@ -2074,7 +2295,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			self.export_textEdit1.append('')
 	#endregion
 
-	#region export
+
+	#region export text
+	def export_save_as_text(self):
+		dlg = QFileDialog()
+		fileName, fileType = dlg.getSaveFileName()
+		print(fileName)
+		if fileName == '':
+			return
+
+		with open(fileName, 'w') as yourFile:
+			yourFile.write(str(self.export_textEdit1.toPlainText()))
+
+	#endregion
+
+	#region export pdf
 	def export_save_as_pdf(self):
 		dlg = QFileDialog()
 		#dlg.

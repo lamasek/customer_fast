@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>980</width>
-    <height>611</height>
+    <width>776</width>
+    <height>475</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -278,9 +278,16 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox">
+           <widget class="QCheckBox" name="wattmeter_checkBox_autorange">
             <property name="text">
-             <string>X A Range</string>
+             <string>Auto Range</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_8">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
            </widget>
           </item>
@@ -331,8 +338,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>956</width>
-             <height>453</height>
+             <width>758</width>
+             <height>343</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -665,7 +672,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="load_pushButton_export">
               <property name="text">
                <string>Export</string>
               </property>
@@ -718,42 +725,35 @@
             <item>
              <widget class="QLabel" name="load_label_Measure">
               <property name="text">
-               <string>Measure and show:</string>
+               <string>Measure:</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_A">
               <property name="text">
-               <string>I [A]</string>
+               <string>A</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_V">
               <property name="text">
-               <string>U [V]</string>
+               <string>V</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_W">
               <property name="text">
-               <string>P [W]</string>
+               <string>W</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_Wh">
               <property name="text">
-               <string>Cap. [Wh]</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="load_checkBox_measure_X">
-              <property name="text">
-               <string>X</string>
+               <string>Wh</string>
               </property>
              </widget>
             </item>
@@ -771,8 +771,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>942</width>
-             <height>1042</height>
+             <width>748</width>
+             <height>1028</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -933,8 +933,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>956</width>
-             <height>453</height>
+             <width>758</width>
+             <height>342</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1207,8 +1207,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>980</width>
-     <height>21</height>
+     <width>776</width>
+     <height>17</height>
     </rect>
    </property>
   </widget>
@@ -1231,7 +1231,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>
