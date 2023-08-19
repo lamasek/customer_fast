@@ -278,20 +278,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="wattmeter_checkBox_autorange">
-            <property name="text">
-             <string>Auto Range</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_8">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QLabel" name="label_7">
             <property name="text">
              <string>Show:</string>
@@ -770,9 +756,9 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
+             <y>-518</y>
              <width>748</width>
-             <height>1028</height>
+             <height>824</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -808,16 +794,6 @@
             </item>
             <item>
              <widget class="PlotWidget" name="load_plotWidget4" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>300</width>
-                <height>200</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="PlotWidget" name="load_plotWidget5" native="true">
               <property name="minimumSize">
                <size>
                 <width>300</width>
