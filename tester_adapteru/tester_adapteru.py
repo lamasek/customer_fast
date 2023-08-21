@@ -736,7 +736,7 @@ def textEditAppendImg(te: QtWidgets.QTextEdit, img: QImage):
 	te.insertHtml('<BR></BR>')
 	te.insertHtml('<BR></BR>')
 
-def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, *kwargs):
+def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, addLine2Zero = True, *kwargs):
 	penColor = color=(205, 205, 205)
 	pen = pyqtgraph.mkPen(penColor, width=1)
 	cursor = Qt.CursorShape.CrossCursor
@@ -752,6 +752,11 @@ def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, *kwargs):
 	#plot.setCursor(self.cursor)
 	plot_dataLine =  plot.plot([], [],
 		labelY, symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=pen)
+	
+	if addLine2Zero:
+		plot_dataLine2 = plot.plot([], [], symbol='+', symbolSize = 0)
+		plot_dataLine2.setData([time.time()], [0])
+
 	return(plot_dataLine)
 
 def data2plot2qimg_old(dataX, dataY, width = 600, height=400, 
@@ -908,9 +913,9 @@ class TestACDCadapteru():
 
 
 
-		plot1.hide()
-		plot2.hide()
-		plot3.hide()
+		#plot1.hide()
+		#plot2.hide()
+		#plot3.hide()
 
 		#region test_Pstb -------------------------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', 'Pstb'}: 
@@ -1361,6 +1366,7 @@ class TestACDCadapteru():
 		if cfg.get('testACDCadapteru/test') in {'All', '1 hour load'}: 
 			exportTextEdit.insertHtml('<H2>Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
 			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon adaptéru a měří se časový průběh I, U a P')
+			statusLabel.setText('Test 1 hour max. started')
 
 			load.setStateOn(False)
 			load.setFunction('CP')
@@ -1372,32 +1378,51 @@ class TestACDCadapteru():
 			dataLoadAtime = []
 			dataLoadV = []
 			dataLoadVtime = []
+			dataLoadW = []
+			dataLoadWtime = []
 
 			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
 			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+			plot3_dataLine = plot_prepare(cfg, plot3, 'Load measured P [W]')
 
 			if load.demo == True:
 				tstop = time.time() + 60*10 # 10 seconds
 			else:
 				tstop = time.time() + 60*60 # 1 hour
 			
+			tlabel = 0
 			while time.time() < tstop:
 				
 				dataLoadA.append(load.measure('A'))
 				dataLoadAtime.append(time.time())
 				dataLoadV.append(load.measure('V'))
 				dataLoadVtime.append(time.time())
+				dataLoadW.append(load.measure('W'))
+				dataLoadWtime.append(time.time())
 
 				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+				plot3_dataLine.setData(dataLoadWtime, dataLoadW)
 
-				#if self.check_exit(statusLabel): #stop the test and exit
-				#	exportTextEdit.insertHtml('<H2>Test zkratu přerušen uživatelem</H2><BR></BR>')
-				#	statusLabel.setText('Short test stopped - current over 50A')
-				#	load.setStateOn(False)
-				#	return()
+				if wmeter.demo == True:
+					QtTest.QTest.qWait(1)
+				else:
+					QtTest.QTest.qWait(100)
 
-			statusLabel.setText('Test 1 hour max. finished')
+				if tlabel > 8: #each 9 rounds update label
+					tleft = int(tstop-time.time())
+					statusLabel.setText(f'Test 1 hour load: {tleft}')
+					tlabel = 0
+				tlabel += 1
+
+				if self.check_exit(statusLabel): #stop the test and exit
+					exportTextEdit.insertHtml('<H2>Test Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
+					statusLabel.setText('1 hour load test stopped by user')
+					load.setStateOn(False)
+					return()
+
+			load.setStateOn(False)
+			statusLabel.setText('Test 1 hour load: finished')
 
 
 			exportTextEdit.insertHtml('<P>Průběh proudu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
@@ -1407,6 +1432,11 @@ class TestACDCadapteru():
 
 			exportTextEdit.insertHtml('<P>Průběh napětí při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh výkonu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Power [W]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
@@ -1442,6 +1472,7 @@ class TestACDCadapteru():
 # pyuic6 -o MainWindow.py mainwindow.ui
 # or if something went wrong with PATH, .... you can use:
 # python -m PyQt6.uic.pyuic -o MainWindow.py -x mainwindow.ui
+
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
