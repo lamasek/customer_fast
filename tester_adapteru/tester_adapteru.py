@@ -1365,7 +1365,8 @@ class TestACDCadapteru():
 		#region zátěž 1 hodina max.  ---------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', '1 hour load'}: 
 			exportTextEdit.insertHtml('<H2>Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
-			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon adaptéru a měří se časový průběh I, U a P')
+			exportTextEdit.insertHtml('<P>Na zátěži se nastaví maximální výkon adaptéru a měří se časový průběh I, U a P po dobu 1 hodina<BR></BR>')
+			exportTextEdit.insertHtml('<P>Pokud je vybrána volba Wait on last, měření po 1 hodině pokračuje až do zastavení uživatelem nebo maximálně dalších 8 hodin </P><BR></BR>')
 			statusLabel.setText('Test 1 hour max. started')
 
 			load.setStateOn(False)
@@ -1386,7 +1387,7 @@ class TestACDCadapteru():
 			plot3_dataLine = plot_prepare(cfg, plot3, 'Load measured P [W]')
 
 			if load.demo == True:
-				tstop = time.time() + 60*10 # 10 seconds
+				tstop = time.time() + 10 # 10 seconds
 			else:
 				tstop = time.time() + 60*60 # 1 hour
 			
