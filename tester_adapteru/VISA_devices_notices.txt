@@ -1,7 +1,82 @@
 
 
 
-Rigol DL3031A
+
+obecně - oddělovač desetinného místa je na zařízení .
+v OS je to dle nastavení OS/locale
+	 - v ČR je to 	,
+	- v US je to 	.
+nicmene v pythonu to neresim a je to OK
+
+
+
+YOKOGAWA WT310E ----------------------------------------------------------------
+
+pokud chceme cist hodnoty tak s pyvisa a pyvisa-py we have to switch to ASCII, otherwise library is crashing for non ASCII character
+:NUM:FORM ASCII
+:NUM:FORM?
+
+casto vraci hodnotu NAN - odhad je ze je to kdyz ma autorange a meni range, coz je nekdy velice casto
+
+
+<Decimal> indicates a value expressed as a decimal number, as shown in the table below. Decimal values
+are written in the NR form as specified in ANSI X3.42-1975.
+    Symbol   Meaning                Example
+    <NR1>    Integer                125 -1 +1000
+    <NR2>    Fixed-point number     125.0 -.90 +001.
+    <NR3>    Floating-point number  125.0E+0 -9E-1 +.1E4
+    <NRf>    Any of the forms <NR1> to <NR3>
+• This instrument can receive decimal values that are sent from the controller in any of the forms <NR1>
+to <NR3>. This is expressed as <NRf>.
+• This instrument returns a response to the controller in one of the forms from <NR1> to <NR3> depending on the query. The same form is
+
+*IDN?
+:MEAS? is only measurement settings
+
+
+COMMunicate:HEADer?
+COMMunicate:HEADer 0
+    #vypne headery v odpovedich
+
+:integ?
+kontrolovat ze to je spravne na NORM;0,10,0
+
+:math?
+    by melo byt: AVW1
+
+:INTEGrate?
+:INTEGrate:MODE
+:INTEGrate:TIMer
+:INTEGrate:STARt
+:INTEGrate:STOP
+:INTEGrate:RESet
+TODO - jak zjistit ze integrate uz skoncil
+
+
+during integration Start (by button) error 846 can occure
+    "Error(Code:846): Attempted to start integration while measurement of peak overflow was in progress"
+    https://tmi.yokogawa.com/us/library/resources/faqs/errorcode846-occurs-when-attempting-to-start-integration-on-the-wt3000/
+    The following error code will appear if Peak Over has occurred and you attempt to start integration. The WT3000 has two types of indicators,
+    Over Range and Peak Over, which are used to indicate when a measurement value has exceeded the limit range.
+
+    reseni - u adapteru ktere merime se to deje jen ojedinele, staci mackat tlacitko dokud to nenastartuje
+
+
+seznam co jde odecitat:
+:NUMeric?
+:NUM:FORM ASC;NUM 10;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;:NUM:LIST:NUM 2;ORD 50;SEL ALL;ITEM1 U,1;ITEM2 I,1;:NUM:HOLD 0
+
+
+:NUM:VAL? 1
+
+pak uz odecitame namerene hodnoty
+:NUMeric:VALUE?
+NAN,NAN,236.42E+00,0.0000E-03,-0.0000E+00,0.0000E+00,0.0000E+00,INF,INF,50.016E+00
+
+
+
+
+Rigol DL3031A -------------------------------------------------------
 *IDN?
 "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
 
@@ -19,34 +94,34 @@ Rigol DL3031A
 
 :SOURCE:FUNCTION CURRent
 :SOURCE:CURRent:LEVEL:IMMEDIATE <A>
+:SOUR:CURR:LEVEL?
+
+Range 6/60A se nastavuje jako:
+:SOUR:CURR:RANGE?
+:SOUR:CURR:RANG 6
+:SOUR:CURR:RANG 60
 
 
 :[SOURce]:FUNCtion:MODE {FIXed|LIST|WAVe|BATTery}
 :SOUR:FUNC:MODE?
 
-
 :SOUR:FUNC:MODE BATT
-
-proud se nastavuje jako
-:SOUR:CURR:LEVEL?
-Range 6/60A se nastavuje jako:
-:SOUR:CURR:RANG 60
-:SOUR:CURR:RANGE?
-
-V_stop se nastavuje jako 
-
+nedokumentovane funkce:
+:BATT?
+:BATT <current>
+:BATT:LEVEL?
+:BATT:LEVEL <current, asi stejne jako bez levelu>
+:BATT:RANGE?
+:BATT:VSTOP?
 
 
 
+
+
+napsat vyrobci ze:
 napsat vyrobci ze VISA/SCPI tuhne (zařízení funguje, ale nedá se na něj vzdáleně dostat, pomůže vypnout/zapnout napájení) kdyz:
  command is emtpy string
  command ends with newline character
-
-
-Command sent:	:SOUR:CURR:RANG 60
-VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
-Command sent:	:SOUR:CURR:RANG MINimum
-VI_ERROR_TMO (-1073807339): Timeout expired before operation completed.
 
 
 otáčecí kolečko nesedí přesně kroky mechanické zarážky na odečet stavu
@@ -56,4 +131,15 @@ ojediněle přeskakuje hodnota aniž bych točil - tohle je asi nejhorší stav
 
 
 ojediněle (cca jednou denně) tuhne - pomůže jen vypnout/zapnout
+neřekne přesně kdy - většinou během ovládání nebo začátku/konce měření
 
+
+by bylo vhodne do dokumentace pridat ze existuji SCPI funkce:
+:SOUR:FUNC:MODE BATT
+:BATT?
+:BATT <current>
+:BATT:LEVEL?
+:BATT:RANGE?
+:BATT:VSTOP?
+
+ja uz jsem to trefil metodou pokus omyl i kdyz nejsou v navodu, ale nekomu to mozna usetri hodinu az dve prace
