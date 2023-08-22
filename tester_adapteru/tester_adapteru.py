@@ -997,7 +997,7 @@ class TestACDCadapteru():
 
 			exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
 					'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
-			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, ylabel='MATH Time [H:M:S]',
+			img = data2plot2qimg(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME, ylabel='MATH Time [H:M:S]',
 					height=200, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
