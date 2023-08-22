@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>776</width>
+    <height>475</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Tester Adapteru</string>
   </property>
@@ -31,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -229,6 +237,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="wattmeter_pushButton_export">
+            <property name="text">
+             <string>Export</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="wattmeter_pushButton_clearGraphs">
             <property name="text">
              <string>Clear Graphs</string>
@@ -309,8 +324,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>714</width>
-             <height>324</height>
+             <width>758</width>
+             <height>343</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -643,6 +658,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="load_pushButton_export">
+              <property name="text">
+               <string>Export</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="load_pushButton_clearGraphs">
               <property name="text">
                <string>Clear Graphs</string>
@@ -689,42 +711,35 @@
             <item>
              <widget class="QLabel" name="load_label_Measure">
               <property name="text">
-               <string>Measure and show:</string>
+               <string>Measure:</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_A">
               <property name="text">
-               <string>I [A]</string>
+               <string>A</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_V">
               <property name="text">
-               <string>U [V]</string>
+               <string>V</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_W">
               <property name="text">
-               <string>P [W]</string>
+               <string>W</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="load_checkBox_measure_Wh">
               <property name="text">
-               <string>Cap. [Wh]</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="load_checkBox_measure_X">
-              <property name="text">
-               <string>X</string>
+               <string>Wh</string>
               </property>
              </widget>
             </item>
@@ -741,9 +756,9 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
-             <width>704</width>
-             <height>1028</height>
+             <y>-518</y>
+             <width>748</width>
+             <height>824</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -787,16 +802,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="PlotWidget" name="load_plotWidget5" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>300</width>
-                <height>200</height>
-               </size>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </widget>
@@ -813,12 +818,15 @@
           <item>
            <widget class="QLabel" name="label_26">
             <property name="text">
-             <string>Po:</string>
+             <string>Po [W]:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="testACDCadapteru_doubleSpinBo_Po">
+           <widget class="QDoubleSpinBox" name="testACDCadapteru_doubleSpinBox_Po">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nominální/maximální výkon adaptéru&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="minimum">
              <double>0.100000000000000</double>
             </property>
@@ -840,11 +848,21 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,10">
+         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_30">
             <property name="text">
              <string>Mereni:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="testACDCadapteru_comboBox_test">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>0</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -891,8 +909,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>714</width>
-             <height>327</height>
+             <width>758</width>
+             <height>342</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1165,7 +1183,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>732</width>
+     <width>776</width>
      <height>17</height>
     </rect>
    </property>

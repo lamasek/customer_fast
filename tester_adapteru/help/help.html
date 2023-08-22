@@ -1,4 +1,7 @@
 <!-- HTML 4.0 document with no body text and in utf-8 encoding for QTextEdit for Qt6 -->
+<H1>Tester adaptérů</H1>
+<P>Autor: Josef La Mašek masek2050@gmail.com</P>
+<P>Ovládání a měření na Wattmetru Yokogawa WT310E a DC zátěže Rigol DL3031A</P>
 
 <H1>Souhrn</H1>
 		
@@ -28,16 +31,24 @@
 		<H2>Test AC/DC adapteru</H2>
 			<P>
 				Vstupy:
+				<UL>Po - Maximální/Nominální výkon adaptéru</UL>
+				<UL>Vmax - Maximální/nominální napětí udávané výrobcem</UL>
 			</P>
 
 		<P>
 			Kroky testu:  
 			<OL>
-				<LI>Měření standby spotřeby - 10 minutového průměru příkonu bez zátěže - <B>Pstb</B></LI>
-				<LI>Měření účinnosti v aktivním režimu (25%, 50%, 75%, 100%) - <B>Pa</B></LI>
-				<LI>Měření účinnosti při malém zatížení (10%) -<B>P10</B></LI>
-				<LI>VA charakteristika zdroje - napětí při zatížení 0-100%</LI>
-				<LI>VA charakteristika a časový průběh U a I při přetížení</LI>
+				<LI><B>Měření Pstb</B> - standby spotřeby - 10 minutového průměru příkonu bez zátěže</LI>
+				<LI><B>Měření Pa</B> - účinnosti v aktivním režimu (25%, 50%, 75%, 100%) plus 
+					<B>Měření P10</B> účinnosti při malém zatížení (10%)</LI>
+				<LI>Měření <B>VA charakteristiky</B> při normálním zatížení:
+					<UL>
+						<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
+						<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
+						<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
+					</UL>
+				</LI>
+				<LI>Měření <B>VA charakteristiky při přetížení</B>- VA charakteristika a časový průběh U a I</LI>
 				<LI>Test ochrany proti zkratu</LI>
 				<LI>Zátěž 1 hodina max. výkon</LI>
 			</OL>	
