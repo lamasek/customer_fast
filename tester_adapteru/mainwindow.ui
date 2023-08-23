@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>776</width>
-    <height>475</height>
+    <width>730</width>
+    <height>477</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -162,7 +162,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,0,0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,0,10">
+         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_22">
             <property name="text">
@@ -182,6 +182,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_connect">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Connect</string>
             </property>
@@ -189,6 +195,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_disconnect">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Disconnect</string>
             </property>
@@ -211,6 +223,16 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QLineEdit" name="wattmeter_lineEdit_status">
+            <property name="frame">
+             <bool>false</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -224,6 +246,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_start">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Start</string>
             </property>
@@ -231,6 +259,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_stop">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Stop</string>
             </property>
@@ -238,6 +272,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_export">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Export</string>
             </property>
@@ -245,6 +285,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="wattmeter_pushButton_clearGraphs">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Clear Graphs</string>
             </property>
@@ -312,6 +358,19 @@
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </item>
         <item>
@@ -324,8 +383,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>758</width>
-             <height>343</height>
+             <width>712</width>
+             <height>345</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -375,6 +434,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_connect">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Connect</string>
               </property>
@@ -382,6 +447,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_disconnect">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Disconnect</string>
               </property>
@@ -425,6 +496,18 @@
           </item>
           <item>
            <widget class="QPushButton" name="load_pushButton_StateON">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="palette">
              <palette>
               <active>
@@ -474,6 +557,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="load_pushButton_StateOFF">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="palette">
              <palette>
               <active>
@@ -627,6 +716,19 @@
           <item>
            <widget class="QDoubleSpinBox" name="load_doubleSpinBox_BATT_vstop"/>
           </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </item>
         <item>
@@ -645,6 +747,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_mereni_start">
+              <property name="maximumSize">
+               <size>
+                <width>50</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Start</string>
               </property>
@@ -652,6 +760,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_mereni_stop">
+              <property name="maximumSize">
+               <size>
+                <width>50</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Stop</string>
               </property>
@@ -659,6 +773,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_export">
+              <property name="maximumSize">
+               <size>
+                <width>50</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Export</string>
               </property>
@@ -666,6 +786,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="load_pushButton_clearGraphs">
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Clear Graphs</string>
               </property>
@@ -743,6 +869,19 @@
               </property>
              </widget>
             </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
           </item>
          </layout>
@@ -756,8 +895,8 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>-518</y>
-             <width>748</width>
+             <y>0</y>
+             <width>702</width>
              <height>824</height>
             </rect>
            </property>
@@ -845,6 +984,19 @@
           <item>
            <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru"/>
           </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </item>
         <item>
@@ -909,8 +1061,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>758</width>
-             <height>342</height>
+             <width>712</width>
+             <height>344</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -937,7 +1089,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,10">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,10">
             <item>
              <widget class="QLabel" name="label_8">
               <property name="font">
@@ -952,6 +1104,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="pushButton_test_zatizeni_start">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Start</string>
               </property>
@@ -959,6 +1117,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="pushButton_test_zatizeni_stop">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Stop</string>
               </property>
@@ -1183,7 +1347,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>776</width>
+     <width>730</width>
      <height>17</height>
     </rect>
    </property>
