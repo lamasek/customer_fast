@@ -423,6 +423,44 @@ class Load(VisaDevice):
 				print('PVcommand = '+PVcommand)
 			VisaDevice.write(self, PVcommand)
 
+class Load_GUI(Load):
+	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
+		Load. VISAresource = VISAresource
+		Load.demo = demo
+		self.status = status
+
+	def connect(self):
+		if  self.is_connected() == True:
+			return(True, 'Already connected')
+		else:
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
+			retCode, retStr = Load.connect(self)
+			#retCode, retStr = super().connect()
+			if retCode == False:
+				self.status.setText('FAILED to connect, error: ' + retStr)
+				self.status.setStyleSheet('color:red')
+				return(False, retStr)
+			else:
+				self.status.setText('Connected to: ' + retStr)
+				self.status.setStyleSheet('color:green')
+				return(True, retStr)
+
+	def disconnect(self):
+		if  self.is_connected() == True:
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
+			ret = Load.disconnect(self)
+			if ret == False:
+				self.status.setText('Disconnected, FAILED to nice disconnect')
+				self.status.setStyleSheet('color:red')
+			else:
+				self.status.setText('Disconnected ')
+				self.status.setStyleSheet(None)
+		else:
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
+
 
 class Wattmeter(VisaDevice):
 
@@ -560,6 +598,45 @@ class Wattmeter(VisaDevice):
 			else:
 				return(True, 'TIM')
 		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
+
+class Wattmeter_GUI(Wattmeter):
+	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
+		Wattmeter. VISAresource = VISAresource
+		Wattmeter.demo = demo
+		self.status = status
+
+	def connect(self):
+		if  self.is_connected() == True:
+			return(True, 'Already connected')
+		else:
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
+			retCode, retStr = Wattmeter.connect(self)
+			#retCode, retStr = super().connect()
+			if retCode == False:
+				self.status.setText('FAILED to connect, error: ' + retStr)
+				self.status.setStyleSheet('color:red')
+				return(False, retStr)
+			else:
+				self.status.setText('Connected to: ' + retStr)
+				self.status.setStyleSheet('color:green')
+				return(True, retStr)
+
+	def disconnect(self):
+		if  self.is_connected() == True:
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
+			ret = Wattmeter.disconnect(self)
+			if ret == False:
+				self.status.setText('Disconnected, FAILED to nice disconnect')
+				self.status.setStyleSheet('color:red')
+			else:
+				self.status.setText('Disconnected ')
+				self.status.setStyleSheet(None)
+		else:
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
+
 
 #region Tab_Config -----------------------------------------------------
 class Tab_Config():
@@ -856,8 +933,6 @@ def data2plot2qimg(
 
 
 class TestACDCadapteru():
-	data1 = []
-	data2 = []
 	semaphore = QSemaphore(0) # semafor na testy:
 			# 0 	test is not running
 			# 1		test is running
@@ -875,8 +950,8 @@ class TestACDCadapteru():
 
 
 	def do_measure(	self,
-			wmeter: Wattmeter,
-			load: Load, 
+			wmeter: Wattmeter_GUI,
+			load: Load_GUI, 
 			exportTextEdit: QtWidgets.QTextEdit, 
 			plot1: pyqtgraph.PlotWidget, 
 			plot2: pyqtgraph.PlotWidget,
@@ -1527,16 +1602,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.tab_visa = Tab_VISA(self, self.cfg, self.visa)
 
 		#region WATTMETER -----------------------------------------------------------------
-		self.wattmeter = Wattmeter(
+		self.wattmeter = Wattmeter_GUI(
 			VISAresource=self.cfg.get('wattmeter/VISAresource'),
-			demo=self.cfg.get('wattmeter/demo')
+			demo=self.cfg.get('wattmeter/demo'),
+			status = self.wattmeter_lineEdit_status
 		)
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
 		self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
 		self.wattmeter_checkBox_demo.stateChanged.connect(self.wattmeter_demo_pressed)
-		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
-		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter_disconnect)
+		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter.connect)
+		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter.disconnect)
 
 		# Wattmeter Measure
 		self.wattmeter_mereni_finished = True # semaphor for measuring method
@@ -1608,16 +1684,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 #endregion
 
 		#region LOAD -----------------------------------------------------
-		self.load = Load(
+		self.load = Load_GUI(
 			VISAresource=self.cfg.get('load/VISAresource'),
-			demo=self.cfg.get('load/demo')
+			demo=self.cfg.get('load/demo'),
+			status = self.load_label_status,
 		)
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
 		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
 		self.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
-		self.load_pushButton_connect.pressed.connect(self.load_connect)
-		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
+		self.load_pushButton_connect.pressed.connect(self.load.connect)
+		self.load_pushButton_disconnect.pressed.connect(self.load.disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
 		
@@ -1753,40 +1830,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 	def wattmeter_demo_pressed(self):
 		self.wattmeter.disconnect()
-		self.wattmeter_label_status.setText('Disconnected')
-		self.wattmeter_label_status.setStyleSheet('')
+		self.wattmeter_lineEdit_status.setText('Disconnected')
+		self.wattmeter_lineEdit_status.setStyleSheet('')
 		self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
-
-	def wattmeter_connect(self):
-		if  self.wattmeter.is_connected() == True:
-			return(True)
-		else:
-			self.wattmeter_label_status.setText('Trying to connect...')
-			self.wattmeter_label_status.setStyleSheet('')
-			retCode, retStr = self.wattmeter.connect()
-			if retCode == False:
-				self.wattmeter_label_status.setText('FAILED to connect, error: ' + retStr)
-				self.wattmeter_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.wattmeter_label_status.setText('Connected to: ' + retStr)
-				self.wattmeter_label_status.setStyleSheet('color:green')
-				return(True)
-
-	def wattmeter_disconnect(self):
-		if  self.wattmeter.is_connected() == True:
-			self.wattmeter_label_status.setText('Disconnecting...')
-			self.wattmeter_label_status.setStyleSheet(None)
-			ret = self.wattmeter.disconnect()
-			if ret == False:
-				self.wattmeter_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.wattmeter_label_status.setStyleSheet('color:red')
-			else:
-				self.wattmeter_label_status.setText('Disconnected ')
-				self.wattmeter_label_status.setStyleSheet(None)
-		else:
-			self.wattmeter_label_status.setText('Disconnected ')
-			self.wattmeter_label_status.setStyleSheet(None)
 
 
 	def wattmeter_checkBox_measure_W_changed(self):
@@ -1818,14 +1864,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def wattmeter_mereni_start(self):
-		if  self.wattmeter.is_connected() == False:
-			self.wattmeter_connect()
-
-		#self.label_test_zatizeni.setText('Measuring')
-		#self.label_test_zatizeni.setStyleSheet('color:green')
-
-		#self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
-
+		self.wattmeter.connect()
 		# schedule Measuring
 		self.timer_wattmeter_mereni = QtCore.QTimer()
 		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
@@ -1967,40 +2006,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_label_status.setStyleSheet('')
 		self.load.setDemo(self.cfg.get('load/demo'))
 
-	def load_connect(self):
-		if  self.load.is_connected() == True:
-			return(True)
-		else:
-			self.load_label_status.setText('Trying to connect...')
-			self.load_label_status.setStyleSheet('')
-			retCode, retStr = self.load.connect()
-			if retCode == False:
-				self.load_label_status.setText('FAILED to connect: ' + retStr)
-				self.load_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.load_label_status.setText('Load connected')
-				self.load_label_status.setStyleSheet('color:green')
-				return(True)
-
-	def load_disconnect(self):
-		if  self.load.is_connected() == True:
-			self.load_label_status.setText('Disconnecting...')
-			self.load_label_status.setStyleSheet(None)
-			ret = self.load.disconnect()
-			if ret == False:
-				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.load_label_status.setStyleSheet('color:red')
-			else:
-				self.load_label_status.setText('Disconnected ')
-				self.load_label_status.setStyleSheet(None)
-		else:
-			self.load_label_status.setText('Disconnected ')
-			self.load_label_status.setStyleSheet(None)
 
 	def load_radioButton_Mode_CC_pressed(self):
 		self.load.load.setFunction('CC')
-
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
 		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
@@ -2057,7 +2065,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 	def load_mereni_start(self):
 		if  self.load.is_connected() == False:
-			self.load_connect()
+			self.load.connect()
 		#self.label_test_zatizeni.setText('Measuring')
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
@@ -2242,13 +2250,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			print('Connecting to Load')
 
 		if not self.load.is_connected():
-			ret = self.load_connect()
-			if ret == True:
-				self.label_test_zatizeni.setText('Load connected')
-				self.label_test_zatizeni.setStyleSheet('color:green')
-			else:
-				self.label_test_zatizeni.setText('FAILED to connect Load')
-				self.label_test_zatizeni.setStyleSheet('color:red')
+			retCode, retString = self.load.connect()
+			if retCode == False:
 				return()
 
 
