@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 80
+verbose =80
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -771,12 +771,12 @@ class Tab_VISA():
 
 	def visa_send(self):
 		if  self.visa.is_connected() == True:
-			command = self.visa_lineEdit_SCPIcommand.text()
-			self.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
+			command = self.mw.visa_lineEdit_SCPIcommand.text()
+			self.mw.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
 			retCode, retStr = self.visa.send(command)
-			self.visa_plainTextEdit_output.appendPlainText(retStr)
+			self.mw.visa_plainTextEdit_output.appendPlainText(retStr)
 		else:
-			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+			self.mw.visa_plainTextEdit_output.appendPlainText('Not connected...')
 
 #endregion --------------------------------------------------------
 
@@ -1394,13 +1394,12 @@ class TestACDCadapteru():
 		#region test zkrat ---------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', 'Short'}: 
 			exportTextEdit.insertHtml('<H2>Měření charakteristik při <B>zkratu (Short)</B></H2><BR></BR>')
-			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon 60A TODO nebo zkrat a měří se časový průběh I')
+			exportTextEdit.insertHtml('<P>Na zátěži se nastaví maximální výkon 60A (pokud dá zdroj méně než 60A '
+			     + 'tak se pro něj jeví jako zkrat) a měří se časový průběh I a U</P><BR></BR>')
 
 			load.setStateOn(False)
 			load.setFunction('CC')
-			load.setPower(60) #maximal current of Rigol DL3031
-			QtTest.QTest.qWait(100)
-			load.setStateOn(True)
+			load.setCurrent(60) # 60A = maximal current of Rigol DL3031
 
 			dataLoadA = []
 			dataLoadAtime = []
@@ -1409,26 +1408,27 @@ class TestACDCadapteru():
 
 			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
 			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+			plot3_dataLine = plot_prepare(cfg, plot3, '')
+
 
 			if load.demo == True:
-				tstop = time.time() + 10 # 10 seconds
+				tstop = time.time() + 10 # 3 seconds
+				stepTime = 5
 			else:
-				tstop = time.time() + 60 # 1 minute
-			
+				tstop = time.time() + 30 # 30 seconds
+				stepTime = 50 # ms
+				QtTest.QTest.qWait(100)
+
+			startOnce = True
 			while time.time() < tstop:
-				if wmeter.demo == True:
-					QtTest.QTest.qWait(1)
-				else:
-					QtTest.QTest.qWait(100)
-				
 				loadA = load.measure('A')
-				if loadA > 50:
+				if loadA > 55:
 					load.setStateOn(False)
-					exportTextEdit.insertHtml('<H2>Test zkratu přerušen - I je větší než 50 A - hrozí poškození zátěže.</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 50A')
+					exportTextEdit.insertHtml('<H2>Test zkratu přerušen - I je větší než 55 A - hrozí poškození zátěže.</H2><BR></BR>')
+					statusLabel.setText('Short test stopped - current over 55A')
 					break
 
-				dataLoadA.append()
+				dataLoadA.append(loadA)
 				dataLoadAtime.append(time.time())
 				dataLoadV.append(load.measure('V'))
 				dataLoadVtime.append(time.time())
@@ -1436,14 +1436,18 @@ class TestACDCadapteru():
 				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
 
+				QtTest.QTest.qWait(stepTime)
+				if startOnce:
+					load.setStateOn(True)
+					startOnce = False
 
 				if self.check_exit(statusLabel): #stop the test and exit
 					exportTextEdit.insertHtml('<H2>Test zkratu přerušen uživatelem</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 50A')
+					statusLabel.setText('Short test stopped - current over 55A')
 					load.setStateOn(False)
-					return()
+					break
 
-
+			load.setStateOn(False)
 
 			exportTextEdit.insertHtml('<P>Průběh proudu při zkratu' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
@@ -1516,8 +1520,8 @@ class TestACDCadapteru():
 					exportTextEdit.insertHtml('<H2>Test Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B>'
 			       		+ ' - ZASTAVENO UŽIVATELEM</H2><BR></BR>')
 					statusLabel.setText('1 hour load test stopped by user')
-					load.setStateOn(False)
-					return()
+					#load.setStateOn(False)
+					break
 
 			load.setStateOn(False)
 			statusLabel.setText('Test 1 hour load: finished')
@@ -1534,7 +1538,7 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml('</P>')
 
 			exportTextEdit.insertHtml('<P>Průběh výkonu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Power [W]', height=400, formatXasTime=True)
+			img = data2plot2qimg(dataLoadWtime, dataLoadW, ylabel='Power [W]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
