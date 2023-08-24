@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'mainwindow.ui'
+# Form implementation generated from reading ui file 'ui_mainwindow.ui'
 #
 # Created by: PyQt6 UI code generator 6.5.2
 #
@@ -209,6 +209,14 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_2)
         self.verticalLayout_14.addWidget(self.scrollArea_2)
         self.tabWidget.addTab(self.tab_Wattmeter, "")
+        self.tab_Wattmeter2 = QtWidgets.QWidget()
+        self.tab_Wattmeter2.setObjectName("tab_Wattmeter2")
+        self.verticalLayout_34 = QtWidgets.QVBoxLayout(self.tab_Wattmeter2)
+        self.verticalLayout_34.setObjectName("verticalLayout_34")
+        self.tab_Wattmeter2_widget = Tab_Wattmeter(parent=self.tab_Wattmeter2)
+        self.tab_Wattmeter2_widget.setObjectName("tab_Wattmeter2_widget")
+        self.verticalLayout_34.addWidget(self.tab_Wattmeter2_widget)
+        self.tabWidget.addTab(self.tab_Wattmeter2, "")
         self.tab_Load = QtWidgets.QWidget()
         self.tab_Load.setObjectName("tab_Load")
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.tab_Load)
@@ -475,15 +483,20 @@ class Ui_MainWindow(object):
         self.label_30.setObjectName("label_30")
         self.horizontalLayout_15.addWidget(self.label_30)
         self.testACDCadapteru_comboBox_test = QtWidgets.QComboBox(parent=self.tab_test_ACDCadapteru)
-        self.testACDCadapteru_comboBox_test.setMinimumSize(QtCore.QSize(150, 0))
+        self.testACDCadapteru_comboBox_test.setMinimumSize(QtCore.QSize(120, 0))
         self.testACDCadapteru_comboBox_test.setObjectName("testACDCadapteru_comboBox_test")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_comboBox_test)
         self.testACDCadapteru_pushButton_start = QtWidgets.QPushButton(parent=self.tab_test_ACDCadapteru)
+        self.testACDCadapteru_pushButton_start.setMaximumSize(QtCore.QSize(60, 16777215))
         self.testACDCadapteru_pushButton_start.setObjectName("testACDCadapteru_pushButton_start")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_pushButton_start)
         self.testACDCadapteru_pushButton_stop = QtWidgets.QPushButton(parent=self.tab_test_ACDCadapteru)
+        self.testACDCadapteru_pushButton_stop.setMaximumSize(QtCore.QSize(60, 16777215))
         self.testACDCadapteru_pushButton_stop.setObjectName("testACDCadapteru_pushButton_stop")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_pushButton_stop)
+        self.testACDCadapteru_checkBox_load8h = QtWidgets.QCheckBox(parent=self.tab_test_ACDCadapteru)
+        self.testACDCadapteru_checkBox_load8h.setObjectName("testACDCadapteru_checkBox_load8h")
+        self.horizontalLayout_15.addWidget(self.testACDCadapteru_checkBox_load8h)
         self.label_28 = QtWidgets.QLabel(parent=self.tab_test_ACDCadapteru)
         self.label_28.setObjectName("label_28")
         self.horizontalLayout_15.addWidget(self.label_28)
@@ -491,7 +504,7 @@ class Ui_MainWindow(object):
         self.testACDCadapteru_label_status.setWordWrap(True)
         self.testACDCadapteru_label_status.setObjectName("testACDCadapteru_label_status")
         self.horizontalLayout_15.addWidget(self.testACDCadapteru_label_status)
-        self.horizontalLayout_15.setStretch(5, 10)
+        self.horizontalLayout_15.setStretch(6, 10)
         self.verticalLayout_16.addLayout(self.horizontalLayout_15)
         self.scrollArea_3 = QtWidgets.QScrollArea(parent=self.tab_test_ACDCadapteru)
         self.scrollArea_3.setWidgetResizable(True)
@@ -659,7 +672,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -694,6 +707,7 @@ class Ui_MainWindow(object):
         self.wattmeter_checkBox_measure_V.setText(_translate("MainWindow", "V"))
         self.wattmeter_checkBox_measure_MATH.setText(_translate("MainWindow", "MATH/AVG W"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Wattmeter), _translate("MainWindow", "Wattmeter"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Wattmeter2), _translate("MainWindow", "Wattmeter2"))
         self.label_2.setText(_translate("MainWindow", "VISA  resource"))
         self.load_checkBox_demo.setText(_translate("MainWindow", "Demo"))
         self.load_pushButton_connect.setText(_translate("MainWindow", "Connect"))
@@ -728,7 +742,8 @@ class Ui_MainWindow(object):
         self.label_27.setText(_translate("MainWindow", "Typ adapteru"))
         self.label_30.setText(_translate("MainWindow", "Mereni:"))
         self.testACDCadapteru_pushButton_start.setText(_translate("MainWindow", "Start"))
-        self.testACDCadapteru_pushButton_stop.setText(_translate("MainWindow", "Stop"))
+        self.testACDCadapteru_pushButton_stop.setText(_translate("MainWindow", "Skip"))
+        self.testACDCadapteru_checkBox_load8h.setText(_translate("MainWindow", "Load+8h"))
         self.label_28.setText(_translate("MainWindow", "Status:"))
         self.testACDCadapteru_label_status.setText(_translate("MainWindow", "Init..."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_test_ACDCadapteru), _translate("MainWindow", "Test AC/DC adapteru"))
@@ -754,3 +769,4 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_help), _translate("MainWindow", "Help"))
 from mplwidget import MplWidget
 from pyqtgraph import PlotWidget
+from tab_wattmeter import Tab_Wattmeter

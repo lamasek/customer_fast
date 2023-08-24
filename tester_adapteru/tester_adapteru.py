@@ -116,9 +116,11 @@ try:
 except all:
     pass
 
+from visa_device import VisaDevice
 
+from wattmeter_device import Wattmeter_GUI
 
-from MainWindow import Ui_MainWindow
+from ui_mainwindow import Ui_MainWindow
 
 
 ###### GLOBAL variables - config ####################################################
@@ -194,143 +196,6 @@ data_test_zatizeni_V = []
 data_test_zatizeni_W = []
 
 
-###############################
-class VisaDevice():
-	
-	def __init__(self, VISAresource: str, demo: bool):
-		self. VISAresource = VISAresource
-		self.demo = demo
-
-	demo = False	# if True, it does not connect to real device, it provide fake demo values
-	#demo_connected = False
-	
-	def setDemo(self, d: bool): #pokud demo, tak dela sinusovku co 10s a jen kladnou
-		self.demo = d
-	
-
-	VISAresource = ''
-	connected = False
-
-	def is_connected(self):
-		return(self.connected)
-	
-	def setVISAresource(self, Vr: str):
-		self.VISAresource = Vr
-
-	def connect(self):
-		# return retCode=True/False, retString=Error str/IDN of device
-		if  self.demo == True:
-			self.connected = True
-			return(True, 'Demo connected')
-
-		if self.connected:
-			return(True, 'Already connected')
-		self.rm = pyvisa.ResourceManager()
-		if verbose > 70:
-			print('Connecting to ' + self.VISAresource)
-		try:
-			self.PVdevice = self.rm.open_resource(self.VISAresource)
-		except Exception as e:
-			print('  Connection failed: ' + str(e))
-			self.connected = False
-			return(False, ' Connection failed'+str(e))
-
-		# Query if instrument is present
-		# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
-		try:
-			IDNreply = self.PVdevice.query("*IDN?")
-		except Exception as e:
-			print('SCPI *IDN? test after connection failed: ' + str(e))
-			self.connected = False
-			return(False, 'SCPI *IDN? test after connection failed: '+str(e))
-		if verbose>50:
-			print(IDNreply.strip())
-		self.connected = True
-		return(True, IDNreply)
-
-	def disconnect(self):
-		if  self.demo == True:
-			self.connected = False
-			return(True)
-
-		if verbose > 70:
-			print('Load disconnecting...')
-		try:
-			self.rm.close() 
-		except:
-			None
-		#TODO check
-		self.connected = False
-		return(True)
-
-	def send(self, commandi):
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				if '?' in command: # some devices (e.g. Yokogawa WT310E) have some IDs after ? (e.g. ":NUM:VAL? 1")
-					reply = self.PVdevice.query(command)
-				else:
-					self.PVdevice.write(command)
-					reply = ''
-				if verbose>150:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 50:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
-
-	def write(self, commandi):
-		#return(bool (True = OK), <string with error message | ''>)
-		if  self.demo == True:
-			return(True, '')
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				reply = self.PVdevice.write(command)
-				if verbose>50:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 50:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
-
-	def query(self, commandi):
-		#return(retCode = True/False, retString)
-		if  self.demo == True:
-			return(True, 'Demo')
-
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				reply = self.PVdevice.query(command)
-				reply.strip()
-				if verbose>50:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 70:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
 
 
 class Load(VisaDevice):
@@ -462,180 +327,6 @@ class Load_GUI(Load):
 			self.status.setStyleSheet(None)
 
 
-class Wattmeter(VisaDevice):
-
-	def connect(self):
-		r, s = VisaDevice.connect(self)
-		if r == False:
-			return(r, s)
-		if self.demo == True:
-			return(r, s)
-		VisaDevice.write(self, ':NUM:FORM ASCII')
-		#todo check ze je ok
-
-		#todo check ze:
-		#:integ?
-		#kontrolovat ze to je spravne na NORM;0,10,0
-
-		return(r, s)
-		#self.connected = True
-
-	def measure(self, varName):
-		# return float | False -error durinq query | None - device answered NAN or not float
-		if  self.demo == True:
-			i = 100*math.sin( # sinus, period 5s in time
-					(time.time()%5) / 5 * 2*3.1415
-				)
-			if i < 0: #only positive part
-				i = 0
-			return( i )
-		
-		global verbose
-		verbose -= 100
-		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
-		if varName == 'MATH':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		if varName == 'TIME':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 2")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'V':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'A':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'W':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		else:
-			return(False)
-	
-	def measureNoNAN(self, varName):
-		# if measure returns NaN, perform again, max 100 times
-		for i in range(100):
-			ret = self.measure(varName)
-			if ret is not None:
-				return(ret)
-		return(False)
-	
-	def measure10Avg(self, varName):
-		# measure 10 times and return avg
-		sum = 0
-		for i in range(10):
-			ret = self.measureNoNAN(varName)
-			if verbose > 170:
-				print('measure10Avg:' + str(ret))
-			if ret is not None:
-				sum += ret
-		return(sum / 10)
-
-
-
-	# Integrate ------------------------------------
-	# procedure how to make integrate measure on Wattmeter:
-	# :INTEG:RESET
-	# volitelne
-	#	:INTEG:TIME 0,10,10
-	#	check math, mod, rms, ...
-	# :INTEG:START
-	# periodicalluy check :INTEGrate:STATe?
-	# 	if is STARTt - wait
-	# 	if TIMeup - finished, take results
-	#	 if other - measuring failed
-
-	integrate = 0 #demo integrate
-
-	def integrateStart(self):
-		if  self.demo == True:
-			self.integrate = 10
-			return(True)
-		return(VisaDevice.write(self, ":INTEGrate:STARt"))
-
-	def integrateReset(self):
-		if  self.demo == True:
-			self.integrate = 0
-		VisaDevice.write(self, ":INTEGrate:RESet")
-		VisaDevice.write(self, ":INTEGrate:STOP") #in case is running, RESet does not work
-		VisaDevice.write(self, ":INTEGrate:RESet")
-
-	def integrateState(self):
-		# returns:
-		# 	STAR[t] pocita
-		# 	TIM[eup] normalni konec vypoctu
-		#	ERRor
-		# 	RESet	normalni po resetu a spusteni pristroje - tohle je v klidu bez chyb
-		# 	STOP
-		if  self.demo == True:
-			if self.integrate > 0:
-				self.integrate -= 1
-				return(True, 'STAR')
-			else:
-				return(True, 'TIM')
-		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
-
-class Wattmeter_GUI(Wattmeter):
-	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
-		Wattmeter. VISAresource = VISAresource
-		Wattmeter.demo = demo
-		self.status = status
-
-	def connect(self):
-		if  self.is_connected() == True:
-			return(True, 'Already connected')
-		else:
-			self.status.setText('Trying to connect...')
-			self.status.setStyleSheet('')
-			retCode, retStr = Wattmeter.connect(self)
-			#retCode, retStr = super().connect()
-			if retCode == False:
-				self.status.setText('FAILED to connect, error: ' + retStr)
-				self.status.setStyleSheet('color:red')
-				return(False, retStr)
-			else:
-				self.status.setText('Connected to: ' + retStr)
-				self.status.setStyleSheet('color:green')
-				return(True, retStr)
-
-	def disconnect(self):
-		if  self.is_connected() == True:
-			self.status.setText('Disconnecting...')
-			self.status.setStyleSheet(None)
-			ret = Wattmeter.disconnect(self)
-			if ret == False:
-				self.status.setText('Disconnected, FAILED to nice disconnect')
-				self.status.setStyleSheet('color:red')
-			else:
-				self.status.setText('Disconnected ')
-				self.status.setStyleSheet(None)
-		else:
-			self.status.setText('Disconnected ')
-			self.status.setStyleSheet(None)
 
 
 #region Tab_Config -----------------------------------------------------
@@ -722,9 +413,11 @@ class Tab_Config():
 #region Tab_VISA -----------------------------------------------------
 class Tab_VISA():
 	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, visa: VisaDevice):
-		self.visa = visa
-		self.cfg = cfg
 		self.mw = mw
+		self.cfg = cfg
+		self.visa = visa
+
+		self.status = self.mw.visa_label_status
 		cfg.add_handler('VISA/VISAresource', mw.visa_lineEdit_VISAresource)
 		mw.visa_lineEdit_VISAresource.textChanged.connect(self.visa_VISAresource_changed)
 		self.mw.visa_pushButton_connect.pressed.connect(self.visa_connect)
@@ -741,33 +434,33 @@ class Tab_VISA():
 		if  self.visa.is_connected() == True:
 			return(True)
 		else:
-			self.mw.visa_label_status.setText('Trying to connect...')
-			self.mw.visa_label_status.setStyleSheet('')
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
 			ret, retStr = self.visa.connect()
 			self.mw.visa_plainTextEdit_output.appendPlainText(retStr)
 			if ret == False:
-				self.mw.visa_label_status.setText('FAILED to connect')
-				self.mw.visa_label_status.setStyleSheet('color:red')
+				self.status.setText('FAILED to connect')
+				self.status.setStyleSheet('color:red')
 				return(False)
 			else:
-				self.mw.visa_label_status.setText('Connected')
-				self.mw.visa_label_status.setStyleSheet('color:green')
+				self.status.setText('Connected')
+				self.status.setStyleSheet('color:green')
 				return(True)
 
 	def visa_disconnect(self):
 		if  self.visa.is_connected() == True:
-			self.mw.visa_label_status.setText('Disconnecting...')
-			self.mw.visa_label_status.setStyleSheet(None)
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
 			ret = self.visa.disconnect()
 			if ret == False:
-				self.mw.visa_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.mw.visa_label_status.setStyleSheet('color:red')
+				self.status.setText('Disconnected, FAILED to nice disconnect')
+				self.status.setStyleSheet('color:red')
 			else:
-				self.mw.visa_label_status.setText('Disconnected ')
-				self.mw.visa_label_status.setStyleSheet(None)
+				self.status.setText('Disconnected ')
+				self.status.setStyleSheet(None)
 		else:
-			self.mw.visa_label_status.setText('Disconnected ')
-			self.mw.visa_label_status.setStyleSheet(None)
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
 
 	def visa_send(self):
 		if  self.visa.is_connected() == True:
@@ -937,6 +630,14 @@ class TestACDCadapteru():
 			# 0 	test is not running
 			# 1		test is running
 			# 2 	do exit from test (e.g. button pressed)
+
+	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, load: Load_GUI, wmeter: Wattmeter_GUI):
+		self.mw = mw
+		self.cfg = cfg
+		self.load = load
+		self.wmeter = wmeter
+		self.exportTextEdit = self.mw.export_textEdit1
+		#testACDCadapteru_checkBox_load8h
 
 	def check_exit(self, statusLabel):
 		if self.semaphore.available() > 1: #stop the test and exit
@@ -1530,22 +1231,32 @@ class TestACDCadapteru():
 			statusLabel.setText('Test 1 hour load: finished')
 
 
-			exportTextEdit.insertHtml('<P>Průběh proudu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			exportTextEdit.insertHtml('<P>Průběh proudu při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			exportTextEdit.insertHtml('<P>Průběh napětí při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			exportTextEdit.insertHtml('<P>Průběh napětí při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			exportTextEdit.insertHtml('<P>Průběh výkonu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			exportTextEdit.insertHtml('<P>Průběh výkonu při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadWtime, dataLoadW, ylabel='Power [W]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 			statusLabel.setText('Test 1 hour load: Finished')
 		#endregion 
+
+		#region Load +8 hodin
+
+
+
+
+
+		#endregion
+
+
 
 
 		#finished with no errors
@@ -1558,7 +1269,6 @@ class TestACDCadapteru():
 	
 	
 
-#pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 #https://www.pythonguis.com/tutorials/pyqt6-first-steps-qt-designer/
 # https://www.pythonguis.com/tutorials/pyqt6-plotting-matplotlib/
@@ -1574,9 +1284,9 @@ class TestACDCadapteru():
 
 # development environment install
 # pip install pyqt6-tools
-# pyuic6 -o MainWindow.py mainwindow.ui
+# pyuic6 mainwindow.ui -o ui_mainwindow.py 
 # or if something went wrong with PATH, .... you can use:
-# python -m PyQt6.uic.pyuic -o MainWindow.py -x mainwindow.ui
+# python -m PyQt6.uic.pyuic -x mainwindow.ui -o ui_mainwindow.py 
 
 
 
@@ -1710,7 +1420,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.wattmeter_plotWidget4_dataLine2 = self.wattmeter_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
-#endregion
+		#endregion
+
+		#region WATTMETER2 -----------------------------------------------------------------
+		self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
+		#self.wattmeter = Wattmeter_GUI(
+		#	VISAresource=self.cfg.get('wattmeter/VISAresource'),
+		#	demo=self.cfg.get('wattmeter/demo'),
+		#	status = self.wattmeter_lineEdit_status
+		#)
+
+		#endregion
+
 
 		#region LOAD -----------------------------------------------------
 		self.load = Load_GUI(
@@ -1812,7 +1533,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#region testACDCadapteru ----------------------------------------------
-		self.testACDCadapteru = TestACDCadapteru()
+		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
 		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)

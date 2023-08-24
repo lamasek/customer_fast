@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -403,6 +403,16 @@
            </layout>
           </widget>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_Wattmeter2">
+       <attribute name="title">
+        <string>Wattmeter2</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_34">
+        <item>
+         <widget class="Tab_Wattmeter" name="tab_Wattmeter2_widget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -1000,7 +1010,7 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,0,10">
+         <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,0,0,10">
           <item>
            <widget class="QLabel" name="label_30">
             <property name="text">
@@ -1012,7 +1022,7 @@
            <widget class="QComboBox" name="testACDCadapteru_comboBox_test">
             <property name="minimumSize">
              <size>
-              <width>150</width>
+              <width>120</width>
               <height>0</height>
              </size>
             </property>
@@ -1020,6 +1030,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="testACDCadapteru_pushButton_start">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Start</string>
             </property>
@@ -1027,8 +1043,21 @@
           </item>
           <item>
            <widget class="QPushButton" name="testACDCadapteru_pushButton_stop">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
-             <string>Stop</string>
+             <string>Skip</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="testACDCadapteru_checkBox_load8h">
+            <property name="text">
+             <string>Load+8h</string>
             </property>
            </widget>
           </item>
@@ -1367,11 +1396,17 @@
    <header>pyqtgraph</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>Tab_Wattmeter</class>
+   <extends>QWidget</extends>
+   <header>tab_wattmeter</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_BATT_range"/>
   <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
  </buttongroups>
 </ui>
