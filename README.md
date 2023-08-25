@@ -4,7 +4,7 @@
 Instalace 
  
  Na Windows masinu nainstalovat
-    python ze store
+    python ze store (overeno na 3.11)
     GIT fow Windows https://gitforwindows.org/
 
 Vytvorit adresar kde to bude - napr. Plocha\LaMasek

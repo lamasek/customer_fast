@@ -1,0 +1,7 @@
+
+
+tesne po spusteni kdyz v load kliknu na stop tak krici ze neco nema
+
+nekdy nesmaze dobre grafy ve wattmeter_pushButton_clearGraphs
+
+ve wattmetru krici v realu ze ma problem s merenim MATH protoze tam nejsou data, protoze tam merak zadne nema

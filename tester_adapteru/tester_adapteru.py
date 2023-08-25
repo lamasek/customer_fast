@@ -1358,6 +1358,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			demo=self.cfg.get('load/demo'),
 			status = self.load_label_status,
 		)
+		self.timer_load_mereni = QtCore.QTimer()
+
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
 		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
@@ -1740,7 +1742,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
 		# schedule Measuring
-		self.timer_load_mereni = QtCore.QTimer()
 		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
 		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
 		self.timer_load_mereni.start()
