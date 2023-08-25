@@ -1345,7 +1345,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter = Wattmeter_GUI(
 			VISAresource=self.cfg.get('wattmeter/VISAresource'),
 			demo=self.cfg.get('wattmeter/demo'),
-			status = self.wattmeter_lineEdit_status
+			status = self.wattmeter_label_status
 		)
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
@@ -1424,7 +1424,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#endregion
 
 		#region WATTMETER2 -----------------------------------------------------------------
-		self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
+		#self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
 		#self.wattmeter = Wattmeter_GUI(
 		#	VISAresource=self.cfg.get('wattmeter/VISAresource'),
 		#	demo=self.cfg.get('wattmeter/demo'),
