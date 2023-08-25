@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>903</width>
-    <height>587</height>
+    <width>730</width>
+    <height>456</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -656,8 +656,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>865</width>
-             <height>836</height>
+             <width>702</width>
+             <height>824</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -840,8 +840,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>879</width>
-             <height>429</height>
+             <width>712</width>
+             <height>323</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1126,8 +1126,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>903</width>
-     <height>21</height>
+     <width>730</width>
+     <height>17</height>
     </rect>
    </property>
   </widget>
@@ -1135,15 +1135,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>MplWidget</class>
-   <extends>QWidget</extends>
-   <header>mplwidget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>PlotWidget</class>
    <extends>QWidget</extends>
    <header>pyqtgraph</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MplWidget</class>
+   <extends>QWidget</extends>
+   <header>mplwidget</header>
    <container>1</container>
   </customwidget>
   <customwidget>
@@ -1156,7 +1156,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_BATT_range"/>
   <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
  </buttongroups>
 </ui>

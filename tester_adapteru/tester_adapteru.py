@@ -1,13 +1,13 @@
 #!python3
 
-verbose =80
+verbose = 80
 
 
-# lib_check_install v3 by Josef La Masek ----------------------------
+# region   lib_check_install v3 by Josef La Masek ----------------------------
 import importlib.util
 import subprocess
 import sys
-import pip
+#import pip
 def lib_check_install(MODULEname, PACKAGEname=None): 
 	#
 	# check if module MODULEname is avalable for include, if not, it try to install it via pip
@@ -49,7 +49,44 @@ def lib_check_install(MODULEname, PACKAGEname=None):
 	except:
 		None
 	#pip.main(['install', p]) # old deprecated way
-#--------------------------------------------------------------------
+# endregion   --------------------------------------------------------------------
+
+
+# region  autoUiPy - automatic QT Designer .ui to .py converter ------------------------------
+# v 1 , by Josef La Masek  masek2050@gmail.com
+# 
+# no needs to do manually run 'pyuc' or by creating setup in project in QT Designer / QT Creator
+# during startup it checkes for given list, if generated .py files exists and are fresh,
+# if they are not, it will regenerate them
+
+autoUiPy_PYUIC = 'PyQt6.uic.pyuic'
+autoUiPy_ui_list = ['ui_mainwindow', 'ui_tab_wattmeter']
+autoUiPy_enabled = True
+
+# --------------
+
+import os.path
+
+if autoUiPy_enabled:
+	for i in autoUiPy_ui_list:
+		if os.path.exists(i+'.py'):
+			try:
+				#print(os.path.getmtime(i+'.ui'))
+				#print(os.path.getmtime(i+'.py'))
+				if os.path.getmtime(i+'.ui') <= os.path.getmtime(i+'.py'):
+					continue
+			except:
+				print('autoUiPy: something wrong with given filename')
+		
+		# python -m PyQt6.uic.pyuic -x mainwindow.ui -o ui_mainwindow.py
+		autoUiPy_PYUIC_CALL = [sys.executable, '-m', autoUiPy_PYUIC, '-x', i+'.ui', '-o', i+'.py']
+		print('autoUiPy: Calling: ', autoUiPy_PYUIC_CALL)
+		try:
+			subprocess.check_call(autoUiPy_PYUIC_CALL)
+		except Exception as e:
+			print('autoUiPy: subprocess call failed: ', e)
+
+# endregion ----------------------------------------------------------------
 
 lib_check_install('io')
 import io
@@ -152,6 +189,7 @@ CONFIG_DEFAULT = {
 					'testACDCadapteru/Po':  1, #W
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
+					'testACDCadapteru/load8h': False,
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -1359,6 +1397,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			status = self.load_label_status,
 		)
 		self.timer_load_mereni = QtCore.QTimer()
+		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
+
 
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
@@ -1457,10 +1497,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
 		#testACDCadapteru_comboBox_typAdapteru
-		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
-		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
 		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', 'Short', '1 hour load'])
 		self.cfg.add_handler('testACDCadapteru/test', self.testACDCadapteru_comboBox_test)
+		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
+		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
+		self.cfg.add_handler('testACDCadapteru/load8h', self.testACDCadapteru_checkBox_load8h)
+
+
 		#endregion
 
 
@@ -1468,6 +1511,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.mplWidget1.myinit()
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
+
+		self.timer_test_zatizeni = QtCore.QTimer()
+		self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
+
 
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni_start.pressed.connect(self.test_zatizeni_start)
@@ -1743,7 +1790,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		# schedule Measuring
 		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
-		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
 		self.timer_load_mereni.start()
 
 
@@ -1942,9 +1988,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			)
 
 		# schedule Measuring
-		self.timer_test_zatizeni = QtCore.QTimer()
 		self.timer_test_zatizeni.setInterval(self.cfg.get('test_adapteru/time_step_delay')) # ms
-		self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
 		self.timer_test_zatizeni.start()
 
 

@@ -6,8 +6,8 @@
 <H1>Souhrn</H1>
 		
 	<P>Měření a ovládání na Wattmetru Yokogawa WT310E a DC zátěže Rigol DL 3000.</P>
-	<P>Parametry měření provádějte pouze pokud neběží test.</P>
-	<P>Měření v záložce Wattmeter a Load je možno provádět během testu.</P>
+	<P>Parametry měření měňte pouze pokud neběží test.</P>
+	<P>Měření v záložce Wattmeter a Load je možno provádět i během testů.</P>
 	<P>Změna nastavení Wattmetru nebo Zátěže během testu není detekována a povede často ke znehodnocení testu.
 		Pokud jste si dobře vědomi co test s wattmetrem nebo zátěží dělá, je možno to na vlastní riziko měnit. </P>
 				
@@ -17,46 +17,61 @@
 		<P>Config je z disku načítán při spuštění aplikace, pak už ne.</P>
 		<P>Config je na disk ukládán při ukončení aplikace.</P>
 		<P>
-		Default config je použit když:
-		<UL>
-		  <LI> jde o první spuštění aplikace</LI>
-		  <LI> není načtena uložená konfigurace z disku</LI>
-		  <LI> pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.</LI>
-		</UL>
-		<P>
+			Default config je použit když:
+			<UL>
+			<LI> jde o první spuštění aplikace</LI>
+			<LI> není načtena uložená konfigurace z disku</LI>
+			<LI> pro možnost resetu hodnot do defaultu stiskem tlačítka na žádost uživatele.</LI>
+			</UL>
+		</P>
 
 	<H2>VISA</H2>
+		VISA je API pro ovládání měřících a laboratorních přístrojů.
+		Zde je možno testovat a ovládat přístroje se znalostí SCPI příkazů.<BR></BR>
+		
 		Pokud je v 'SCPI Command' znak otazník (kdekoliv), je Command zasílán jako Query, pokud ne, je zasílán jako Write.
 
-		<H2>Test AC/DC adapteru</H2>
-			<P>
-				Vstupy:
-				<UL>Po - Maximální/Nominální výkon adaptéru</UL>
-				<UL>Vmax - Maximální/nominální napětí udávané výrobcem</UL>
-			</P>
+	<H2>Test AC/DC adapteru</H2>
+		<P>Je možno vybrat jakýkoliv test, nebo všechny testy najednou.
+			 Výstup z testů je vždy přidáván do záložky Export.</P>
+		<P>Vstupy:
+			<UL>
+				<LI><B>Po</B> - Maximální/Nominální výkon adaptéru</LI>
+				<LI><B>Typ adapteru</B>: Typ dle TODO, Pokud je vybrán je součástí reportů i vyhodnocení
+					, zda splňuje kritéria dle TODO</LI>
+				<LI>TODO Vmax - Maximální/nominální napětí udávané výrobcem</LI>
+			</UL>
+		</P>
 
-		<P>
-			Kroky testu:  
+		<P>Možné testy:  
 			<OL>
-				<LI><B>Měření Pstb</B> - standby spotřeby - 10 minutového průměru příkonu bez zátěže</LI>
-				<LI><B>Měření Pa</B> - účinnosti v aktivním režimu (25%, 50%, 75%, 100%) plus 
-					<B>Měření P10</B> účinnosti při malém zatížení (10%)</LI>
-				<LI>Měření <B>VA charakteristiky</B> při normálním zatížení:
+				<LI>Měření <B>Pstb</B> - standby spotřeby - 10 minutového průměru příkonu bez zátěže</LI>
+				<LI>Měření <B>Pa</B> - účinnosti v aktivním režimu (25%, 50%, 75%, 100%) plus 
+					Měření <B>P10</B> účinnosti při malém zatížení (10%)</LI>
+				<LI>Měření <B>VA char.</B> - Volt/Ampérové chakteristiky při normálním zatížení:
 					<UL>
-						<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
+						<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-100%</LI>
 						<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
 						<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
 					</UL>
 				</LI>
-				<LI>Měření <B>VA charakteristiky při přetížení</B>- VA charakteristika a časový průběh U a I</LI>
-				<LI>Test ochrany proti zkratu</LI>
-				<LI>Zátěž 1 hodina max. výkon</LI>
+				<LI>Měření <B>VA char. overcur.</B>- VA charakteristika při přetížení a časový průběh U a I</LI>
+				<LI>Test ochrany proti zkratu - <B>Short</B></LI>
+				<LI>Zátěž 1 hodina max. výkon - <B>1 hour load</B>. Volitelně plus dalších 8 hodin 
+					- <B>Load+8h</B> zejména pro možnost nechat test běžet až do příchodu uživatele a změření teploty</LI>
 			</OL>	
 		</P>
 		
 	<H2>Export</H2>
-		Měření je vždy vkládáno na aktuální pozici kurzoru.
-		Před měřením není obsah mazán.
+		<UL>
+			<LI>Sem se exportují naměřené reporty a data.</LI>
+			<LI>Odtud je možno je uložit jako prostý text nebo PDF.</LI>
+			<LI>Před měřením není obsah mazán, vždy se přidává na aktuální pozici kurzoru.</LI>
+			<LI>Kdykoliv je možno export smazat, modifikovat, nebo exportovat.</LI>
+			<LI>Výstupy z "Test AC/DC adapteru" jsou generovány automaticky během a po měření a to ve formě reportu včetně grafů.</LI>
+			<LI>Výstupy z Wattmeter a Load jsou po stisknutí tlačítka Export exportovány jako textový seznam všech
+		naměřených hodnot (pro pozdější export do CSV/TEXTu).</LI>
+		</UL>
 
 	<H2>Comments</H2>
 		Poznámky a komentáře uživatele.
