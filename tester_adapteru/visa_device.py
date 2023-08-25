@@ -16,6 +16,7 @@ class VisaDevice():
 	def setDemo(self, d: bool): #pokud demo, tak dela sinusovku co 10s a jen kladnou
 		self.demo = d
 	
+	verbose = 100
 
 	VISAresource = ''
 	connected = False
