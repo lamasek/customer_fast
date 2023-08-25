@@ -78,7 +78,7 @@ import matplotlib.dates
 lib_check_install('mplcursors')
 import mplcursors
 
-lib_check_install('PyQt6')
+lib_check_install('PyQt6', 'pyqt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
 from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter, QCloseEvent
@@ -1350,7 +1350,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.tab_Wattmeter_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter, export=self.export_textEdit1)
 
-		#endregion
+		#endregion 
 
 		#region LOAD -----------------------------------------------------
 		self.load = Load_GUI(
