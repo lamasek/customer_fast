@@ -1,8 +1,6 @@
 
 import time
 
-from pyqtconfig import QSettingsManager
-
 import pyqtgraph
 from pyqtgraph import mkPen
 import pyqtgraph.exporters
@@ -10,6 +8,12 @@ import pyqtgraph.exporters
 
 from PyQt6.QtWidgets import*
 from PyQt6 import QtCore
+from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter, QCloseEvent
+from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
+
+from pyqtconfig import QSettingsManager
+
+
 
 from ui_tab_wattmeter import Ui_TabWattmeterContent
 
@@ -20,23 +24,57 @@ from visa_device import VisaDevice
 import wattmeter_device
 from wattmeter_device import Wattmeter_GUI
 
+def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, addLine2Zero = True, *kwargs):
+	penColor = color=(205, 205, 205)
+	pen = pyqtgraph.mkPen(penColor, width=1)
+	cursor = Qt.CursorShape.CrossCursor
+	# https://www.geeksforgeeks.org/pyqtgraph-symbols/
+
+	#plot.show()
+	plot.clear()
+	plot.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
+	#plot1.showGrid(x=True, y=True)
+	daxis = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+	plot.setAxisItems({"bottom": daxis})
+	plot.setLabel('left', labelY)
+	#plot.setCursor(self.cursor)
+	plot_dataLine =  plot.plot([], [],
+		labelY, symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=pen)
+	
+	if addLine2Zero:
+		plot_dataLine2 = plot.plot([], [], symbol='+', symbolSize = 0)
+		plot_dataLine2.setData([time.time()], [0])
+
+	return(plot_dataLine)
 
 class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
+
     cfg : QSettingsManager
+    wattmeter: Wattmeter_GUI
+    export: QTextEdit
+
+    data_W = []
+    data_Wtime = []
+    data_A = []
+    data_Atime = []
+    data_V = []
+    data_Vtime = []
+    data_MATH = []
+    data_MATHtime = []
 
     def __init__(self, parent = None):
         QWidget.__init__(self, parent)
         self.setupUi(self)
 
-        print('XX1')
 
-
-    def myinit(self, cfg: QSettingsManager, wattmeter: Wattmeter_GUI):
-        print('XX2')
+    def myinit(self, cfg: QSettingsManager, wattmeter: Wattmeter_GUI, export: QTextEdit):
         self.cfg = cfg
         self.wattmeter = wattmeter
-        print(self.cfg.get('wattmeter/VISAresource'))
+        self.export = export
+
         self.cfg.add_handler('wattmeter/VISAresource', self.ui_VISAresource)
+
+        self.mereni_timer = QtCore.QTimer()
 
         self.ui_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
         self.cfg.add_handler('wattmeter/demo', self.ui_demo)
@@ -44,14 +82,44 @@ class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
         self.ui_connect.pressed.connect(self.wattmeter.connect)
         self.ui_disconnect.pressed.connect(self.wattmeter.disconnect)
 
+        self.wattmeter_mereni_finished = True # semaphor for measuring method
+        self.ui_start.pressed.connect(self.wattmeter_mereni_start)
+        self.ui_stop.pressed.connect(self.wattmeter_mereni_stop)
+        self.cfg.add_handler('wattmeter/measure_interval', self.ui_measure_interval)
+        #self.cfg.add_handler('wattmeter/autorange', self.ui_autorange)
+        self.ui_export.pressed.connect(self.wattmeter_mereni_export)
+        self.ui_clear_graphs.pressed.connect(self.wattmeter_mereni_clear_graphs)
 
-    def xxx(self):
-        #self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
-        #self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
-        #self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
-        #self.wattmeter_checkBox_demo.stateChanged.connect(self.wattmeter_demo_pressed)
-        #self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter.connect)
-        #self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter.disconnect)
+
+        self.cfg.add_handler('wattmeter/measure_W', self.ui_measure_W)
+        self.ui_measure_W.stateChanged.connect(self.ui_measure_W_changed)
+        self.ui_measure_W_changed() # set initial state from config
+        self.cfg.add_handler('wattmeter/measure_A', self.ui_measure_A)
+        self.ui_measure_A.stateChanged.connect(self.ui_measure_A_changed)
+        self.ui_measure_A_changed() # set initial state from config
+        self.cfg.add_handler('wattmeter/measure_V', self.ui_measure_V)
+        self.ui_measure_V.stateChanged.connect(self.ui_measure_V_changed)
+        self.ui_measure_V_changed() # set initial state from config
+        self.cfg.add_handler('wattmeter/measure_MATH', self.ui_measure_MATH)
+        self.ui_measure_MATH.stateChanged.connect(self.ui_measure_MATH_changed)
+        self.ui_measure_MATH_changed() # set initial state from config
+
+
+        self.plot1_dataLine = plot_prepare(cfg, self.plot1, 'Power/P [W]', addLine2Zero=False)
+        self.plot2_dataLine = plot_prepare(cfg, self.plot2, 'Current/I [A]', addLine2Zero=False)
+        self.plot3_dataLine = plot_prepare(cfg, self.plot3, 'Voltage/U [V]', addLine2Zero=False)
+        self.plot4_dataLine = plot_prepare(cfg, self.plot4, 'AVG Power 10 min./P [W]', addLine2Zero=False)
+
+    #def setStatus(self, s: str):
+    #    self.ui_status.setText(s)
+
+    def oldinit(self):
+        self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
+        self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
+        self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
+        self.wattmeter_checkBox_demo.stateChanged.connect(self.wattmeter_demo_pressed)
+        self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter.connect)
+        self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter.disconnect)
 
         # Wattmeter Measure
         self.wattmeter_mereni_finished = True # semaphor for measuring method
@@ -77,49 +145,49 @@ class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
 
         # setup Wattmeter graphs
         # plotWidget1 / W
-        self.wattmeter_plotWidget1.setMinimumSize(plotMinW, plotMinH)
-        self.wattmeter_plotWidget1.showGrid(x=True, y=True)
+        self.plot1.setMinimumSize(plotMinW, plotMinH)
+        self.plot1.showGrid(x=True, y=True)
         wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        self.wattmeter_plotWidget1.setAxisItems({"bottom": wattmeter_daxis1})
-        self.wattmeter_plotWidget1.setLabel('left', 'Power/P [W]')
-        self.wattmeter_plotWidget1.setCursor(self.cursor)
-        self.wattmeter_plotWidget1_dataLine =  self.wattmeter_plotWidget1.plot([], [],
+        self.plot1.setAxisItems({"bottom": wattmeter_daxis1})
+        self.plot1.setLabel('left', 'Power/P [W]')
+        self.plot1.setCursor(self.cursor)
+        self.plot1_dataLine =  self.plot1.plot([], [],
             'Power/P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
         #line2 contains just 0 to force autorange go from 0
-        self.wattmeter_plotWidget1_dataLine2 = self.wattmeter_plotWidget1.plot([], [], symbol='+', symbolSize = 0)
+        self.plot1_dataLine2 = self.plot1.plot([], [], symbol='+', symbolSize = 0)
 
         # plotWidget2 / A
-        self.wattmeter_plotWidget2.setMinimumSize(plotMinW, plotMinH)
-        self.wattmeter_plotWidget2.showGrid(x=True, y=True)
+        self.plot2.setMinimumSize(plotMinW, plotMinH)
+        self.plot2.showGrid(x=True, y=True)
         wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        self.wattmeter_plotWidget2.setAxisItems({"bottom": wattmeter_daxis1})
-        self.wattmeter_plotWidget2.setLabel('left', 'Current/I [A]')
-        self.wattmeter_plotWidget2.setCursor(self.cursor)
-        self.wattmeter_plotWidget2_dataLine =  self.wattmeter_plotWidget2.plot([], [],
+        self.plot2.setAxisItems({"bottom": wattmeter_daxis1})
+        self.plot2.setLabel('left', 'Current/I [A]')
+        self.plot2.setCursor(self.cursor)
+        self.plot2_dataLine =  self.plot2.plot([], [],
             'Current/I [A]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-        self.wattmeter_plotWidget2_dataLine2 = self.wattmeter_plotWidget2.plot([], [], symbol='+', symbolSize = 0)
+        self.plot2_dataLine2 = self.plot2.plot([], [], symbol='+', symbolSize = 0)
 
         # plotWidget3 / U
-        self.wattmeter_plotWidget3.setMinimumSize(plotMinW, plotMinH)
-        self.wattmeter_plotWidget3.showGrid(x=True, y=True)
+        self.plot3.setMinimumSize(plotMinW, plotMinH)
+        self.plot3.showGrid(x=True, y=True)
         wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        self.wattmeter_plotWidget3.setAxisItems({"bottom": wattmeter_daxis1})
-        self.wattmeter_plotWidget3.setLabel('left', 'Voltage/U [V]')
-        self.wattmeter_plotWidget3.setCursor(self.cursor)
-        self.wattmeter_plotWidget3_dataLine =  self.wattmeter_plotWidget3.plot([], [],
+        self.plot3.setAxisItems({"bottom": wattmeter_daxis1})
+        self.plot3.setLabel('left', 'Voltage/U [V]')
+        self.plot3.setCursor(self.cursor)
+        self.plot3_dataLine =  self.plot3.plot([], [],
             'Voltage/U [V]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-        self.wattmeter_plotWidget3_dataLine2 = self.wattmeter_plotWidget3.plot([], [], symbol='+', symbolSize = 0)
+        self.plot3_dataLine2 = self.plot3.plot([], [], symbol='+', symbolSize = 0)
 
         # plotWidget4 / MATH
-        self.wattmeter_plotWidget4.setMinimumSize(plotMinW, plotMinH)
-        self.wattmeter_plotWidget4.showGrid(x=True, y=True)
+        self.plot4.setMinimumSize(plotMinW, plotMinH)
+        self.plot4.showGrid(x=True, y=True)
         wattmeter_daxis1 = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        self.wattmeter_plotWidget4.setAxisItems({"bottom": wattmeter_daxis1})
-        self.wattmeter_plotWidget4.setLabel('left', 'AVG Power 10 min./P [W]')
-        self.wattmeter_plotWidget4.setCursor(self.cursor)
-        self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
+        self.plot4.setAxisItems({"bottom": wattmeter_daxis1})
+        self.plot4.setLabel('left', 'AVG Power 10 min./P [W]')
+        self.plot4.setCursor(self.cursor)
+        self.plot4_dataLine =  self.plot4.plot([], [],
             'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
-        self.wattmeter_plotWidget4_dataLine2 = self.wattmeter_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
+        self.plot4_dataLine2 = self.plot4.plot([], [], symbol='+', symbolSize = 0)
 
 
     def wattmeter_VISAresource_changed(self):
@@ -127,50 +195,49 @@ class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
 
     def wattmeter_demo_pressed(self):
         self.wattmeter.disconnect()
-        self.wattmeter_lineEdit_status.setText('Disconnected')
-        self.wattmeter_lineEdit_status.setStyleSheet('')
-        self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
+        self.ui_status.setText('Disconnected')
+        self.ui_status.setStyleSheet('')
+        self.wattmeter.setDemo(self.ui_demo.isChecked())
 
 
-    def wattmeter_checkBox_measure_W_changed(self):
+    def ui_measure_W_changed(self):
         if self.cfg.get('wattmeter/measure_W'):
-            self.wattmeter_plotWidget1.show()
+            self.plot1.show()
         else:
-            self.wattmeter_plotWidget1.hide()
+            self.plot1.hide()
 
 
-    def wattmeter_checkBox_measure_A_changed(self):
+    def ui_measure_A_changed(self):
         if self.cfg.get('wattmeter/measure_A'):
-            self.wattmeter_plotWidget2.show()
+            self.plot2.show()
         else:
-            self.wattmeter_plotWidget2.hide()
+            self.plot2.hide()
 
 
-    def wattmeter_checkBox_measure_V_changed(self):
+    def ui_measure_V_changed(self):
         if self.cfg.get('wattmeter/measure_V'):
-            self.wattmeter_plotWidget3.show()
+            self.plot3.show()
         else:
-            self.wattmeter_plotWidget3.hide()
+            self.plot3.hide()
 
 
-    def wattmeter_checkBox_measure_MATH_changed(self):
+    def ui_measure_MATH_changed(self):
         if self.cfg.get('wattmeter/measure_MATH'):
-            self.wattmeter_plotWidget4.show()
+            self.plot4.show()
         else:
-            self.wattmeter_plotWidget4.hide()
+            self.plot4.hide()
 
 
     def wattmeter_mereni_start(self):
         self.wattmeter.connect()
         # schedule Measuring
-        self.timer_wattmeter_mereni = QtCore.QTimer()
-        self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
-        self.timer_wattmeter_mereni.timeout.connect(self.wattmeter_mereni_mer)
-        self.timer_wattmeter_mereni.start()
+        self.mereni_timer.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
+        self.mereni_timer.timeout.connect(self.wattmeter_mereni_mer)
+        self.mereni_timer.start()
 
 
     def wattmeter_mereni_stop(self):
-        self.timer_wattmeter_mereni.stop()
+        self.mereni_timer.stop()
         self.wattmeter_mereni_finished = True
 
 
@@ -183,110 +250,106 @@ class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
         if True: #self.cfg.get('wattmeter/measure_'):
             W = self.wattmeter.measure('W')
             if type(W) is float or int:
-                data_wattmeter_W.append(W)
-                data_wattmeter_Wtime.append(time.time())
-                self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
-                if len(data_wattmeter_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-                    self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
+                self.data_W.append(W)
+                self.data_Wtime.append(time.time())
+                self.plot1_dataLine.setData(self.data_Wtime, self.data_W)
+                #if len(self.data_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+                #    self.plot1_dataLine2.setData([time.time()], [0])
 
 
         if True: #self.cfg.get('wattmeter/measure_'):
             A = self.wattmeter.measure('A')
             if type(A) is float or int:
-                data_wattmeter_A.append(A)
-                data_wattmeter_Atime.append(time.time())
-                self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
-                if len(data_wattmeter_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-                    self.wattmeter_plotWidget2_dataLine2.setData([time.time()], [0])
+                self.data_A.append(A)
+                self.data_Atime.append(time.time())
+                self.plot2_dataLine.setData(self.data_Atime, self.data_A)
+                #if len(self.data_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+                #    self.plot2_dataLine2.setData([time.time()], [0])
 
         if True: #self.cfg.get('wattmeter/measure_'):
             V = self.wattmeter.measure('V')
             if type(V) is float or int:
-                data_wattmeter_V.append(V)
-                data_wattmeter_Vtime.append(time.time())
-                self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
-                if len(data_wattmeter_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-                    self.wattmeter_plotWidget3_dataLine2.setData([time.time()], [0])
+                self.data_V.append(V)
+                self.data_Vtime.append(time.time())
+                self.plot3_dataLine.setData(self.data_Vtime, self.data_V)
+                #if len(self.data_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+                #    self.plot3_dataLine2.setData([time.time()], [0])
 
         if True: #self.cfg.get('wattmeter/measure_'):
             MATH = self.wattmeter.measure('MATH')
             if type(MATH) is float or int:
-                data_wattmeter_MATH.append(MATH)
-                data_wattmeter_MATHtime.append(time.time())
-                self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
-                if len(data_wattmeter_MATH) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-                    self.wattmeter_plotWidget4_dataLine2.setData([time.time()], [0])
+                self.data_MATH.append(MATH)
+                self.data_MATHtime.append(time.time())
+                self.plot4_dataLine.setData(self.data_MATHtime, self.data_MATH)
+                #if len(self.data_MATH) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+                #    self.plot4_dataLine2.setData([time.time()], [0])
 
         self.wattmeter_mereni_finished = True
 
     #region wattmeter_mereni_export
     def wattmeter_mereni_export(self):
-        self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot wattmetrem</H1><BR></BR>')
+        self.export.insertHtml('<BR></BR><H1>Export naměřených hodnot wattmetrem</H1><BR></BR>')
         CSVDELIM = self.cfg.get('export/CSVDELIM')
         if self.cfg.get('wattmeter/measure_W'):
-            self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
-            self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
-            for i in range(len(data_wattmeter_W)):
-                self.export_textEdit1.append(
-                    str(data_wattmeter_Wtime[i])+CSVDELIM+
-                    str(data_wattmeter_W[i])
+            self.export.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
+            self.export.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
+            for i in range(len(self.data_W)):
+                self.export.append(
+                    str(self.data_Wtime[i])+CSVDELIM+
+                    str(self.data_W[i])
                 )
-            self.export_textEdit1.append('')
-            self.export_textEdit1.insertHtml('<BR></BR>')
+            self.export.append('')
+            self.export.insertHtml('<BR></BR>')
 
 
         if self.cfg.get('wattmeter/measure_A'):
-            self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
-            self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
-            for i in range(len(data_wattmeter_A)):
-                self.export_textEdit1.append(
-                    str(data_wattmeter_Atime[i])+CSVDELIM+
-                    str(data_wattmeter_A[i])
+            self.export.insertHtml('<H2>Proud [A]</H2><BR></BR>')
+            self.export.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
+            for i in range(len(self.data_A)):
+                self.export.append(
+                    str(self.data_Atime[i])+CSVDELIM+
+                    str(self.data_A[i])
                 )
-            self.export_textEdit1.append('')
-            self.export_textEdit1.insertHtml('<BR></BR>')
+            self.export.append('')
+            self.export.insertHtml('<BR></BR>')
 
         if self.cfg.get('wattmeter/measure_V'):
-            self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
-            self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
-            for i in range(len(data_wattmeter_V)):
-                self.export_textEdit1.append(
-                    str(data_wattmeter_Vtime[i])+CSVDELIM+
-                    str(data_wattmeter_V[i])
+            self.export.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
+            self.export.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
+            for i in range(len(self.data_V)):
+                self.export.append(
+                    str(self.data_Vtime[i])+CSVDELIM+
+                    str(self.data_V[i])
                 )
-            self.export_textEdit1.append('')
-            self.export_textEdit1.insertHtml('<BR></BR>')
+            self.export.append('')
+            self.export.insertHtml('<BR></BR>')
 
         if self.cfg.get('wattmeter/measure_MATH'):
-            data_wattmeter_MATH
-            data_wattmeter_MATHtime
-            self.export_textEdit1.insertHtml('<H2>MATH - Energie [W]</H2><BR></BR>')
-            self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}MATH [W]')
-            for i in range(len(data_wattmeter_MATH)):
-                self.export_textEdit1.append(
-                    str(data_wattmeter_MATHtime[i])+CSVDELIM+
-                    str(data_wattmeter_MATH[i])
+            self.data_MATH
+            self.data_MATHtime
+            self.export.insertHtml('<H2>MATH - Energie [W]</H2><BR></BR>')
+            self.export.append(f'Time [seconds since 1970]{CSVDELIM}MATH [W]')
+            for i in range(len(self.data_MATH)):
+                self.export.append(
+                    str(self.data_MATHtime[i])+CSVDELIM+
+                    str(self.data_MATH[i])
                 )
-            self.export_textEdit1.append('')
-            self.export_textEdit1.insertHtml('<BR></BR>')
+            self.export.append('')
+            self.export.insertHtml('<BR></BR>')
     #endregion wattmeter_mereni_export
 
 
-    def wattmeter_mereni_clearGraphs(self):
-        global data_wattmeter_W, data_wattmeter_Wtime
-        data_wattmeter_W = []
-        data_wattmeter_Wtime = []
-        global data_wattmeter_A, data_wattmeter_Atime
-        data_wattmeter_A = []
-        data_wattmeter_Atime = []
-        global data_wattmeter_V, data_wattmeter_Vtime
-        data_wattmeter_V = []
-        data_wattmeter_Vtime = []
-        global data_wattmeter_MATH, data_wattmeter_MATHtime
-        data_wattmeter_MATH = []
-        data_wattmeter_MATHtime = []
+    def wattmeter_mereni_clear_graphs(self):
+        self.data_W = []
+        self.data_Wtime = []
+        self.data_A = []
+        self.data_Atime = []
+        self.data_V = []
+        self.data_Vtime = []
+        self.data_MATH = []
+        self.data_MATHtime = []
 
-        self.wattmeter_plotWidget1_dataLine.setData([], [])
-        self.wattmeter_plotWidget2_dataLine.setData([], [])
-        self.wattmeter_plotWidget3_dataLine.setData([], [])
-        self.wattmeter_plotWidget4_dataLine.setData([], [])
+        self.plot1_dataLine.setData([], [])
+        self.plot2_dataLine.setData([], [])
+        self.plot3_dataLine.setData([], [])
+        self.plot4_dataLine.setData([], [])

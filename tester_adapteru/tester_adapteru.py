@@ -182,7 +182,7 @@ data_loadAhtime = []
 data_loadWh = []
 data_loadWhtime = []
 
-data_wattmeter_W = []
+#data_wattmeter_W = []
 data_wattmeter_Wtime = []
 data_wattmeter_A = []
 data_wattmeter_Atime = []
@@ -1345,8 +1345,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter = Wattmeter_GUI(
 			VISAresource=self.cfg.get('wattmeter/VISAresource'),
 			demo=self.cfg.get('wattmeter/demo'),
-			status = self.wattmeter_label_status
+			status = self.wattmeter_lineEdit_status
 		)
+		'''
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
 		self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
@@ -1422,9 +1423,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.wattmeter_plotWidget4_dataLine2 = self.wattmeter_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
 		#endregion
+'''
+		#endregion
 
 		#region WATTMETER2 -----------------------------------------------------------------
-		#self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
+		self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
 		#self.wattmeter = Wattmeter_GUI(
 		#	VISAresource=self.cfg.get('wattmeter/VISAresource'),
 		#	demo=self.cfg.get('wattmeter/demo'),
@@ -1432,7 +1435,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#)
 
 		#endregion
-
 
 		#region LOAD -----------------------------------------------------
 		self.load = Load_GUI(
@@ -1576,6 +1578,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	#region classes for wattmeter ------------------------------
+	'''
 	def wattmeter_VISAresource_changed(self):
 		self.wattmeter.setVISAresource(self.cfg.get('wattmeter/VISAresource'))
 
@@ -1744,8 +1747,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget2_dataLine.setData([], [])
 		self.wattmeter_plotWidget3_dataLine.setData([], [])
 		self.wattmeter_plotWidget4_dataLine.setData([], [])
+'''
 	#endregion
-
 
 	#region classes for LOAD ------------------------------
 	def load_VISAresource_changed(self):

@@ -2,6 +2,8 @@
 
 import math
 
+import time
+
 from PyQt6 import QtWidgets
 #from PyQt6.QtWidgets import*
 
@@ -37,12 +39,11 @@ class Wattmeter(VisaDevice):
 				i = 0
 			return( i )
 		
-		global verbose
-		verbose -= 100
+		self.verbose -= 100
 		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
 		if varName == 'MATH':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
-			verbose += 100
+			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
 				return(f)
@@ -50,7 +51,7 @@ class Wattmeter(VisaDevice):
 				return(None)
 		if varName == 'TIME':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 2")
-			verbose += 100
+			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
 				return(f)
@@ -58,7 +59,7 @@ class Wattmeter(VisaDevice):
 				return(None)
 		elif varName == 'V':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
-			verbose += 100
+			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
 				return(f)
@@ -66,7 +67,7 @@ class Wattmeter(VisaDevice):
 				return(None)
 		elif varName == 'A':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
-			verbose += 100
+			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
 				return(f)
@@ -74,7 +75,7 @@ class Wattmeter(VisaDevice):
 				return(None)
 		elif varName == 'W':
 			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
-			verbose += 100
+			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
 				return(f)
@@ -96,7 +97,7 @@ class Wattmeter(VisaDevice):
 		sum = 0
 		for i in range(10):
 			ret = self.measureNoNAN(varName)
-			if verbose > 170:
+			if self.verbose > 170:
 				print('measure10Avg:' + str(ret))
 			if ret is not None:
 				sum += ret

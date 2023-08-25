@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>730</width>
-    <height>477</height>
+    <width>903</width>
+    <height>587</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -383,8 +383,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>712</width>
-             <height>345</height>
+             <width>879</width>
+             <height>429</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -906,8 +906,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>702</width>
-             <height>824</height>
+             <width>865</width>
+             <height>836</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -1090,8 +1090,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>712</width>
-             <height>344</height>
+             <width>879</width>
+             <height>429</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1376,8 +1376,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>730</width>
-     <height>17</height>
+     <width>903</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>

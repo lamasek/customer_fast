@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>736</width>
-    <height>339</height>
+    <width>873</width>
+    <height>510</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,7 +100,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="ui_clear">
+      <widget class="QPushButton" name="ui_clear_graphs">
        <property name="text">
         <string>Clear Graphs</string>
        </property>
@@ -114,12 +114,47 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="ui_interval">
+      <widget class="QSpinBox" name="ui_measure_interval">
        <property name="minimum">
         <number>50</number>
        </property>
        <property name="maximum">
         <number>100000</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Show:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ui_measure_W">
+       <property name="text">
+        <string>W</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ui_measure_A">
+       <property name="text">
+        <string>A</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ui_measure_V">
+       <property name="text">
+        <string>V</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="ui_measure_MATH">
+       <property name="text">
+        <string>MATH/Avg. W</string>
        </property>
       </widget>
      </item>
@@ -135,15 +170,37 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>722</width>
-        <height>270</height>
+        <width>853</width>
+        <height>425</height>
        </rect>
       </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="PlotWidget" name="plot1" native="true"/>
+       </item>
+       <item>
+        <widget class="PlotWidget" name="plot2" native="true"/>
+       </item>
+       <item>
+        <widget class="PlotWidget" name="plot3" native="true"/>
+       </item>
+       <item>
+        <widget class="PlotWidget" name="plot4" native="true"/>
+       </item>
+      </layout>
      </widget>
     </widget>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PlotWidget</class>
+   <extends>QWidget</extends>
+   <header>pyqtgraph</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
