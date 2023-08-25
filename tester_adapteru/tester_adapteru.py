@@ -108,6 +108,7 @@ import pyqtgraph.exporters
 # 'FIX' the apllication logo in the taskbar 
 # sets grouping this script as unique app - not Pythonw.exe with python logo
 # see https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
+# stopped to work in Windows 11 in ?May? 2023 
 lib_check_install('ctypes')
 try:
     import ctypes
