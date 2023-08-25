@@ -1,6 +1,6 @@
 #!python3
 
-verbose = 80
+verbose =80
 
 
 # lib_check_install v3 by Josef La Masek ----------------------------
@@ -108,6 +108,7 @@ import pyqtgraph.exporters
 # 'FIX' the apllication logo in the taskbar 
 # sets grouping this script as unique app - not Pythonw.exe with python logo
 # see https://stackoverflow.com/questions/1551605/how-to-set-applications-taskbar-icon-in-windows-7/1552105#1552105
+# stopped to work in Windows 11 in ?May? 2023 
 lib_check_install('ctypes')
 try:
     import ctypes
@@ -116,9 +117,11 @@ try:
 except all:
     pass
 
+from visa_device import VisaDevice
 
+from wattmeter_device import Wattmeter_GUI
 
-from MainWindow import Ui_MainWindow
+from ui_mainwindow import Ui_MainWindow
 
 
 ###### GLOBAL variables - config ####################################################
@@ -194,143 +197,6 @@ data_test_zatizeni_V = []
 data_test_zatizeni_W = []
 
 
-###############################
-class VisaDevice():
-	
-	def __init__(self, VISAresource: str, demo: bool):
-		self. VISAresource = VISAresource
-		self.demo = demo
-
-	demo = False	# if True, it does not connect to real device, it provide fake demo values
-	#demo_connected = False
-	
-	def setDemo(self, d: bool): #pokud demo, tak dela sinusovku co 10s a jen kladnou
-		self.demo = d
-	
-
-	VISAresource = ''
-	connected = False
-
-	def is_connected(self):
-		return(self.connected)
-	
-	def setVISAresource(self, Vr: str):
-		self.VISAresource = Vr
-
-	def connect(self):
-		# return retCode=True/False, retString=Error str/IDN of device
-		if  self.demo == True:
-			self.connected = True
-			return(True, 'Demo connected')
-
-		if self.connected:
-			return(True, 'Already connected')
-		self.rm = pyvisa.ResourceManager()
-		if verbose > 70:
-			print('Connecting to ' + self.VISAresource)
-		try:
-			self.PVdevice = self.rm.open_resource(self.VISAresource)
-		except Exception as e:
-			print('  Connection failed: ' + str(e))
-			self.connected = False
-			return(False, ' Connection failed'+str(e))
-
-		# Query if instrument is present
-		# Prints e.g. "RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
-		try:
-			IDNreply = self.PVdevice.query("*IDN?")
-		except Exception as e:
-			print('SCPI *IDN? test after connection failed: ' + str(e))
-			self.connected = False
-			return(False, 'SCPI *IDN? test after connection failed: '+str(e))
-		if verbose>50:
-			print(IDNreply.strip())
-		self.connected = True
-		return(True, IDNreply)
-
-	def disconnect(self):
-		if  self.demo == True:
-			self.connected = False
-			return(True)
-
-		if verbose > 70:
-			print('Load disconnecting...')
-		try:
-			self.rm.close() 
-		except:
-			None
-		#TODO check
-		self.connected = False
-		return(True)
-
-	def send(self, commandi):
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				if '?' in command: # some devices (e.g. Yokogawa WT310E) have some IDs after ? (e.g. ":NUM:VAL? 1")
-					reply = self.PVdevice.query(command)
-				else:
-					self.PVdevice.write(command)
-					reply = ''
-				if verbose>150:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 50:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
-
-	def write(self, commandi):
-		#return(bool (True = OK), <string with error message | ''>)
-		if  self.demo == True:
-			return(True, '')
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				reply = self.PVdevice.write(command)
-				if verbose>50:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 50:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
-
-	def query(self, commandi):
-		#return(retCode = True/False, retString)
-		if  self.demo == True:
-			return(True, 'Demo')
-
-		if  self.connected == True:
-			command = commandi.strip()
-			if command =='':
-				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
-			try:
-				if verbose>70:
-					print('Command:' + command)
-				reply = self.PVdevice.query(command)
-				reply.strip()
-				if verbose>50:
-					print(reply)
-				return(True, reply)
-			except Exception as e:
-				if verbose > 70:
-					print('  Comand "' + command + '" failed: ' + str(e))
-				return(False, str(e))
-		else:
-			return(False, 'Not connected')
 
 
 class Load(VisaDevice):
@@ -423,143 +289,46 @@ class Load(VisaDevice):
 				print('PVcommand = '+PVcommand)
 			VisaDevice.write(self, PVcommand)
 
-
-class Wattmeter(VisaDevice):
+class Load_GUI(Load):
+	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
+		Load. VISAresource = VISAresource
+		Load.demo = demo
+		self.status = status
 
 	def connect(self):
-		r, s = VisaDevice.connect(self)
-		if r == False:
-			return(r, s)
-		if self.demo == True:
-			return(r, s)
-		VisaDevice.write(self, ':NUM:FORM ASCII')
-		#todo check ze je ok
-
-		#todo check ze:
-		#:integ?
-		#kontrolovat ze to je spravne na NORM;0,10,0
-
-		return(r, s)
-		#self.connected = True
-
-	def measure(self, varName):
-		# return float | False -error durinq query | None - device answered NAN or not float
-		if  self.demo == True:
-			i = 100*math.sin( # sinus, period 5s in time
-					(time.time()%5) / 5 * 2*3.1415
-				)
-			if i < 0: #only positive part
-				i = 0
-			return( i )
-		
-		global verbose
-		verbose -= 100
-		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
-		if varName == 'MATH':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		if varName == 'TIME':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 2")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'V':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'A':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
-		elif varName == 'W':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
-			verbose += 100
-			f = float(retString.strip())
-			if type(f) == float:
-				return(f)
-			else:
-				return(None)
+		if  self.is_connected() == True:
+			return(True, 'Already connected')
 		else:
-			return(False)
-	
-	def measureNoNAN(self, varName):
-		# if measure returns NaN, perform again, max 100 times
-		for i in range(100):
-			ret = self.measure(varName)
-			if ret is not None:
-				return(ret)
-		return(False)
-	
-	def measure10Avg(self, varName):
-		# measure 10 times and return avg
-		sum = 0
-		for i in range(10):
-			ret = self.measureNoNAN(varName)
-			if verbose > 170:
-				print('measure10Avg:' + str(ret))
-			if ret is not None:
-				sum += ret
-		return(sum / 10)
-
-
-
-	# Integrate ------------------------------------
-	# procedure how to make integrate measure on Wattmeter:
-	# :INTEG:RESET
-	# volitelne
-	#	:INTEG:TIME 0,10,10
-	#	check math, mod, rms, ...
-	# :INTEG:START
-	# periodicalluy check :INTEGrate:STATe?
-	# 	if is STARTt - wait
-	# 	if TIMeup - finished, take results
-	#	 if other - measuring failed
-
-	integrate = 0 #demo integrate
-
-	def integrateStart(self):
-		if  self.demo == True:
-			self.integrate = 10
-			return(True)
-		return(VisaDevice.write(self, ":INTEGrate:STARt"))
-
-	def integrateReset(self):
-		if  self.demo == True:
-			self.integrate = 0
-		VisaDevice.write(self, ":INTEGrate:RESet")
-		VisaDevice.write(self, ":INTEGrate:STOP") #in case is running, RESet does not work
-		VisaDevice.write(self, ":INTEGrate:RESet")
-
-	def integrateState(self):
-		# returns:
-		# 	STAR[t] pocita
-		# 	TIM[eup] normalni konec vypoctu
-		#	ERRor
-		# 	RESet	normalni po resetu a spusteni pristroje - tohle je v klidu bez chyb
-		# 	STOP
-		if  self.demo == True:
-			if self.integrate > 0:
-				self.integrate -= 1
-				return(True, 'STAR')
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
+			retCode, retStr = Load.connect(self)
+			#retCode, retStr = super().connect()
+			if retCode == False:
+				self.status.setText('FAILED to connect, error: ' + retStr)
+				self.status.setStyleSheet('color:red')
+				return(False, retStr)
 			else:
-				return(True, 'TIM')
-		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
+				self.status.setText('Connected to: ' + retStr)
+				self.status.setStyleSheet('color:green')
+				return(True, retStr)
+
+	def disconnect(self):
+		if  self.is_connected() == True:
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
+			ret = Load.disconnect(self)
+			if ret == False:
+				self.status.setText('Disconnected, FAILED to nice disconnect')
+				self.status.setStyleSheet('color:red')
+			else:
+				self.status.setText('Disconnected ')
+				self.status.setStyleSheet(None)
+		else:
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
+
+
+
 
 #region Tab_Config -----------------------------------------------------
 class Tab_Config():
@@ -645,9 +414,11 @@ class Tab_Config():
 #region Tab_VISA -----------------------------------------------------
 class Tab_VISA():
 	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, visa: VisaDevice):
-		self.visa = visa
-		self.cfg = cfg
 		self.mw = mw
+		self.cfg = cfg
+		self.visa = visa
+
+		self.status = self.mw.visa_label_status
 		cfg.add_handler('VISA/VISAresource', mw.visa_lineEdit_VISAresource)
 		mw.visa_lineEdit_VISAresource.textChanged.connect(self.visa_VISAresource_changed)
 		self.mw.visa_pushButton_connect.pressed.connect(self.visa_connect)
@@ -664,42 +435,42 @@ class Tab_VISA():
 		if  self.visa.is_connected() == True:
 			return(True)
 		else:
-			self.mw.visa_label_status.setText('Trying to connect...')
-			self.mw.visa_label_status.setStyleSheet('')
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
 			ret, retStr = self.visa.connect()
 			self.mw.visa_plainTextEdit_output.appendPlainText(retStr)
 			if ret == False:
-				self.mw.visa_label_status.setText('FAILED to connect')
-				self.mw.visa_label_status.setStyleSheet('color:red')
+				self.status.setText('FAILED to connect')
+				self.status.setStyleSheet('color:red')
 				return(False)
 			else:
-				self.mw.visa_label_status.setText('Connected')
-				self.mw.visa_label_status.setStyleSheet('color:green')
+				self.status.setText('Connected')
+				self.status.setStyleSheet('color:green')
 				return(True)
 
 	def visa_disconnect(self):
 		if  self.visa.is_connected() == True:
-			self.mw.visa_label_status.setText('Disconnecting...')
-			self.mw.visa_label_status.setStyleSheet(None)
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
 			ret = self.visa.disconnect()
 			if ret == False:
-				self.mw.visa_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.mw.visa_label_status.setStyleSheet('color:red')
+				self.status.setText('Disconnected, FAILED to nice disconnect')
+				self.status.setStyleSheet('color:red')
 			else:
-				self.mw.visa_label_status.setText('Disconnected ')
-				self.mw.visa_label_status.setStyleSheet(None)
+				self.status.setText('Disconnected ')
+				self.status.setStyleSheet(None)
 		else:
-			self.mw.visa_label_status.setText('Disconnected ')
-			self.mw.visa_label_status.setStyleSheet(None)
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
 
 	def visa_send(self):
 		if  self.visa.is_connected() == True:
-			command = self.visa_lineEdit_SCPIcommand.text()
-			self.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
+			command = self.mw.visa_lineEdit_SCPIcommand.text()
+			self.mw.visa_plainTextEdit_output.appendPlainText('Command sent:\t' + command)
 			retCode, retStr = self.visa.send(command)
-			self.visa_plainTextEdit_output.appendPlainText(retStr)
+			self.mw.visa_plainTextEdit_output.appendPlainText(retStr)
 		else:
-			self.visa_plainTextEdit_output.appendPlainText('Not connected...')
+			self.mw.visa_plainTextEdit_output.appendPlainText('Not connected...')
 
 #endregion --------------------------------------------------------
 
@@ -856,12 +627,18 @@ def data2plot2qimg(
 
 
 class TestACDCadapteru():
-	data1 = []
-	data2 = []
 	semaphore = QSemaphore(0) # semafor na testy:
 			# 0 	test is not running
 			# 1		test is running
 			# 2 	do exit from test (e.g. button pressed)
+
+	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, load: Load_GUI, wmeter: Wattmeter_GUI):
+		self.mw = mw
+		self.cfg = cfg
+		self.load = load
+		self.wmeter = wmeter
+		self.exportTextEdit = self.mw.export_textEdit1
+		#testACDCadapteru_checkBox_load8h
 
 	def check_exit(self, statusLabel):
 		if self.semaphore.available() > 1: #stop the test and exit
@@ -875,8 +652,8 @@ class TestACDCadapteru():
 
 
 	def do_measure(	self,
-			wmeter: Wattmeter,
-			load: Load, 
+			wmeter: Wattmeter_GUI,
+			load: Load_GUI, 
 			exportTextEdit: QtWidgets.QTextEdit, 
 			plot1: pyqtgraph.PlotWidget, 
 			plot2: pyqtgraph.PlotWidget,
@@ -911,8 +688,6 @@ class TestACDCadapteru():
 		rc, rs = wmeter.query('*IDN?')
 		exportTextEdit.insertHtml('<P>Wattmeter IDN: ' + rs + '</P><BR></BR>')
 
-
-
 		#plot1.hide()
 		#plot2.hide()
 		#plot3.hide()
@@ -940,7 +715,11 @@ class TestACDCadapteru():
 			wmeter.integrateReset()
 			wmeter.integrateStart()
 			if wmeter.demo != True:
+				stepTime = 200
 				QtTest.QTest.qWait(1000)
+			else: 
+				stepTime = 20
+
 			retCode, iState = wmeter.integrateState()
 			statusLabel.setText('Test Pstb - Measuring')
 
@@ -963,25 +742,26 @@ class TestACDCadapteru():
 
 				retCode, iState = wmeter.integrateState()
 				
-				if wmeter.demo != True:
-					QtTest.QTest.qWait(200)
-				else:
-					QtTest.QTest.qWait(10)
+				QtTest.QTest.qWait(stepTime)
 
 				if self.check_exit(statusLabel): #stop the test and exit
-					exportTextEdit.insertHtml('<H2>Měření Pstb přerušeno uživatelem</H2><BR></BR>')
+					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
+			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
 					statusLabel.setText('Test Pstb - Stopped by user')
 					wmeter.integrateReset()
-					return()
+					break
 
 			if not iState.startswith('TIM'): # failed to measure
-				exportTextEdit.insertHtml('<H2>Měření Pstb selhalo</H2><BR></BR>')
+				exportTextEdit.insertHtml('<H2>Měření Pstb selhalo, zobrazené hodnoty jsou pro kratší čas než požadovaný</H2><BR></BR>')
 				statusLabel.setText('Test Pstb - Failed')
-				wmeter.integrateReset()
-				self.semaphore.tryAcquire(1) #normal exit
-				self.semaphore.tryAcquire(1) #user stopped during normal exit
-				return(False)
-				
+
+
+			#Pstb = ldata_wattmeter_MATH[-1] 
+			vPstb = wmeter.measureNoNAN('MATH')
+			wmeter.integrateReset()
+			exportTextEdit.insertHtml(f'<H3>Standby příkon adaptéru - <B>Pstb</B>: {vPstb:.4f} W</H3><BR></BR>')
+			exportTextEdit.insertHtml('<BR></BR>')
+
 			exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
 			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
 					ylabel='Power [W]', xlabel='Time [H:M:S]', formatXasTime=True, width=1200)
@@ -997,16 +777,11 @@ class TestACDCadapteru():
 
 			exportTextEdit.insertHtml('<P>Průběh času během měření (hodí se pro vizuální kontrolu ' +
 					'chyb v měření, měl by plynule růst od 0 do 10 minut):<BR></BR>')
-			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, ylabel='MATH Time [H:M:S]',
+			img = data2plot2qimg(ldata_wattmeter_TIMEtime, ldata_wattmeter_TIME, ylabel='MATH Time [H:M:S]',
 					height=200, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			#Pstb = ldata_wattmeter_MATH[-1] 
-			vPstb = wmeter.measureNoNAN('MATH')
-			wmeter.integrateReset()
-			exportTextEdit.insertHtml('<H3>Standby příkon adaptéru - <B>Pstb</B>: ' + str(vPstb) + ' W</H3><BR></BR>')
-			exportTextEdit.insertHtml('<BR></BR>')
 			statusLabel.setText('Test Pstb - Finished')
 		#endregion -------------------------------------------------------------
 
@@ -1018,59 +793,63 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml('<H2>Měření účinnosti v aktivním režimu  - <B>Pa</B></H2><BR></BR>')
 			exportTextEdit.insertHtml('<P>Měří se účinnost adaptéru (příkon na wattmetru děleno výkonem na zátěži)' +
 					'při 25%, 50%, 75%, 100% zatížení z maxima, z toho aritmetický průměr.</P><BR></BR>')
-			exportTextEdit.insertHtml('<P>Na zátěži je nastaven mód Constant Power, měřená účinnost bude ' + 
-					'horší díky ztrátám napětí na měřících kabelech a konektorech</P><BR></BR>')
-			load.setStateOn(False)
-			load.setFunction('CP')
+			exportTextEdit.insertHtml('<P>Na zátěži je nastaven mód Constant Power, změřená účinnost bude ' + 
+					'horší než reálná díky ztrátám napětí na měřících kabelech a konektorech</P><BR></BR>')
+			exportTextEdit.insertHtml('<P>Po nastavení zátěže se čeká 5 vteřin, než se začne měřit.' + 
+					'Na wattmetru se měří 10x a z toho se použije aritmetický průměr.</P><BR></BR>')
+			#TODO 'NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019, kterým se stanoví požadavky na ekodesign vnějších napájecích zdrojů podle směrnice Evropského parlamentu a Rady 2009/125/ES'
 			vPo = cfg.get('testACDCadapteru/Po')
 			exportTextEdit.insertHtml('<H3>Nominální/maximální výkon adaptéru - <B>Po = ' + str(vPo) + 
 					' W</B></H3><BR></BR>')
 
-			load.setPower(vPo*0.1)
+			load.setStateOn(False)
+			load.setFunction('CP')
+			load.setPower(0)
 			load.setStateOn(True)
+
 			if wmeter.demo == True:
-				QtTest.QTest.qWait(100)
+				twait = 100
 			else:
-				QtTest.QTest.qWait(1000)
+				twait = 3000
+			load.setStateOn(True)
+
+			load.setPower(vPo*0.1)
+			QtTest.QTest.qWait(twait)
 			wmeterW10 = wmeter.measure10Avg('W')
 			loadW10 = load.measure('W')
 			statusLabel.setText('Power in 10%')
 
 			load.setPower(vPo*0.25)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(100)
-			else:
-				QtTest.QTest.qWait(1000)
+			QtTest.QTest.qWait(twait)
 			wmeterW25 = wmeter.measure10Avg('W')
 			loadW25 = load.measure('W')
 			statusLabel.setText('P in 25%')
 
 			load.setPower(vPo*0.5)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(100)
-			else:
-				QtTest.QTest.qWait(1000)
+			QtTest.QTest.qWait(twait)
 			wmeterW50 = wmeter.measure10Avg('W')
 			loadW50 = load.measure('W')
 			statusLabel.setText('P in 50%')
 
-			load.setPower(vPo+0.75)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(100)
-			else:
-				QtTest.QTest.qWait(1000)
+			load.setPower(vPo*0.75)
+			QtTest.QTest.qWait(twait)
 			wmeterW75 = wmeter.measure10Avg('W')
 			loadW75 = load.measure('W')
 			statusLabel.setText('P in 75%')
 
 			load.setPower(vPo)
-			if wmeter.demo == True:
-				QtTest.QTest.qWait(100)
-			else:
-				QtTest.QTest.qWait(1000)
+			QtTest.QTest.qWait(twait)
 			wmeterW100 = wmeter.measure10Avg('W')
 			loadW100 = load.measure('W')
 			statusLabel.setText('P in 100%')
+
+			try:
+				xP10 = loadW10/wmeterW10
+			except:
+				xP10 = 0
+			exportTextEdit.insertHtml('<H4>Průměrná účinnost při malém zatížení (10%) - <B>P10 = </B>' +
+					str(xP10) + '</H4><BR></BR>')
+
 
 			try:
 				xP25 = loadW25/wmeterW25
@@ -1090,8 +869,6 @@ class TestACDCadapteru():
 				xP100 = 0
 
 			vPa = (xP25 + xP50 + xP75 + xP100)/4
-			exportTextEdit.insertHtml('<H4>Průměrná účinnost při malém zatížení (10%) - <B>P10 = </B>' +
-					str(wmeterW10) + '</H4><BR></BR>')
 			exportTextEdit.insertHtml(
 				'<TABLE BORDER="1">' +
 					'<TR><TH>% z Po</TH><TH>Požadovaný P [W]</TH><TH>Naměřený P na zátěži [W]</TH>' +
@@ -1115,10 +892,11 @@ class TestACDCadapteru():
 
 		#region test VA charakteristika  -------------------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', 'VA char.'}: 
+			statusLabel.setText('Test VA char.: Started')
 			exportTextEdit.insertHtml('<P><H2>Měření <B>VA charakteristiky</B> při normálním zatížení</H2>')
 			exportTextEdit.insertHtml('''
 						<UL>
-							<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-110%</LI>
+							<LI>postupně se zvyšuje požadovaný výkon na zátěži 0-100%</LI>
 							<LI>měří se U a I na zátěži, výsledek je VA charakteristika zdroje<LI>
 							<LI>měří se P na zátěži i na wattmetru a výsledek je graf účinnosti vzhledem k zátěži</LI>
 						</UL></P><BR></BR>''')
@@ -1147,12 +925,15 @@ class TestACDCadapteru():
 
 			xPo = cfg.get('testACDCadapteru/Po')
 			loadReqW = 0
-			while loadReqW < xPo*1.1:
+			if wmeter.demo == True:
+				stepTime = 1
+				stepW = xPo/60 # merime 0,1 minutu
+			else:
+				stepTime = 100
+				stepW = xPo/600 # merime 1,1 minutu
+			while loadReqW < xPo:
 				load.setPower(loadReqW)
-				if wmeter.demo == True:
-					QtTest.QTest.qWait(1)
-				else:
-					QtTest.QTest.qWait(100)
+				QtTest.QTest.qWait(stepTime)
 				
 				dataLoadA.append(load.measure('A'))
 				dataLoadAtime.append(time.time())
@@ -1170,20 +951,19 @@ class TestACDCadapteru():
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
 				plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
 
-				if load.demo == True:
-					loadReqW += xPo/60 # merime 0,1 minutu
-				else:
-					loadReqW += xPo/600 # merime 1,1 minutu
 
-				if self.check_exit(statusLabel): #stop the test and exit
-					exportTextEdit.insertHtml('<H2>Měření VA charky přerušeno uživatelem</H2><BR></BR>')
+				loadReqW += stepW
+
+				if self.check_exit(statusLabel): #stop the test
+					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
+			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
 					statusLabel.setText('Test VA char - Stopped by user')
 					load.setStateOn(False)
-					return()
+					break
 
 
 			exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', height=400)
+			img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', xlabel='Current [A]', height=400)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
@@ -1197,20 +977,26 @@ class TestACDCadapteru():
 			dataUcinnostP = []
 			for i in range(len(dataLoadW)):
 				try:
-					dataUcinnostP.append(dataLoadW[i]/dataWmeterW[i])
+					xP = dataLoadW[i]/dataWmeterW[i]
+					if xP > 1:
+						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xp}')
+					else:
+						dataUcinnostP.append(xP)
 				except:
 					dataUcinnostP.append(0)
 			exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', height=400)
+			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', xlabel='Power [W]', height=400)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
+			statusLabel.setText('Test VA char.: Finished')
 		#endregion
 
 		#region Měření VA charakteristiky při přetížení------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', 'VA char. overcur.'}: 
+			statusLabel.setText('Test VA char. overcur.: Started')
 			exportTextEdit.insertHtml('<H2>Měření <B>VA charakteristiky při přetížení</B></H2><BR></BR>')
 			exportTextEdit.insertHtml('Měří se časový průběh U a I při zátěži od 80% Po' + 
-					'až do přetížení plus 1 minuta nebo 10*Pa')
+					'až do přetížení plus 0.5 minuty nebo 10*Pa')
 
 			load.setStateOn(False)
 			load.setFunction('CP')
@@ -1235,14 +1021,21 @@ class TestACDCadapteru():
 			plot3_dataLine = plot_prepare(cfg, plot3, 'Load Requested P [W]')
 
 			xPo = cfg.get('testACDCadapteru/Po')
-			loadReqW = xPo*0.8
+			loadReqW = xPo*0.5
 			overloadedAttempts = 600 #1 minuta
+			if wmeter.demo == True:
+				stepTime = 1
+				stepW = xPo/60 # merime 0,1 minutu
+				overloadedAttempts = 10 #10 pokusu => 1s
+
+			else:
+				stepTime = 100
+				stepW = xPo/600 # merime 1 minutu
+				overloadedAttempts = 300 # 300 pokusu => 0.5 minuty
+
 			while loadReqW < xPo*10:
 				load.setPower(loadReqW)
-				if wmeter.demo == True:
-					QtTest.QTest.qWait(1)
-				else:
-					QtTest.QTest.qWait(100)
+				QtTest.QTest.qWait(stepTime)
 				
 				dataLoadA.append(load.measure('A'))
 				dataLoadAtime.append(time.time())
@@ -1258,22 +1051,35 @@ class TestACDCadapteru():
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
 				plot3_dataLine.setData(dataLoadReqWtime, dataLoadReqW)
 
-				if load.demo == True:
-					loadReqW += xPo/60 # merime 0,1 minutu
-				else:
-					loadReqW += xPo/600 # merime 1,1 minutu
+				
+				loadReqW += stepW
 				if loadW < loadReqW*0.1:
-					overloadedAttempts += 1
+					overloadedAttempts -= 1
+					statusLabel.setText(f'Test VA char overload: overloadedAttempts={overloadedAttempts}')
 				if overloadedAttempts < 0:
 					break
 
 				if self.check_exit(statusLabel): #stop the test and exit
-					exportTextEdit.insertHtml('<H2>Měření VA charky při přetížení přerušeno uživatelem</H2><BR></BR>')
+					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
+			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
 					statusLabel.setText('Test VA char overload - Stopped by user')
 					load.setStateOn(False)
-					return()
+					break
 
+			load.setStateOn(False)
 
+			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži (hodí se pro vizuální srovnání a kontrolu ' +
+					'chyb v měření. Měl by plynule růst od 50% Po až do přetížení, plus cca 30 sekund.)<BR></BR>')
+			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
+					height=200, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
+
+			exportTextEdit.insertHtml('<P>Průběh změřeného výkonu na zátěži během měření:<BR></BR>')
+			img = data2plot2qimg(dataLoadWtime, dataLoadW, ylabel='Measured P [W]',
+					height=200, formatXasTime=True)
+			textEditAppendImg(exportTextEdit, img)
+			exportTextEdit.insertHtml('</P>')
 
 			exportTextEdit.insertHtml('<P>Průběh proudu při přetížení' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
@@ -1285,26 +1091,19 @@ class TestACDCadapteru():
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
-					'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
-			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
-					height=200, formatXasTime=True)
-			textEditAppendImg(exportTextEdit, img)
-			exportTextEdit.insertHtml('</P>')
-
-
+			statusLabel.setText('Test VA char. overcur.: Finished')
 		#endregion Měření VA charakteristiky při přetížení - VA charakteristika a časový průběh U a I
 
 		#region test zkrat ---------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', 'Short'}: 
+			statusLabel.setText('Test Short: Started')
 			exportTextEdit.insertHtml('<H2>Měření charakteristik při <B>zkratu (Short)</B></H2><BR></BR>')
-			exportTextEdit.insertHtml('Na zátěži se nastaví maximální výkon 60A TODO nebo zkrat a měří se časový průběh I')
+			exportTextEdit.insertHtml('<P>Na zátěži se nastaví maximální výkon 60A (pokud dá zdroj méně než 60A '
+			     + 'tak se pro něj jeví jako zkrat) a měří se časový průběh I a U</P><BR></BR>')
 
 			load.setStateOn(False)
 			load.setFunction('CC')
-			load.setPower(60) #maximal current of Rigol DL3031
-			QtTest.QTest.qWait(100)
-			load.setStateOn(True)
+			load.setCurrent(60) # 60A = maximal current of Rigol DL3031
 
 			dataLoadA = []
 			dataLoadAtime = []
@@ -1313,26 +1112,27 @@ class TestACDCadapteru():
 
 			plot1_dataLine = plot_prepare(cfg, plot1, 'Load Measured I [A]')
 			plot2_dataLine = plot_prepare(cfg, plot2, 'Load measured U [V]')
+			plot3_dataLine = plot_prepare(cfg, plot3, '')
+
 
 			if load.demo == True:
-				tstop = time.time() + 10 # 10 seconds
+				tstop = time.time() + 10 # 3 seconds
+				stepTime = 5
 			else:
-				tstop = time.time() + 60 # 1 minute
-			
+				tstop = time.time() + 30 # 30 seconds
+				stepTime = 50 # ms
+				QtTest.QTest.qWait(100)
+
+			startOnce = True
 			while time.time() < tstop:
-				if wmeter.demo == True:
-					QtTest.QTest.qWait(1)
-				else:
-					QtTest.QTest.qWait(100)
-				
 				loadA = load.measure('A')
-				if loadA > 50:
+				if loadA > 55:
 					load.setStateOn(False)
-					exportTextEdit.insertHtml('<H2>Test zkratu přerušen - I je větší než 50 A - hrozí poškození zátěže.</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 50A')
+					exportTextEdit.insertHtml('<H2>Test zkratu přerušen - I je větší než 55 A - hrozí poškození zátěže.</H2><BR></BR>')
+					statusLabel.setText('Short test stopped - current over 55A')
 					break
 
-				dataLoadA.append()
+				dataLoadA.append(loadA)
 				dataLoadAtime.append(time.time())
 				dataLoadV.append(load.measure('V'))
 				dataLoadVtime.append(time.time())
@@ -1340,14 +1140,19 @@ class TestACDCadapteru():
 				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
 
+				QtTest.QTest.qWait(stepTime)
+				if startOnce:
+					load.setStateOn(True)
+					startOnce = False
 
 				if self.check_exit(statusLabel): #stop the test and exit
-					exportTextEdit.insertHtml('<H2>Test zkratu přerušen uživatelem</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 50A')
+					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
+			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
+					statusLabel.setText('Short test stopped - current over 55A')
 					load.setStateOn(False)
-					return()
+					break
 
-
+			load.setStateOn(False)
 
 			exportTextEdit.insertHtml('<P>Průběh proudu při zkratu' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
@@ -1358,16 +1163,16 @@ class TestACDCadapteru():
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
-
+			statusLabel.setText('Test Short: Started')
 		#endregion test zkrat
 
 
 		#region zátěž 1 hodina max.  ---------------------------------------------------
 		if cfg.get('testACDCadapteru/test') in {'All', '1 hour load'}: 
+			statusLabel.setText('Test 1 hour load: Started')
 			exportTextEdit.insertHtml('<H2>Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
 			exportTextEdit.insertHtml('<P>Na zátěži se nastaví maximální výkon adaptéru a měří se časový průběh I, U a P po dobu 1 hodina<BR></BR>')
 			exportTextEdit.insertHtml('<P>Pokud je vybrána volba Wait on last, měření po 1 hodině pokračuje až do zastavení uživatelem nebo maximálně dalších 8 hodin </P><BR></BR>')
-			statusLabel.setText('Test 1 hour max. started')
 
 			load.setStateOn(False)
 			load.setFunction('CP')
@@ -1417,44 +1222,54 @@ class TestACDCadapteru():
 				tlabel += 1
 
 				if self.check_exit(statusLabel): #stop the test and exit
-					exportTextEdit.insertHtml('<H2>Test Měření chování při <B>zátěži na maximální výkon po dobu 1 hodiny</B></H2><BR></BR>')
+					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
+			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
 					statusLabel.setText('1 hour load test stopped by user')
-					load.setStateOn(False)
-					return()
+					#load.setStateOn(False)
+					break
 
 			load.setStateOn(False)
 			statusLabel.setText('Test 1 hour load: finished')
 
 
-			exportTextEdit.insertHtml('<P>Průběh proudu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			exportTextEdit.insertHtml('<P>Průběh proudu při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadAtime, dataLoadA, ylabel='Current [I]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			exportTextEdit.insertHtml('<P>Průběh napětí při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
+			exportTextEdit.insertHtml('<P>Průběh napětí při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 
-			exportTextEdit.insertHtml('<P>Průběh výkonu při maximálná zátěži po dobu 1 hodina' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Power [W]', height=400, formatXasTime=True)
+			exportTextEdit.insertHtml('<P>Průběh výkonu při maximální zátěži po dobu 1 hodina' + '<BR></BR>')
+			img = data2plot2qimg(dataLoadWtime, dataLoadW, ylabel='Power [W]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
-
+			statusLabel.setText('Test 1 hour load: Finished')
 		#endregion 
+
+		#region Load +8 hodin
+
+
+
+
+
+		#endregion
+
+
 
 
 		#finished with no errors
 		self.semaphore.tryAcquire(1) #normal exit
 		self.semaphore.tryAcquire(1) #user stopped during normal exit
-		statusLabel.setText('Stopped')
+		#statusLabel.setText('Finished')
 		if verbose > 150:
-			print('TestACDCadapteru-->do_measure Test stopped')
+			print('TestACDCadapteru-->do_measure Finished')
 
 	
 	
 
-#pyuic6 mainwindow.ui -o MainWindow.py
 #https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html
 #https://www.pythonguis.com/tutorials/pyqt6-first-steps-qt-designer/
 # https://www.pythonguis.com/tutorials/pyqt6-plotting-matplotlib/
@@ -1470,9 +1285,9 @@ class TestACDCadapteru():
 
 # development environment install
 # pip install pyqt6-tools
-# pyuic6 -o MainWindow.py mainwindow.ui
+# pyuic6 mainwindow.ui -o ui_mainwindow.py 
 # or if something went wrong with PATH, .... you can use:
-# python -m PyQt6.uic.pyuic -o MainWindow.py -x mainwindow.ui
+# python -m PyQt6.uic.pyuic -x mainwindow.ui -o ui_mainwindow.py 
 
 
 
@@ -1527,16 +1342,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.tab_visa = Tab_VISA(self, self.cfg, self.visa)
 
 		#region WATTMETER -----------------------------------------------------------------
-		self.wattmeter = Wattmeter(
+		self.wattmeter = Wattmeter_GUI(
 			VISAresource=self.cfg.get('wattmeter/VISAresource'),
-			demo=self.cfg.get('wattmeter/demo')
+			demo=self.cfg.get('wattmeter/demo'),
+			status = self.wattmeter_lineEdit_status
 		)
 		self.cfg.add_handler('wattmeter/VISAresource', self.wattmeter_lineEdit_VISAresource)
 		self.wattmeter_lineEdit_VISAresource.textChanged.connect(self.wattmeter_VISAresource_changed)
 		self.cfg.add_handler('wattmeter/demo', self.wattmeter_checkBox_demo)
 		self.wattmeter_checkBox_demo.stateChanged.connect(self.wattmeter_demo_pressed)
-		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter_connect)
-		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter_disconnect)
+		self.wattmeter_pushButton_connect.pressed.connect(self.wattmeter.connect)
+		self.wattmeter_pushButton_disconnect.pressed.connect(self.wattmeter.disconnect)
 
 		# Wattmeter Measure
 		self.wattmeter_mereni_finished = True # semaphor for measuring method
@@ -1605,19 +1421,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter_plotWidget4_dataLine =  self.wattmeter_plotWidget4.plot([], [],
 			'AVG Power 19 min./P [W]', symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=self.pen)
 		self.wattmeter_plotWidget4_dataLine2 = self.wattmeter_plotWidget4.plot([], [], symbol='+', symbolSize = 0)
-#endregion
+		#endregion
+
+		#region WATTMETER2 -----------------------------------------------------------------
+		self.tab_Wattmeter2_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter)
+		#self.wattmeter = Wattmeter_GUI(
+		#	VISAresource=self.cfg.get('wattmeter/VISAresource'),
+		#	demo=self.cfg.get('wattmeter/demo'),
+		#	status = self.wattmeter_lineEdit_status
+		#)
+
+		#endregion
+
 
 		#region LOAD -----------------------------------------------------
-		self.load = Load(
+		self.load = Load_GUI(
 			VISAresource=self.cfg.get('load/VISAresource'),
-			demo=self.cfg.get('load/demo')
+			demo=self.cfg.get('load/demo'),
+			status = self.load_label_status,
 		)
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
 		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
 		self.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
-		self.load_pushButton_connect.pressed.connect(self.load_connect)
-		self.load_pushButton_disconnect.pressed.connect(self.load_disconnect)
+		self.load_pushButton_connect.pressed.connect(self.load.connect)
+		self.load_pushButton_disconnect.pressed.connect(self.load.disconnect)
 		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
 		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
 		
@@ -1706,7 +1534,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#region testACDCadapteru ----------------------------------------------
-		self.testACDCadapteru = TestACDCadapteru()
+		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
 		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
@@ -1753,40 +1581,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 	def wattmeter_demo_pressed(self):
 		self.wattmeter.disconnect()
-		self.wattmeter_label_status.setText('Disconnected')
-		self.wattmeter_label_status.setStyleSheet('')
+		self.wattmeter_lineEdit_status.setText('Disconnected')
+		self.wattmeter_lineEdit_status.setStyleSheet('')
 		self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
-
-	def wattmeter_connect(self):
-		if  self.wattmeter.is_connected() == True:
-			return(True)
-		else:
-			self.wattmeter_label_status.setText('Trying to connect...')
-			self.wattmeter_label_status.setStyleSheet('')
-			retCode, retStr = self.wattmeter.connect()
-			if retCode == False:
-				self.wattmeter_label_status.setText('FAILED to connect, error: ' + retStr)
-				self.wattmeter_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.wattmeter_label_status.setText('Connected to: ' + retStr)
-				self.wattmeter_label_status.setStyleSheet('color:green')
-				return(True)
-
-	def wattmeter_disconnect(self):
-		if  self.wattmeter.is_connected() == True:
-			self.wattmeter_label_status.setText('Disconnecting...')
-			self.wattmeter_label_status.setStyleSheet(None)
-			ret = self.wattmeter.disconnect()
-			if ret == False:
-				self.wattmeter_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.wattmeter_label_status.setStyleSheet('color:red')
-			else:
-				self.wattmeter_label_status.setText('Disconnected ')
-				self.wattmeter_label_status.setStyleSheet(None)
-		else:
-			self.wattmeter_label_status.setText('Disconnected ')
-			self.wattmeter_label_status.setStyleSheet(None)
 
 
 	def wattmeter_checkBox_measure_W_changed(self):
@@ -1818,14 +1615,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def wattmeter_mereni_start(self):
-		if  self.wattmeter.is_connected() == False:
-			self.wattmeter_connect()
-
-		#self.label_test_zatizeni.setText('Measuring')
-		#self.label_test_zatizeni.setStyleSheet('color:green')
-
-		#self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
-
+		self.wattmeter.connect()
 		# schedule Measuring
 		self.timer_wattmeter_mereni = QtCore.QTimer()
 		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
@@ -1967,40 +1757,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.load_label_status.setStyleSheet('')
 		self.load.setDemo(self.cfg.get('load/demo'))
 
-	def load_connect(self):
-		if  self.load.is_connected() == True:
-			return(True)
-		else:
-			self.load_label_status.setText('Trying to connect...')
-			self.load_label_status.setStyleSheet('')
-			retCode, retStr = self.load.connect()
-			if retCode == False:
-				self.load_label_status.setText('FAILED to connect: ' + retStr)
-				self.load_label_status.setStyleSheet('color:red')
-				return(False)
-			else:
-				self.load_label_status.setText('Load connected')
-				self.load_label_status.setStyleSheet('color:green')
-				return(True)
-
-	def load_disconnect(self):
-		if  self.load.is_connected() == True:
-			self.load_label_status.setText('Disconnecting...')
-			self.load_label_status.setStyleSheet(None)
-			ret = self.load.disconnect()
-			if ret == False:
-				self.load_label_status.setText('Disconnected, FAILED to nice disconnect')
-				self.load_label_status.setStyleSheet('color:red')
-			else:
-				self.load_label_status.setText('Disconnected ')
-				self.load_label_status.setStyleSheet(None)
-		else:
-			self.load_label_status.setText('Disconnected ')
-			self.load_label_status.setStyleSheet(None)
 
 	def load_radioButton_Mode_CC_pressed(self):
 		self.load.load.setFunction('CC')
-
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
 		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
@@ -2057,7 +1816,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 	def load_mereni_start(self):
 		if  self.load.is_connected() == False:
-			self.load_connect()
+			self.load.connect()
 		#self.label_test_zatizeni.setText('Measuring')
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
@@ -2238,18 +1997,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.mplWidget1.plot_clear()
 
-		if verbose > 100:
-			print('Connecting to Load')
-
 		if not self.load.is_connected():
-			ret = self.load_connect()
-			if ret == True:
-				self.label_test_zatizeni.setText('Load connected')
-				self.label_test_zatizeni.setStyleSheet('color:green')
-			else:
-				self.label_test_zatizeni.setText('FAILED to connect Load')
-				self.label_test_zatizeni.setStyleSheet('color:red')
+			retCode, retString = self.load.connect()
+			if retCode == False:
 				return()
+		self.load.setFunction('CC')
 
 
 		self.test_zatizeni_running = True
