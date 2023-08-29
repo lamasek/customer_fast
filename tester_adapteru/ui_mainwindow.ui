@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>730</width>
-    <height>456</height>
+    <width>903</width>
+    <height>587</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -656,8 +656,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>702</width>
-             <height>824</height>
+             <width>865</width>
+             <height>836</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -807,7 +807,7 @@
           <item>
            <widget class="QCheckBox" name="testACDCadapteru_checkBox_load8h">
             <property name="text">
-             <string>Load+8h</string>
+             <string>1h Load+8h</string>
             </property>
            </widget>
           </item>
@@ -840,8 +840,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>712</width>
-             <height>323</height>
+             <width>879</width>
+             <height>429</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1126,8 +1126,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>730</width>
-     <height>17</height>
+     <width>903</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -1156,7 +1156,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>

@@ -683,7 +683,7 @@ class TestACDCadapteru():
 			if verbose > 150:
 				print('TestACDCadapteru-->do_measure Test stopped by user')
 			statusLabel.setText('Stopped by user')
-			self.semaphore.tryAcquire(2)
+			self.semaphore.tryAcquire(1)
 			return(True)
 		else:
 			return(False)
@@ -1006,7 +1006,7 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml('</P>')
 
 			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
-					'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+					'chyb v měření, měl by plynule růst od 0 do 100% Po)<BR></BR>')
 			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
 					height=200, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
@@ -1023,7 +1023,7 @@ class TestACDCadapteru():
 				except:
 					dataUcinnostP.append(0)
 			exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', xlabel='Power [W]', height=400)
+			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', xlabel='Measured Power on Load [W]', height=400)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 			statusLabel.setText('Test VA char.: Finished')
@@ -1266,7 +1266,6 @@ class TestACDCadapteru():
 					#load.setStateOn(False)
 					break
 
-			load.setStateOn(False)
 			statusLabel.setText('Test 1 hour load: finished')
 
 
@@ -1285,15 +1284,55 @@ class TestACDCadapteru():
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 			statusLabel.setText('Test 1 hour load: Finished')
+
+
+			if cfg.get('testACDCadapteru/load8h'): # plus next * hours 
+
+				statusLabel.setText('Test 1+8 hour load: Started')
+
+				if load.demo == True:
+					tstop = time.time() + 10 # 10 seconds
+				else:
+					tstop = time.time() + 60*60*8 # 1 hour
+				
+				tlabel = 0
+				while time.time() < tstop:
+					
+					dataLoadA.append(load.measure('A'))
+					dataLoadAtime.append(time.time())
+					dataLoadV.append(load.measure('V'))
+					dataLoadVtime.append(time.time())
+					dataLoadW.append(load.measure('W'))
+					dataLoadWtime.append(time.time())
+
+					plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+					plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+					plot3_dataLine.setData(dataLoadWtime, dataLoadW)
+
+					if wmeter.demo == True:
+						QtTest.QTest.qWait(1)
+					else:
+						QtTest.QTest.qWait(100)
+
+					if tlabel > 8: #each 9 rounds update label
+						tleft = int(tstop-time.time())
+						statusLabel.setText(f'Test 1+8 hour load: {tleft}')
+						tlabel = 0
+					tlabel += 1
+
+					if self.check_exit(statusLabel): #stop the test and exit
+						statusLabel.setText('Test 1+8 hour load: test stopped by user')
+						#load.setStateOn(False)
+						break
+
+				statusLabel.setText('Test 1+8 hour load: finished')
+
+
+			load.setStateOn(False)
+
+
+
 		#endregion 
-
-		#region Load +8 hodin
-
-
-
-
-
-		#endregion
 
 
 
@@ -1542,179 +1581,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.set('GUI/lastTabIndex', self.tabWidget.currentIndex())
 
 
-	#region classes for wattmeter ------------------------------
-	'''
-	def wattmeter_VISAresource_changed(self):
-		self.wattmeter.setVISAresource(self.cfg.get('wattmeter/VISAresource'))
-
-	def wattmeter_demo_pressed(self):
-		self.wattmeter.disconnect()
-		self.wattmeter_lineEdit_status.setText('Disconnected')
-		self.wattmeter_lineEdit_status.setStyleSheet('')
-		self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
-
-
-	def wattmeter_checkBox_measure_W_changed(self):
-		if self.cfg.get('wattmeter/measure_W'):
-			self.wattmeter_plotWidget1.show()
-		else:
-			self.wattmeter_plotWidget1.hide()
-
-
-	def wattmeter_checkBox_measure_A_changed(self):
-		if self.cfg.get('wattmeter/measure_A'):
-			self.wattmeter_plotWidget2.show()
-		else:
-			self.wattmeter_plotWidget2.hide()
-
-
-	def wattmeter_checkBox_measure_V_changed(self):
-		if self.cfg.get('wattmeter/measure_V'):
-			self.wattmeter_plotWidget3.show()
-		else:
-			self.wattmeter_plotWidget3.hide()
-
-
-	def wattmeter_checkBox_measure_MATH_changed(self):
-		if self.cfg.get('wattmeter/measure_MATH'):
-			self.wattmeter_plotWidget4.show()
-		else:
-			self.wattmeter_plotWidget4.hide()
-
-
-	def wattmeter_mereni_start(self):
-		self.wattmeter.connect()
-		# schedule Measuring
-		self.timer_wattmeter_mereni = QtCore.QTimer()
-		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
-		self.timer_wattmeter_mereni.timeout.connect(self.wattmeter_mereni_mer)
-		self.timer_wattmeter_mereni.start()
-
-
-	def wattmeter_mereni_stop(self):
-		self.timer_wattmeter_mereni.stop()
-		self.wattmeter_mereni_finished = True
-
-
-	def wattmeter_mereni_mer(self):
-		if self.wattmeter_mereni_finished == False:
-			print('wattmeter_mereni_mer nestiha!!!!!!!!!!')
-			return()
-		self.wattmeter_mereni_finished = False
-		
-		if True: #self.cfg.get('wattmeter/measure_'):
-			W = self.wattmeter.measure('W')
-			if type(W) is float or int:
-				data_wattmeter_W.append(W)
-				data_wattmeter_Wtime.append(time.time())
-				self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
-				if len(data_wattmeter_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
-
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			A = self.wattmeter.measure('A')
-			if type(A) is float or int:
-				data_wattmeter_A.append(A)
-				data_wattmeter_Atime.append(time.time())
-				self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
-				if len(data_wattmeter_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget2_dataLine2.setData([time.time()], [0])
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			V = self.wattmeter.measure('V')
-			if type(V) is float or int:
-				data_wattmeter_V.append(V)
-				data_wattmeter_Vtime.append(time.time())
-				self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
-				if len(data_wattmeter_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget3_dataLine2.setData([time.time()], [0])
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			MATH = self.wattmeter.measure('MATH')
-			if type(MATH) is float or int:
-				data_wattmeter_MATH.append(MATH)
-				data_wattmeter_MATHtime.append(time.time())
-				self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
-				if len(data_wattmeter_MATH) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget4_dataLine2.setData([time.time()], [0])
-
-		self.wattmeter_mereni_finished = True
-
-	#region wattmeter_mereni_export
-	def wattmeter_mereni_export(self):
-		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot wattmetrem</H1><BR></BR>')
-		CSVDELIM = self.cfg.get('export/CSVDELIM')
-		if self.cfg.get('wattmeter/measure_W'):
-			self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
-			for i in range(len(data_wattmeter_W)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Wtime[i])+CSVDELIM+
-					str(data_wattmeter_W[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-
-		if self.cfg.get('wattmeter/measure_A'):
-			self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
-			for i in range(len(data_wattmeter_A)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Atime[i])+CSVDELIM+
-					str(data_wattmeter_A[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-		if self.cfg.get('wattmeter/measure_V'):
-			self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
-			for i in range(len(data_wattmeter_V)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Vtime[i])+CSVDELIM+
-					str(data_wattmeter_V[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-		if self.cfg.get('wattmeter/measure_MATH'):
-			data_wattmeter_MATH
-			data_wattmeter_MATHtime
-			self.export_textEdit1.insertHtml('<H2>MATH - Energie [W]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}MATH [W]')
-			for i in range(len(data_wattmeter_MATH)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_MATHtime[i])+CSVDELIM+
-					str(data_wattmeter_MATH[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-	#endregion wattmeter_mereni_export
-
-
-	def wattmeter_mereni_clearGraphs(self):
-		global data_wattmeter_W, data_wattmeter_Wtime
-		data_wattmeter_W = []
-		data_wattmeter_Wtime = []
-		global data_wattmeter_A, data_wattmeter_Atime
-		data_wattmeter_A = []
-		data_wattmeter_Atime = []
-		global data_wattmeter_V, data_wattmeter_Vtime
-		data_wattmeter_V = []
-		data_wattmeter_Vtime = []
-		global data_wattmeter_MATH, data_wattmeter_MATHtime
-		data_wattmeter_MATH = []
-		data_wattmeter_MATHtime = []
-
-		self.wattmeter_plotWidget1_dataLine.setData([], [])
-		self.wattmeter_plotWidget2_dataLine.setData([], [])
-		self.wattmeter_plotWidget3_dataLine.setData([], [])
-		self.wattmeter_plotWidget4_dataLine.setData([], [])
-'''
-	#endregion
-
 	#region classes for LOAD ------------------------------
 	def load_VISAresource_changed(self):
 			self.load.setVISAresource(self.cfg.get('load/VISAresource'))
@@ -1727,7 +1593,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def load_radioButton_Mode_CC_pressed(self):
-		self.load.load.setFunction('CC')
+		self.load.setFunction('CC')
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
 		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
