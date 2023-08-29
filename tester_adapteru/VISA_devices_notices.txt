@@ -1,5 +1,4 @@
-
-
+SCPI / VISA notices
 
 
 obecně - oddělovač desetinného místa je na zařízení .
@@ -7,7 +6,6 @@ v OS je to dle nastavení OS/locale
 	 - v ČR je to 	,
 	- v US je to 	.
 nicmene v pythonu to neresim a je to OK
-
 
 
 YOKOGAWA WT310E ----------------------------------------------------------------
@@ -19,17 +17,6 @@ pokud chceme cist hodnoty tak s pyvisa a pyvisa-py we have to switch to ASCII, o
 casto vraci hodnotu NAN - odhad je ze je to kdyz ma autorange a meni range, coz je nekdy velice casto
 
 
-<Decimal> indicates a value expressed as a decimal number, as shown in the table below. Decimal values
-are written in the NR form as specified in ANSI X3.42-1975.
-    Symbol   Meaning                Example
-    <NR1>    Integer                125 -1 +1000
-    <NR2>    Fixed-point number     125.0 -.90 +001.
-    <NR3>    Floating-point number  125.0E+0 -9E-1 +.1E4
-    <NRf>    Any of the forms <NR1> to <NR3>
-• This instrument can receive decimal values that are sent from the controller in any of the forms <NR1>
-to <NR3>. This is expressed as <NRf>.
-• This instrument returns a response to the controller in one of the forms from <NR1> to <NR3> depending on the query. The same form is
-
 *IDN?
 :MEAS? is only measurement settings
 
@@ -38,11 +25,6 @@ COMMunicate:HEADer?
 COMMunicate:HEADer 0
     #vypne headery v odpovedich
 
-:integ?
-kontrolovat ze to je spravne na NORM;0,10,0
-
-:math?
-    by melo byt: AVW1
 
 :INTEGrate?
 :INTEGrate:MODE
@@ -73,11 +55,20 @@ pak uz odecitame namerene hodnoty
 NAN,NAN,236.42E+00,0.0000E-03,-0.0000E+00,0.0000E+00,0.0000E+00,INF,INF,50.016E+00
 
 
+In case 1 (10 min Avg Power for Pa)
+:integ?
+kontrolovat ze to je spravne na NORM;0,10,0
+
+:math?
+    by melo byt: AVW1
+
+
+
 
 
 Rigol DL3031A -------------------------------------------------------
 *IDN?
-"RIGOL TECHNOLOGIES,DL3021,DL3A204800938,00.01.05.00.01"
+"RIGOL TECHNOLOGIES,DL3021,XXXXXXXXXX,00.01.05.00.01"
 
 :MEASURE:CURRENT?
 :MEASURE:VOLTAGE?
@@ -123,17 +114,11 @@ napsat vyrobci ze VISA/SCPI tuhne (zařízení funguje, ale nedá se na něj vzd
  command ends with newline character
 
 
-otáčecí kolečko nesedí přesně kroky mechanické zarážky na odečet stavu
-občas otočím o "zoubek" a nic se nestane
-občas neotočím a změní se hodnota
-ojediněle přeskakuje hodnota aniž bych točil - tohle je asi nejhorší stav
-
-
 ojediněle (cca jednou denně) tuhne - pomůže jen vypnout/zapnout
 neřekne přesně kdy - většinou během ovládání nebo začátku/konce měření
 
 
-by bylo vhodne do dokumentace pridat ze existuji SCPI funkce:
+v dokumentaci chybi ovladani BATT func:
 :SOUR:FUNC:MODE BATT
 :BATT?
 :BATT <current>
@@ -141,4 +126,3 @@ by bylo vhodne do dokumentace pridat ze existuji SCPI funkce:
 :BATT:RANGE?
 :BATT:VSTOP?
 
-ja uz jsem to trefil metodou pokus omyl i kdyz nejsou v navodu, ale nekomu to mozna usetri hodinu az dve prace
