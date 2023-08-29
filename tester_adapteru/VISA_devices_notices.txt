@@ -50,7 +50,6 @@ kontrolovat ze to je spravne na NORM;0,10,0
 :INTEGrate:STARt
 :INTEGrate:STOP
 :INTEGrate:RESet
-TODO - jak zjistit ze integrate uz skoncil
 
 
 during integration Start (by button) error 846 can occure
