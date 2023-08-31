@@ -1,7 +1,10 @@
 hodilo by se dat verbosity do cfg
 alespon pri startu kdyz ne menit behem fungovani
+navic je verbosity ve visa_device nejak odflaknute
 
 
+v testech ac dc 
+zkontrolovat ze na zacatku kazdeho testu si testa nastavuje spravny mod zateze
 
 
 Měření účinnosti v aktivním režimu - Pa

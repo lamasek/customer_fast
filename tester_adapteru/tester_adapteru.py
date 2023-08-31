@@ -166,6 +166,7 @@ from ui_mainwindow import Ui_MainWindow
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
 					'GUI/lastTabIndex' : 1,
+					'verbose': 80, 
 					'plots/theme': 'auto',
 					'plots/minWidth': 300,
 					'plots/minHeight': 200,
@@ -373,15 +374,20 @@ class Tab_Config():
 	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager):
 		self.cfg = cfg
 		self.mw = mw
-		self.mw.config_plainTextEdit.setPlaceholderText('Config not read yet...')
+		self.mw.config_plainTextEdit.setPlaceholderText('Trying to read config...')
 		self.cfg.updated.connect(self.config_show)
 		self.config_show()
 		self.mw.config_pushButton_ClearToDefault.clicked.connect(self.config_set_to_default)
 
-		self.mw.config_comboBox_GUItheme.addItems(('auto', 'dark', 'light'))
-		self.cfg.add_handler('GUI/theme', self.mw.config_comboBox_GUItheme)
+		self.mw.config_GUItheme.addItems(('auto', 'dark', 'light'))
+		self.cfg.add_handler('GUI/theme', self.mw.config_GUItheme)
 		self.config_GUItheme_changed()
-		mw.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_changed)
+		mw.config_GUItheme.currentTextChanged.connect(self.config_GUItheme_changed)
+		
+		self.cfg.add_handler('verbose', self.mw.config_verbose)
+		self.config_verbose_changed()
+		
+
 
 	def config_show(self):
 		self.mw.config_plainTextEdit.clear()
@@ -414,38 +420,41 @@ class Tab_Config():
 		except:
 			None
 		try:
+			themeName: str
 			if theme == 'auto':
 				if darkdetect.isDark():
-					theme = 'dark'
+					themeName = 'k'
 				else:
-					theme = 'light'
-			if theme == 'light':
-				self.mw.wattmeter_plotWidget1.setBackground("w")
-				self.mw.wattmeter_plotWidget2.setBackground("w")
-				self.mw.wattmeter_plotWidget3.setBackground("w")
-				self.mw.wattmeter_plotWidget4.setBackground("w")
-				self.mw.load_plotWidget1.setBackground("w")
-				self.mw.load_plotWidget2.setBackground("w")
-				self.mw.load_plotWidget3.setBackground("w")
-				self.mw.load_plotWidget4.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget1.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget2.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget3.setBackground("w")
+					themeName = 'w'
+			elif theme == 'light':
+				themeName = 'w'
+			elif theme == 'dark':
+				themeName = 'k'
 			else:
-				self.mw.wattmeter_plotWidget1.setBackground("k")
-				self.mw.wattmeter_plotWidget2.setBackground("k")
-				self.mw.wattmeter_plotWidget3.setBackground("k")
-				self.mw.wattmeter_plotWidget4.setBackground("k")
-				self.mw.load_plotWidget1.setBackground("k")
-				self.mw.load_plotWidget2.setBackground("k")
-				self.mw.load_plotWidget3.setBackground("k")
-				self.mw.load_plotWidget4.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget1.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget2.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget3.setBackground("k")
+				print('config_GUItheme_changed: unknown theme: ' + str(theme))
+			
+			self.mw.wattmeter_plotWidget1.setBackground(themeName)
+			self.mw.wattmeter_plotWidget2.setBackground(themeName)
+			self.mw.wattmeter_plotWidget3.setBackground(themeName)
+			self.mw.wattmeter_plotWidget4.setBackground(themeName)
+			self.mw.load_plotWidget1.setBackground(themeName)
+			self.mw.load_plotWidget2.setBackground(themeName)
+			self.mw.load_plotWidget3.setBackground(themeName)
+			self.mw.load_plotWidget4.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget1.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget2.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget3.setBackground(themeName)
+
 		except:
 			None
 	#endregion
+
+	def config_verbose_changed(self):
+		global verbose
+		newVerbose = self.cfg.get('verbose')
+		if verbose > 80:
+			print(f'config_verbose_changed, verbose changed from: {verbose} to: {newVerbose}')
+		verbose = newVerbose
 
 
 
@@ -1186,7 +1195,7 @@ class TestACDCadapteru():
 				if self.check_exit(statusLabel): #stop the test and exit
 					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
 			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 55A')
+					statusLabel.setText('Short test stopped - by user')
 					load.setStateOn(False)
 					break
 
@@ -1201,7 +1210,7 @@ class TestACDCadapteru():
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
-			statusLabel.setText('Test Short: Started')
+			statusLabel.setText('Test Short: Finished')
 		#endregion test zkrat
 
 
@@ -1392,16 +1401,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		#region CONFIG ----------------------------
 
-		#self.config_init()
-		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
-		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
-		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
-		self.cfg.add_handler('test_adapteru/time_step_delay', self.spinBox_time_step_delay)
-		self.cfg.add_handler('test_adapteru/time_measure_delay', self.spinBox_time_measure_delay)
-		self.cfg.add_handler('test_adapteru/stop_mV', self.spinBox_stop_mV)
-		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
-		
-		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 		#endregion
 
 		#region for all pyqt graphs in this app:
@@ -1547,6 +1546,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 		#region TEST ZATIZENI -----------------------------------
+		#self.config_init()
+		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
+		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
+		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
+		self.cfg.add_handler('test_adapteru/time_step_delay', self.spinBox_time_step_delay)
+		self.cfg.add_handler('test_adapteru/time_measure_delay', self.spinBox_time_measure_delay)
+		self.cfg.add_handler('test_adapteru/stop_mV', self.spinBox_stop_mV)
+		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
+		
+		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
+
+
 		self.mplWidget1.myinit()
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()

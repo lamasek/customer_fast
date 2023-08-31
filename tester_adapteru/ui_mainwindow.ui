@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -48,13 +48,6 @@
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>GUI theme</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <widget class="QPushButton" name="config_pushButton_ClearToDefault">
             <property name="text">
@@ -62,8 +55,35 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>GUI theme</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Verbose:</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1">
-           <widget class="QComboBox" name="config_comboBox_GUItheme"/>
+           <widget class="QComboBox" name="config_GUItheme"/>
+          </item>
+          <item row="0" column="3">
+           <widget class="QSpinBox" name="config_verbose">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;logging level&lt;/p&gt;&lt;p&gt;  0 = no logging&lt;/p&gt;&lt;p&gt;  80 - normal logging (connect/disconnect...)&lt;/p&gt;&lt;p&gt;  180 - allmost all remote oprations, calls&lt;/p&gt;&lt;p&gt;  255 - everything&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="maximum">
+             <number>500</number>
+            </property>
+            <property name="singleStep">
+             <number>10</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -1156,7 +1176,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_BATT_range"/>
   <buttongroup name="load_buttonGroup_Mode"/>
+  <buttongroup name="load_buttonGroup_BATT_range"/>
  </buttongroups>
 </ui>
