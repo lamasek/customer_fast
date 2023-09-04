@@ -79,7 +79,7 @@ class VisaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if self.verbose>70:
+				if self.verbose>170:
 					print('Command:' + command)
 				if '?' in command: # some devices (e.g. Yokogawa WT310E) have some IDs after ? (e.g. ":NUM:VAL? 1")
 					reply = self.PVdevice.query(command)
@@ -105,10 +105,10 @@ class VisaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if self.verbose>70:
+				if self.verbose>170:
 					print('Command:' + command)
 				reply = self.PVdevice.write(command)
-				if self.verbose>50:
+				if self.verbose>150:
 					print(reply)
 				return(True, reply)
 			except Exception as e:
@@ -128,11 +128,11 @@ class VisaDevice():
 			if command =='':
 				return(False, 'Empty command, nothing to send...') # we have to handle itself, some devices (e.g. Rigol DL3031A) freezes permanently after emty command
 			try:
-				if self.verbose>70:
+				if self.verbose>170:
 					print('Command:' + command)
 				reply = self.PVdevice.query(command)
 				reply.strip()
-				if self.verbose>50:
+				if self.verbose>150:
 					print(reply)
 				return(True, reply)
 			except Exception as e:
