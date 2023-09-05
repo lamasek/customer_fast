@@ -1026,7 +1026,7 @@ class TestACDCadapteru():
 				try:
 					xP = dataLoadW[i]/dataWmeterW[i]
 					if xP > 1:
-						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xp}')
+						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xP}')
 					else:
 						dataUcinnostP.append(xP)
 				except:
