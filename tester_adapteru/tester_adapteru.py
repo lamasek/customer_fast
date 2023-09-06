@@ -1,13 +1,13 @@
 #!python3
 
-verbose =80
+verbose = 80
 
 
-# lib_check_install v3 by Josef La Masek ----------------------------
+# region   lib_check_install v3 by Josef La Masek ----------------------------
 import importlib.util
 import subprocess
 import sys
-import pip
+#import pip
 def lib_check_install(MODULEname, PACKAGEname=None): 
 	#
 	# check if module MODULEname is avalable for include, if not, it try to install it via pip
@@ -49,7 +49,44 @@ def lib_check_install(MODULEname, PACKAGEname=None):
 	except:
 		None
 	#pip.main(['install', p]) # old deprecated way
-#--------------------------------------------------------------------
+# endregion   --------------------------------------------------------------------
+
+
+# region  autoUiPy - automatic QT Designer .ui to .py converter ------------------------------
+# v 1 , by Josef La Masek  masek2050@gmail.com
+# 
+# no needs to do manually run 'pyuc' or by creating setup in project in QT Designer / QT Creator
+# during startup it checkes for given list, if generated .py files exists and are fresh,
+# if they are not, it will regenerate them
+
+autoUiPy_PYUIC = 'PyQt6.uic.pyuic'
+autoUiPy_ui_list = ['ui_mainwindow', 'ui_tab_wattmeter']
+autoUiPy_enabled = True
+
+# --------------
+
+import os.path
+
+if autoUiPy_enabled:
+	for i in autoUiPy_ui_list:
+		if os.path.exists(i+'.py'):
+			try:
+				#print(os.path.getmtime(i+'.ui'))
+				#print(os.path.getmtime(i+'.py'))
+				if os.path.getmtime(i+'.ui') <= os.path.getmtime(i+'.py'):
+					continue
+			except:
+				print('autoUiPy: something wrong with given filename')
+		
+		# python -m PyQt6.uic.pyuic -x mainwindow.ui -o ui_mainwindow.py
+		autoUiPy_PYUIC_CALL = [sys.executable, '-m', autoUiPy_PYUIC, '-x', i+'.ui', '-o', i+'.py']
+		print('autoUiPy: Calling: ', autoUiPy_PYUIC_CALL)
+		try:
+			subprocess.check_call(autoUiPy_PYUIC_CALL)
+		except Exception as e:
+			print('autoUiPy: subprocess call failed: ', e)
+
+# endregion ----------------------------------------------------------------
 
 lib_check_install('io')
 import io
@@ -78,7 +115,7 @@ import matplotlib.dates
 lib_check_install('mplcursors')
 import mplcursors
 
-lib_check_install('PyQt6')
+lib_check_install('PyQt6', 'pyqt6')
 from PyQt6 import QtWidgets, uic, QtCore, QtGui, QtTest
 from PyQt6.QtCore import QCoreApplication, Qt, QFile, QTextStream, QIODevice, QSemaphore, QByteArray
 from PyQt6.QtGui import QImage, QTextCursor, QPageSize, QPixmap, QPainter, QCloseEvent
@@ -129,6 +166,7 @@ from ui_mainwindow import Ui_MainWindow
 CONFIG_DEFAULT = {
 					'GUI/theme': 'auto', #auto, dark, light
 					'GUI/lastTabIndex' : 1,
+					'verbose': 80, 
 					'plots/theme': 'auto',
 					'plots/minWidth': 300,
 					'plots/minHeight': 200,
@@ -152,6 +190,7 @@ CONFIG_DEFAULT = {
 					'testACDCadapteru/Po':  1, #W
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
+					'testACDCadapteru/load8h': False,
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -335,15 +374,20 @@ class Tab_Config():
 	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager):
 		self.cfg = cfg
 		self.mw = mw
-		self.mw.config_plainTextEdit.setPlaceholderText('Config not read yet...')
+		self.mw.config_plainTextEdit.setPlaceholderText('Trying to read config...')
 		self.cfg.updated.connect(self.config_show)
 		self.config_show()
 		self.mw.config_pushButton_ClearToDefault.clicked.connect(self.config_set_to_default)
 
-		self.mw.config_comboBox_GUItheme.addItems(('auto', 'dark', 'light'))
-		self.cfg.add_handler('GUI/theme', self.mw.config_comboBox_GUItheme)
+		self.mw.config_GUItheme.addItems(('auto', 'dark', 'light'))
+		self.cfg.add_handler('GUI/theme', self.mw.config_GUItheme)
 		self.config_GUItheme_changed()
-		mw.config_comboBox_GUItheme.currentTextChanged.connect(self.config_GUItheme_changed)
+		mw.config_GUItheme.currentTextChanged.connect(self.config_GUItheme_changed)
+		
+		self.cfg.add_handler('verbose', self.mw.config_verbose)
+		self.config_verbose_changed()
+		
+
 
 	def config_show(self):
 		self.mw.config_plainTextEdit.clear()
@@ -376,38 +420,41 @@ class Tab_Config():
 		except:
 			None
 		try:
+			themeName: str
 			if theme == 'auto':
 				if darkdetect.isDark():
-					theme = 'dark'
+					themeName = 'k'
 				else:
-					theme = 'light'
-			if theme == 'light':
-				self.mw.wattmeter_plotWidget1.setBackground("w")
-				self.mw.wattmeter_plotWidget2.setBackground("w")
-				self.mw.wattmeter_plotWidget3.setBackground("w")
-				self.mw.wattmeter_plotWidget4.setBackground("w")
-				self.mw.load_plotWidget1.setBackground("w")
-				self.mw.load_plotWidget2.setBackground("w")
-				self.mw.load_plotWidget3.setBackground("w")
-				self.mw.load_plotWidget4.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget1.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget2.setBackground("w")
-				self.mw.testACDCadapteru_plotWidget3.setBackground("w")
+					themeName = 'w'
+			elif theme == 'light':
+				themeName = 'w'
+			elif theme == 'dark':
+				themeName = 'k'
 			else:
-				self.mw.wattmeter_plotWidget1.setBackground("k")
-				self.mw.wattmeter_plotWidget2.setBackground("k")
-				self.mw.wattmeter_plotWidget3.setBackground("k")
-				self.mw.wattmeter_plotWidget4.setBackground("k")
-				self.mw.load_plotWidget1.setBackground("k")
-				self.mw.load_plotWidget2.setBackground("k")
-				self.mw.load_plotWidget3.setBackground("k")
-				self.mw.load_plotWidget4.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget1.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget2.setBackground("k")
-				self.mw.testACDCadapteru_plotWidget3.setBackground("k")
+				print('config_GUItheme_changed: unknown theme: ' + str(theme))
+			
+			self.mw.wattmeter_plotWidget1.setBackground(themeName)
+			self.mw.wattmeter_plotWidget2.setBackground(themeName)
+			self.mw.wattmeter_plotWidget3.setBackground(themeName)
+			self.mw.wattmeter_plotWidget4.setBackground(themeName)
+			self.mw.load_plotWidget1.setBackground(themeName)
+			self.mw.load_plotWidget2.setBackground(themeName)
+			self.mw.load_plotWidget3.setBackground(themeName)
+			self.mw.load_plotWidget4.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget1.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget2.setBackground(themeName)
+			self.mw.testACDCadapteru_plotWidget3.setBackground(themeName)
+
 		except:
 			None
 	#endregion
+
+	def config_verbose_changed(self):
+		global verbose
+		newVerbose = self.cfg.get('verbose')
+		if verbose > 80:
+			print(f'config_verbose_changed, verbose changed from: {verbose} to: {newVerbose}')
+		verbose = newVerbose
 
 
 
@@ -645,7 +692,7 @@ class TestACDCadapteru():
 			if verbose > 150:
 				print('TestACDCadapteru-->do_measure Test stopped by user')
 			statusLabel.setText('Stopped by user')
-			self.semaphore.tryAcquire(2)
+			self.semaphore.tryAcquire(1)
 			return(True)
 		else:
 			return(False)
@@ -968,7 +1015,7 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml('</P>')
 
 			exportTextEdit.insertHtml('<P>Průběh požadovaného výkonu na zátěži během měření (hodí se pro vizuální kontrolu ' +
-					'chyb v měření, měl by plynule růst od 0 do 110% Po)<BR></BR>')
+					'chyb v měření, měl by plynule růst od 0 do 100% Po)<BR></BR>')
 			img = data2plot2qimg(dataLoadReqWtime, dataLoadReqW, ylabel='Requested P [W]',
 					height=200, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
@@ -979,13 +1026,13 @@ class TestACDCadapteru():
 				try:
 					xP = dataLoadW[i]/dataWmeterW[i]
 					if xP > 1:
-						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xp}')
+						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xP}')
 					else:
 						dataUcinnostP.append(xP)
 				except:
 					dataUcinnostP.append(0)
 			exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
-			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', xlabel='Power [W]', height=400)
+			img = data2plot2qimg(dataLoadW, dataUcinnostP, ylabel='Účinnost [0-1]', xlabel='Measured Power on Load [W]', height=400)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 			statusLabel.setText('Test VA char.: Finished')
@@ -1148,7 +1195,7 @@ class TestACDCadapteru():
 				if self.check_exit(statusLabel): #stop the test and exit
 					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
 			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
-					statusLabel.setText('Short test stopped - current over 55A')
+					statusLabel.setText('Short test stopped - by user')
 					load.setStateOn(False)
 					break
 
@@ -1163,7 +1210,7 @@ class TestACDCadapteru():
 			img = data2plot2qimg(dataLoadVtime, dataLoadV, ylabel='Voltage [V]', height=400, formatXasTime=True)
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
-			statusLabel.setText('Test Short: Started')
+			statusLabel.setText('Test Short: Finished')
 		#endregion test zkrat
 
 
@@ -1228,7 +1275,6 @@ class TestACDCadapteru():
 					#load.setStateOn(False)
 					break
 
-			load.setStateOn(False)
 			statusLabel.setText('Test 1 hour load: finished')
 
 
@@ -1247,15 +1293,55 @@ class TestACDCadapteru():
 			textEditAppendImg(exportTextEdit, img)
 			exportTextEdit.insertHtml('</P>')
 			statusLabel.setText('Test 1 hour load: Finished')
+
+
+			if cfg.get('testACDCadapteru/load8h'): # plus next * hours 
+
+				statusLabel.setText('Test 1+8 hour load: Started')
+
+				if load.demo == True:
+					tstop = time.time() + 10 # 10 seconds
+				else:
+					tstop = time.time() + 60*60*8 # 1 hour
+				
+				tlabel = 0
+				while time.time() < tstop:
+					
+					dataLoadA.append(load.measure('A'))
+					dataLoadAtime.append(time.time())
+					dataLoadV.append(load.measure('V'))
+					dataLoadVtime.append(time.time())
+					dataLoadW.append(load.measure('W'))
+					dataLoadWtime.append(time.time())
+
+					plot1_dataLine.setData(dataLoadAtime, dataLoadA)
+					plot2_dataLine.setData(dataLoadVtime, dataLoadV)
+					plot3_dataLine.setData(dataLoadWtime, dataLoadW)
+
+					if wmeter.demo == True:
+						QtTest.QTest.qWait(1)
+					else:
+						QtTest.QTest.qWait(100)
+
+					if tlabel > 8: #each 9 rounds update label
+						tleft = int(tstop-time.time())
+						statusLabel.setText(f'Test 1+8 hour load: {tleft}')
+						tlabel = 0
+					tlabel += 1
+
+					if self.check_exit(statusLabel): #stop the test and exit
+						statusLabel.setText('Test 1+8 hour load: test stopped by user')
+						#load.setStateOn(False)
+						break
+
+				statusLabel.setText('Test 1+8 hour load: finished')
+
+
+			load.setStateOn(False)
+
+
+
 		#endregion 
-
-		#region Load +8 hodin
-
-
-
-
-
-		#endregion
 
 
 
@@ -1315,16 +1401,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		#region CONFIG ----------------------------
 
-		#self.config_init()
-		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
-		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
-		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
-		self.cfg.add_handler('test_adapteru/time_step_delay', self.spinBox_time_step_delay)
-		self.cfg.add_handler('test_adapteru/time_measure_delay', self.spinBox_time_measure_delay)
-		self.cfg.add_handler('test_adapteru/stop_mV', self.spinBox_stop_mV)
-		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
-		
-		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
 		#endregion
 
 		#region for all pyqt graphs in this app:
@@ -1350,7 +1426,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		self.tab_Wattmeter_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter, export=self.export_textEdit1)
 
-		#endregion
+		#endregion 
 
 		#region LOAD -----------------------------------------------------
 		self.load = Load_GUI(
@@ -1358,6 +1434,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			demo=self.cfg.get('load/demo'),
 			status = self.load_label_status,
 		)
+		self.timer_load_mereni = QtCore.QTimer()
+		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
+
+
 		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
 		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
 		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
@@ -1455,17 +1535,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
 		#testACDCadapteru_comboBox_typAdapteru
-		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
-		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
 		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', 'Short', '1 hour load'])
 		self.cfg.add_handler('testACDCadapteru/test', self.testACDCadapteru_comboBox_test)
+		self.testACDCadapteru_pushButton_start.pressed.connect(self.testACDCadapteru_start)
+		self.testACDCadapteru_pushButton_stop.pressed.connect(self.testACDCadapteru_stop)
+		self.cfg.add_handler('testACDCadapteru/load8h', self.testACDCadapteru_checkBox_load8h)
+
+
 		#endregion
 
 
 		#region TEST ZATIZENI -----------------------------------
+		#self.config_init()
+		self.cfg.add_handler('test_adapteru/reqmAstart', self.spinBox_reqmAstart)
+		self.cfg.add_handler('test_adapteru/reqmAstop', self.spinBox_reqmAstop)
+		self.cfg.add_handler('test_adapteru/reqmAstep', self.spinBox_reqmAstep)
+		self.cfg.add_handler('test_adapteru/time_step_delay', self.spinBox_time_step_delay)
+		self.cfg.add_handler('test_adapteru/time_measure_delay', self.spinBox_time_measure_delay)
+		self.cfg.add_handler('test_adapteru/stop_mV', self.spinBox_stop_mV)
+		self.cfg.add_handler('test_adapteru/stop_mVAttempts', self.spinBox_stop_mVAttempts)
+		
+		self.loadstop_mVAttempts = self.cfg.get('test_adapteru/stop_mVAttempts')
+
+
 		self.mplWidget1.myinit()
 		#self.mplWidget1.myinit(theme=configCurrent['plots']['theme'])
 		self.mplWidget1.plot_init()
+
+		self.timer_test_zatizeni = QtCore.QTimer()
+		self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
+
 
 		self.test_zatizeni_running = False
 		self.pushButton_test_zatizeni_start.pressed.connect(self.test_zatizeni_start)
@@ -1493,179 +1592,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.cfg.set('GUI/lastTabIndex', self.tabWidget.currentIndex())
 
 
-	#region classes for wattmeter ------------------------------
-	'''
-	def wattmeter_VISAresource_changed(self):
-		self.wattmeter.setVISAresource(self.cfg.get('wattmeter/VISAresource'))
-
-	def wattmeter_demo_pressed(self):
-		self.wattmeter.disconnect()
-		self.wattmeter_lineEdit_status.setText('Disconnected')
-		self.wattmeter_lineEdit_status.setStyleSheet('')
-		self.wattmeter.setDemo(self.wattmeter_checkBox_demo.isChecked())
-
-
-	def wattmeter_checkBox_measure_W_changed(self):
-		if self.cfg.get('wattmeter/measure_W'):
-			self.wattmeter_plotWidget1.show()
-		else:
-			self.wattmeter_plotWidget1.hide()
-
-
-	def wattmeter_checkBox_measure_A_changed(self):
-		if self.cfg.get('wattmeter/measure_A'):
-			self.wattmeter_plotWidget2.show()
-		else:
-			self.wattmeter_plotWidget2.hide()
-
-
-	def wattmeter_checkBox_measure_V_changed(self):
-		if self.cfg.get('wattmeter/measure_V'):
-			self.wattmeter_plotWidget3.show()
-		else:
-			self.wattmeter_plotWidget3.hide()
-
-
-	def wattmeter_checkBox_measure_MATH_changed(self):
-		if self.cfg.get('wattmeter/measure_MATH'):
-			self.wattmeter_plotWidget4.show()
-		else:
-			self.wattmeter_plotWidget4.hide()
-
-
-	def wattmeter_mereni_start(self):
-		self.wattmeter.connect()
-		# schedule Measuring
-		self.timer_wattmeter_mereni = QtCore.QTimer()
-		self.timer_wattmeter_mereni.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
-		self.timer_wattmeter_mereni.timeout.connect(self.wattmeter_mereni_mer)
-		self.timer_wattmeter_mereni.start()
-
-
-	def wattmeter_mereni_stop(self):
-		self.timer_wattmeter_mereni.stop()
-		self.wattmeter_mereni_finished = True
-
-
-	def wattmeter_mereni_mer(self):
-		if self.wattmeter_mereni_finished == False:
-			print('wattmeter_mereni_mer nestiha!!!!!!!!!!')
-			return()
-		self.wattmeter_mereni_finished = False
-		
-		if True: #self.cfg.get('wattmeter/measure_'):
-			W = self.wattmeter.measure('W')
-			if type(W) is float or int:
-				data_wattmeter_W.append(W)
-				data_wattmeter_Wtime.append(time.time())
-				self.wattmeter_plotWidget1_dataLine.setData(data_wattmeter_Wtime, data_wattmeter_W)
-				if len(data_wattmeter_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget1_dataLine2.setData([time.time()], [0])
-
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			A = self.wattmeter.measure('A')
-			if type(A) is float or int:
-				data_wattmeter_A.append(A)
-				data_wattmeter_Atime.append(time.time())
-				self.wattmeter_plotWidget2_dataLine.setData(data_wattmeter_Atime, data_wattmeter_A)
-				if len(data_wattmeter_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget2_dataLine2.setData([time.time()], [0])
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			V = self.wattmeter.measure('V')
-			if type(V) is float or int:
-				data_wattmeter_V.append(V)
-				data_wattmeter_Vtime.append(time.time())
-				self.wattmeter_plotWidget3_dataLine.setData(data_wattmeter_Vtime, data_wattmeter_V)
-				if len(data_wattmeter_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget3_dataLine2.setData([time.time()], [0])
-
-		if True: #self.cfg.get('wattmeter/measure_'):
-			MATH = self.wattmeter.measure('MATH')
-			if type(MATH) is float or int:
-				data_wattmeter_MATH.append(MATH)
-				data_wattmeter_MATHtime.append(time.time())
-				self.wattmeter_plotWidget4_dataLine.setData(data_wattmeter_MATHtime, data_wattmeter_MATH)
-				if len(data_wattmeter_MATH) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-					self.wattmeter_plotWidget4_dataLine2.setData([time.time()], [0])
-
-		self.wattmeter_mereni_finished = True
-
-	#region wattmeter_mereni_export
-	def wattmeter_mereni_export(self):
-		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot wattmetrem</H1><BR></BR>')
-		CSVDELIM = self.cfg.get('export/CSVDELIM')
-		if self.cfg.get('wattmeter/measure_W'):
-			self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
-			for i in range(len(data_wattmeter_W)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Wtime[i])+CSVDELIM+
-					str(data_wattmeter_W[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-
-		if self.cfg.get('wattmeter/measure_A'):
-			self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
-			for i in range(len(data_wattmeter_A)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Atime[i])+CSVDELIM+
-					str(data_wattmeter_A[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-		if self.cfg.get('wattmeter/measure_V'):
-			self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
-			for i in range(len(data_wattmeter_V)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_Vtime[i])+CSVDELIM+
-					str(data_wattmeter_V[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-
-		if self.cfg.get('wattmeter/measure_MATH'):
-			data_wattmeter_MATH
-			data_wattmeter_MATHtime
-			self.export_textEdit1.insertHtml('<H2>MATH - Energie [W]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}MATH [W]')
-			for i in range(len(data_wattmeter_MATH)):
-				self.export_textEdit1.append(
-					str(data_wattmeter_MATHtime[i])+CSVDELIM+
-					str(data_wattmeter_MATH[i])
-				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
-	#endregion wattmeter_mereni_export
-
-
-	def wattmeter_mereni_clearGraphs(self):
-		global data_wattmeter_W, data_wattmeter_Wtime
-		data_wattmeter_W = []
-		data_wattmeter_Wtime = []
-		global data_wattmeter_A, data_wattmeter_Atime
-		data_wattmeter_A = []
-		data_wattmeter_Atime = []
-		global data_wattmeter_V, data_wattmeter_Vtime
-		data_wattmeter_V = []
-		data_wattmeter_Vtime = []
-		global data_wattmeter_MATH, data_wattmeter_MATHtime
-		data_wattmeter_MATH = []
-		data_wattmeter_MATHtime = []
-
-		self.wattmeter_plotWidget1_dataLine.setData([], [])
-		self.wattmeter_plotWidget2_dataLine.setData([], [])
-		self.wattmeter_plotWidget3_dataLine.setData([], [])
-		self.wattmeter_plotWidget4_dataLine.setData([], [])
-'''
-	#endregion
-
 	#region classes for LOAD ------------------------------
 	def load_VISAresource_changed(self):
 			self.load.setVISAresource(self.cfg.get('load/VISAresource'))
@@ -1678,7 +1604,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
 	def load_radioButton_Mode_CC_pressed(self):
-		self.load.load.setFunction('CC')
+		self.load.setFunction('CC')
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
 		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
@@ -1740,9 +1666,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
 		# schedule Measuring
-		self.timer_load_mereni = QtCore.QTimer()
 		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
-		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
 		self.timer_load_mereni.start()
 
 
@@ -1941,9 +1865,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			)
 
 		# schedule Measuring
-		self.timer_test_zatizeni = QtCore.QTimer()
 		self.timer_test_zatizeni.setInterval(self.cfg.get('test_adapteru/time_step_delay')) # ms
-		self.timer_test_zatizeni.timeout.connect(self.test_zatizeni_mereni)
 		self.timer_test_zatizeni.start()
 
 

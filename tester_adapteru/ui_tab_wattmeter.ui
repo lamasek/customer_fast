@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>873</width>
-    <height>510</height>
+    <width>691</width>
+    <height>376</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,15">
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
@@ -24,7 +24,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="ui_VISAresource"/>
+      <widget class="QLineEdit" name="ui_VISAresource">
+       <property name="text">
+        <string>Init...</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="ui_demo">
@@ -35,6 +39,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="ui_connect">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>Connect</string>
        </property>
@@ -42,6 +52,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="ui_disconnect">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>Disconnect</string>
        </property>
@@ -80,6 +96,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="ui_start">
+       <property name="maximumSize">
+        <size>
+         <width>60</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>Start</string>
        </property>
@@ -87,6 +109,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="ui_stop">
+       <property name="maximumSize">
+        <size>
+         <width>60</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>Stop</string>
        </property>
@@ -94,6 +122,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="ui_export">
+       <property name="maximumSize">
+        <size>
+         <width>60</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="text">
         <string>Export</string>
        </property>
@@ -120,6 +154,9 @@
        </property>
        <property name="maximum">
         <number>100000</number>
+       </property>
+       <property name="singleStep">
+        <number>100</number>
        </property>
       </widget>
      </item>
@@ -158,6 +195,19 @@
        </property>
       </widget>
      </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </item>
    <item>
@@ -170,8 +220,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>853</width>
-        <height>425</height>
+        <width>677</width>
+        <height>307</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
