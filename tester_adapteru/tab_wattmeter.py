@@ -17,36 +17,17 @@ from pyqtconfig import QSettingsManager
 
 from ui_tab_wattmeter import Ui_TabWattmeterContent
 
-
 import visa_device
 from visa_device import VisaDevice
 
 import wattmeter_device
 from wattmeter_device import Wattmeter_GUI
 
-def plot_prepare(cfg, plot: pyqtgraph.PlotWidget, labelY: str, addLine2Zero = False, *kwargs):
-	penColor = color=(205, 205, 205)
-	pen = pyqtgraph.mkPen(penColor, width=1)
-	cursor = Qt.CursorShape.CrossCursor
-	# https://www.geeksforgeeks.org/pyqtgraph-symbols/
+#import shared_functions
+#from shared_functions import plot_prepare
+from shared_functions import *
 
-	#plot.show()
-	plot.clear()
-	plot.setMinimumSize(cfg.get('plots/minWidth'), cfg.get('plots/minHeight'))
-	#plot1.showGrid(x=True, y=True)
-	daxis = pyqtgraph.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-	plot.setAxisItems({"bottom": daxis})
-	plot.setLabel('left', labelY)
-	#plot.setCursor(self.cursor)
-	plot_dataLine =  plot.plot([], [],
-		labelY, symbol='o', symbolSize = 5, symbolBrush =(0, 114, 189), pen=pen)
-	
-	if addLine2Zero:
-		plot_dataLine0 = plot.plot([], [], symbol='+', symbolSize = 0)
-		#plot_dataLine0.setData([time.time()], [0]) #better during 1st measure
-		return(plot_dataLine0, plot_dataLine)
-	else:
-		return(plot_dataLine)
+
 
 class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
 

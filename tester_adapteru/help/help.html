@@ -36,10 +36,25 @@
 			 Výstup z testů je vždy přidáván do záložky Export.</P>
 		<P>Vstupy:
 			<UL>
-				<LI><B>Po</B> - Maximální/Nominální výkon adaptéru</LI>
-				<LI><B>Typ adapteru</B>: Typ dle TODO, Pokud je vybrán je součástí reportů i vyhodnocení
-					, zda splňuje kritéria dle TODO</LI>
-				<LI>TODO Vmax - Maximální/nominální napětí udávané výrobcem</LI>
+				<LI><B>Po</B> - Jmenovitý výstupní výkon adaptéru</LI>
+				<LI><B>Typ adapteru</B>: Typ dle NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019. Možnosti jsou:
+					<UL>
+						<LI><B>Ignore</B> - Neprovádět měření a exporty</LI>
+						<LI><B>AC-AC</B> - </LI>
+						<LI><B>AC-DC &lt;6V  I&gt;=550mA</B> - „nízkonapěťový vnějším napájecí zdrojem“ vnější napájecí zdroj 
+							se jmenovitým výstupním napětím nižším než 6 voltů a jmenovitým výstupním proudem vyšším než nebo
+							 rovnajícím se 550 miliampérů</LI>
+						<LI><B>AC-DC &gt;=6V</B> - </LI>
+						<LI><B>AC-DC multiple outputs</B> - „vnějším napájecí zdroj s více výstupními napětími“ vnější napájecí zdroj,
+							který je schopen přeměnit střídavé napájení z elektrické sítě na více simultánních výstupů s nižším
+							stejnosměrným nebo střídavým napětím<BR></BR>
+							Nejednoznačné vyjádření v nařízení - jednou mluví o více napětích a podruhé 
+							o více výstupech. Doporučujeme preferovat variantu kde jde o více výstupů. USB adaptér s jedním
+							výstupem a řiditelným napětím sem nedávat a dávat sem jen adaptéry s více fyzickými výstupy.</LI>
+					</UL>
+					NAŘÍZENÍ KOMISE (EU) 2019/1782 je jen pro adaptéry do 250W, nicméně doporučujeme používat i pro adaptéry s vyšším výkonem.
+				
+				</LI>
 			</UL>
 		</P>
 

@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -194,7 +194,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,10">
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,15">
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
@@ -246,17 +246,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="load_label_status">
-              <property name="minimumSize">
-               <size>
-                <width>80</width>
-                <height>0</height>
-               </size>
+             <widget class="QLineEdit" name="load_status">
+              <property name="frame">
+               <bool>false</bool>
               </property>
-              <property name="text">
-               <string>Init...</string>
-              </property>
-              <property name="wordWrap">
+              <property name="readOnly">
                <bool>true</bool>
               </property>
              </widget>
@@ -762,7 +756,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru"/>
+           <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru">
+            <property name="minimumSize">
+             <size>
+              <width>120</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item>
            <spacer name="horizontalSpacer_4">
@@ -1176,7 +1177,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>

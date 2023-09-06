@@ -4,7 +4,7 @@ import pyvisa #pip install pyvisa pyvisa-py
 
 class VisaDevice():
 	
-	def __init__(self, VISAresource: str, demo: bool, verbose=100):
+	def __init__(self, VISAresource: str, demo: bool, verbose=30):
 		self. VISAresource = VISAresource
 		self.demo = demo
 		self.verbose = verbose
@@ -16,7 +16,7 @@ class VisaDevice():
 	def setDemo(self, d: bool): #pokud demo, tak dela sinusovku co 10s a jen kladnou
 		self.demo = d
 	
-	verbose = 100
+	verbose: int
 
 	VISAresource = ''
 	connected = False
