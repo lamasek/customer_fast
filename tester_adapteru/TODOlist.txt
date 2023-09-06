@@ -1,6 +1,6 @@
-hodilo by se dat verbosity do cfg
-alespon pri startu kdyz ne menit behem fungovani
-navic je verbosity ve visa_device nejak odflaknute
+
+nefunguje prepinani dark/light u pyqtgrafu
+
 
 
 v testech ac dc 
