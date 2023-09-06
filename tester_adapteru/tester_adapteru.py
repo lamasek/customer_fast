@@ -234,7 +234,10 @@ data_test_zatizeni_W = []
 class Load(VisaDevice):
 
 	def measure(self, varName):
-		#return(False | float)
+		'''
+		varName = 'A' | 'V' | 'W' | 'Wh'
+		return(float | None)
+		'''
 		if  self.demo == True:
 			i = math.sin( # sinus, period 5s in time
 					(time.time()%5) / 5 * 2*3.1415
@@ -243,27 +246,35 @@ class Load(VisaDevice):
 				i = 0
 			return( i )
 		else:
-			global verbose
-			verbose -= 100
+			#global verbose
 			if varName == 'A':
-				retCode, retString = VisaDevice.query(self, ":MEASURE:CURRENT?")
-				verbose += 100
-				return(float(retString.strip()))
+				qStr = ":MEASURE:CURRENT?"
 			elif varName == 'V':
-				retCode, retString = VisaDevice.query(self, ":MEASURE:VOLTAGE?")
-				verbose += 100
-				return(float(retString.strip()))
+				qStr = ":MEASURE:VOLTAGE?"
 			elif varName == 'W':
-				retCode, retString = VisaDevice.query(self, ":MEASURE:POWER?")
-				verbose += 100
-				return(float(retString.strip()))
+				qStr = ":MEASURE:POWER?"
 			elif varName == 'Wh':
-				retCode, retString = VisaDevice.query(self, ":MEASURE:WATThours?")
-				verbose += 100
-				return(float(retString.strip()))
+
+				qStr = ":MEASURE:WATThours?"
 			else:
-				return(False)
+				return(None)
 			
+			self.verbose -= 100
+			retCode, retString = VisaDevice.query(self, qStr)
+			self.verbose += 100
+			if retCode == False:
+				return(None)
+			try:
+				f = float(retString.strip())
+			except Exception:
+				print(f"error converting answer to float, answer: {retString}")
+				return(None)
+			if type(f) == float:
+				return(f)
+			else:
+				return(None)
+				
+
 
 	def setFunction(self, mode: str):
 		#modes
@@ -308,7 +319,7 @@ class Load(VisaDevice):
 			return()
 		else:
 			PVcommand = ':SOURCE:CURRent:LEVEL:IMMEDIATE ' + str(current)
-			if verbose > 100:
+			if self.verbose > 100:
 				print('PVcommand = '+PVcommand)
 			VisaDevice.write(self, PVcommand)
 
@@ -317,15 +328,16 @@ class Load(VisaDevice):
 			return()
 		else:
 			PVcommand = ':SOURCE:POWer:LEVEL:IMMEDIATE ' + str(current)
-			if verbose > 100:
+			if self.verbose > 100:
 				print('PVcommand = '+PVcommand)
 			VisaDevice.write(self, PVcommand)
 
 class Load_GUI(Load):
-	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
+	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit, verbose: int):
 		Load. VISAresource = VISAresource
 		Load.demo = demo
 		self.status = status
+		self.verbose = verbose
 
 	def connect(self):
 		if  self.is_connected() == True:
@@ -515,7 +527,7 @@ class Tab_VISA():
 #endregion --------------------------------------------------------
 
 #region Tab_Load -----------------------------------------------------
-class Tab_Load(Ui_MainWindow):
+class Tab_Load():
 
 	#def myinit(self, cfg: QSettingsManager, load: Load_GUI, export: QTextEdit):
 	#	self.cfg = cfg
@@ -524,8 +536,8 @@ class Tab_Load(Ui_MainWindow):
 
 	data_A = []
 	data_Atime = []
-	data_loadV = []
-	data_loadVtime = []
+	data_V = []
+	data_Vtime = []
 	data_W = []
 	data_Wtime = []
 	data_Ah = []
@@ -535,70 +547,73 @@ class Tab_Load(Ui_MainWindow):
 
 
 
-	def __init__(self, cfg: QSettingsManager, load: Load_GUI, export: QTextEdit):
+	def __init__(self, mw: Ui_MainWindow, cfg: QSettingsManager, load: Load_GUI, export: QTextEdit):
+		#self.setupUi(self)
+
 		self.cfg = cfg
 		self.load = load
 		self.export = export
-		
+		self.mw = mw
+		self.status = self.mw.load_status
 				
 		self.timer_load_mereni = QtCore.QTimer()
 		self.timer_load_mereni.timeout.connect(self.load_mereni_mer)
 
 
-		self.cfg.add_handler('load/VISAresource', self.load_lineEdit_VISAresource)
-		self.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
-		self.cfg.add_handler('load/demo', self.load_checkBox_demo)
-		self.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
-		self.load_pushButton_connect.pressed.connect(self.load.connect)
-		self.load_pushButton_disconnect.pressed.connect(self.load.disconnect)
-		self.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
-		self.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
+		self.cfg.add_handler('load/VISAresource', self.mw.load_lineEdit_VISAresource)
+		self.mw.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
+		self.cfg.add_handler('load/demo', self.mw.load_checkBox_demo)
+		self.mw.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
+		self.mw.load_pushButton_connect.pressed.connect(self.load.connect)
+		self.mw.load_pushButton_disconnect.pressed.connect(self.load.disconnect)
+		self.mw.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
+		self.mw.load_pushButton_StateOFF.pressed.connect(self.load_pushButton_StateOFF_pressed)
 		
 		# LOAD Rem. Ctrl.
-		self.load_radioButton_Mode_CC.pressed.connect(self.load_radioButton_Mode_CC_pressed)
-		self.load_radioButton_Mode_BATT.pressed.connect(self.load.setModeBATT)
-		self.load_doubleSpinBox_BATT_current.valueChanged.connect(self.load_doubleSpinBox_BATT_current_changed)
-		self.load_radioButton_BATT_range_6A.pressed.connect( self.load_radioButton_BATT_range_6A_connect )
-		self.load_radioButton_BATT_range_60A.pressed.connect(self.load_radioButton_BATT_range_60A_connect)
-		self.load_doubleSpinBox_BATT_vstop.valueChanged.connect(self.load_doubleSpinBox_BATT_vstop_changed)
+		self.mw.load_radioButton_Mode_CC.pressed.connect(self.load_radioButton_Mode_CC_pressed)
+		self.mw.load_radioButton_Mode_BATT.pressed.connect(self.load.setModeBATT)
+		self.mw.load_doubleSpinBox_BATT_current.valueChanged.connect(self.load_doubleSpinBox_BATT_current_changed)
+		self.mw.load_radioButton_BATT_range_6A.pressed.connect( self.load_radioButton_BATT_range_6A_connect )
+		self.mw.load_radioButton_BATT_range_60A.pressed.connect(self.load_radioButton_BATT_range_60A_connect)
+		self.mw.load_doubleSpinBox_BATT_vstop.valueChanged.connect(self.load_doubleSpinBox_BATT_vstop_changed)
 
 		# LOAD Measure
-		self.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
-		self.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
-		self.load_pushButton_export.pressed.connect(self.load_mereni_export)
+		self.mw.load_pushButton_mereni_start.pressed.connect(self.load_mereni_start)
+		self.mw.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
+		self.mw.load_pushButton_export.pressed.connect(self.load_mereni_export)
 
-		self.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
-		self.cfg.add_handler('load/measure_interval', self.load_spinBox_measure_interval)
-		self.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
+		self.mw.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
+		self.cfg.add_handler('load/measure_interval', self.mw.load_spinBox_measure_interval)
+		self.mw.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
 
-		self.cfg.add_handler('load/measure_A', self.load_checkBox_measure_A)
-		self.load_checkBox_measure_A.stateChanged.connect(self.load_checkBox_measure_A_changed)
+		self.cfg.add_handler('load/measure_A', self.mw.load_checkBox_measure_A)
+		self.mw.load_checkBox_measure_A.stateChanged.connect(self.load_checkBox_measure_A_changed)
 		self.load_checkBox_measure_A_changed() # set initial state from config
-		self.cfg.add_handler('load/measure_V', self.load_checkBox_measure_V)
-		self.load_checkBox_measure_V.stateChanged.connect(self.load_checkBox_measure_V_changed)
+		self.cfg.add_handler('load/measure_V', self.mw.load_checkBox_measure_V)
+		self.mw.load_checkBox_measure_V.stateChanged.connect(self.load_checkBox_measure_V_changed)
 		self.load_checkBox_measure_V_changed() # set initial state from config
-		self.cfg.add_handler('load/measure_W', self.load_checkBox_measure_W)
-		self.load_checkBox_measure_W.stateChanged.connect(self.load_checkBox_measure_W_changed)
+		self.cfg.add_handler('load/measure_W', self.mw.load_checkBox_measure_W)
+		self.mw.load_checkBox_measure_W.stateChanged.connect(self.load_checkBox_measure_W_changed)
 		self.load_checkBox_measure_W_changed() # set initial state from config
-		self.cfg.add_handler('load/measure_Wh', self.load_checkBox_measure_Wh)
-		self.load_checkBox_measure_Wh.stateChanged.connect(self.load_checkBox_measure_Wh_changed)
+		self.cfg.add_handler('load/measure_Wh', self.mw.load_checkBox_measure_Wh)
+		self.mw.load_checkBox_measure_Wh.stateChanged.connect(self.load_checkBox_measure_Wh_changed)
 		self.load_checkBox_measure_Wh_changed() # set initial state from config
 
 		self.load_mereni_finished = True # semaphor for measuring method
 
 
-		self.plot1_dataLine0, self.plot1_dataLine = plot_prepare(cfg, self.load_plotWidget1, 'Current/I [A]', addLine2Zero=True)
-		self.plot2_dataLine0, self.plot2_dataLine = plot_prepare(cfg, self.load_plotWidget2, 'Voltage/U [V]', addLine2Zero=True)
-		self.plot3_dataLine0, self.plot3_dataLine = plot_prepare(cfg, self.load_plotWidget3, 'Power/P [W]', addLine2Zero=True)
-		self.plot4_dataLine0, self.plot4_dataLine = plot_prepare(cfg, self.load_plotWidget4, 'Capacity [Wh]', addLine2Zero=True)
+		self.plot1_dataLine0, self.plot1_dataLine = plot_prepare(cfg, self.mw.load_plotWidget1, 'Current/I [A]', addLine2Zero=True)
+		self.plot2_dataLine0, self.plot2_dataLine = plot_prepare(cfg, self.mw.load_plotWidget2, 'Voltage/U [V]', addLine2Zero=True)
+		self.plot3_dataLine0, self.plot3_dataLine = plot_prepare(cfg, self.mw.load_plotWidget3, 'Power/P [W]', addLine2Zero=True)
+		self.plot4_dataLine0, self.plot4_dataLine = plot_prepare(cfg, self.mw.load_plotWidget4, 'Capacity [Wh]', addLine2Zero=True)
 
 	def load_VISAresource_changed(self):
 			self.load.setVISAresource(self.cfg.get('load/VISAresource'))
 
 	def load_demo_pressed(self):
 		self.load.disconnect()
-		self.load_status.setText('Disconnected')
-		self.load_status.setStyleSheet('')
+		self.status.setText('Disconnected')
+		self.status.setStyleSheet('')
 		self.load.setDemo(self.cfg.get('load/demo'))
 
 
@@ -606,7 +621,7 @@ class Tab_Load(Ui_MainWindow):
 		self.load.setFunction('CC')
 	
 	def load_doubleSpinBox_BATT_current_changed(self):
-		self.load.write(':BATT:LEVEL '+str(self.load_doubleSpinBox_BATT_current.value()))
+		self.load.write(':BATT:LEVEL '+str(self.mw.load_doubleSpinBox_BATT_current.value()))
 
 	def load_radioButton_BATT_range_6A_connect(self):
 		self.load.write(':BATT:RANG 6')
@@ -615,7 +630,7 @@ class Tab_Load(Ui_MainWindow):
 		self.load.write(':BATT:RANG 60')
 
 	def load_doubleSpinBox_BATT_vstop_changed(self):
-		self.load.write(':BATT:VSTOP '+str(self.load_doubleSpinBox_BATT_vstop.value()))
+		self.load.write(':BATT:VSTOP '+str(self.mw.load_doubleSpinBox_BATT_vstop.value()))
 
 	def load_pushButton_StateON_pressed(self):
 		if self.load.is_connected() != True:
@@ -636,27 +651,27 @@ class Tab_Load(Ui_MainWindow):
 
 	def load_checkBox_measure_A_changed(self):
 		if self.cfg.get('load/measure_A'):
-			self.load_plotWidget1.show()
+			self.mw.load_plotWidget1.show()
 		else:
-			self.load_plotWidget1.hide()
+			self.mw.load_plotWidget1.hide()
 
 	def load_checkBox_measure_V_changed(self):
 		if self.cfg.get('load/measure_V'):
-			self.load_plotWidget2.show()
+			self.mw.load_plotWidget2.show()
 		else:
-			self.load_plotWidget2.hide()
+			self.mw.load_plotWidget2.hide()
 
 	def load_checkBox_measure_W_changed(self):
 		if self.cfg.get('load/measure_W'):
-			self.load_plotWidget3.show()
+			self.mw.load_plotWidget3.show()
 		else:
-			self.load_plotWidget3.hide()
+			self.mw.load_plotWidget3.hide()
 
 	def load_checkBox_measure_Wh_changed(self):
 		if self.cfg.get('load/measure_Wh'):
-			self.load_plotWidget4.show()
+			self.mw.load_plotWidget4.show()
 		else:
-			self.load_plotWidget4.hide()
+			self.mw.load_plotWidget4.hide()
 
 	def load_mereni_start(self):
 		if  self.load.is_connected() == False:
@@ -664,9 +679,10 @@ class Tab_Load(Ui_MainWindow):
 		#self.label_test_zatizeni.setText('Measuring')
 		#self.label_test_zatizeni.setStyleSheet('color:green')
 
-		# schedule Measuring
-		self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
-		self.timer_load_mereni.start()
+		if  self.load.is_connected() == True:
+			# schedule Measuring
+			self.timer_load_mereni.setInterval(self.cfg.get('load/measure_interval')) # ms
+			self.timer_load_mereni.start()
 
 
 	def load_mereni_stop(self):
@@ -684,33 +700,33 @@ class Tab_Load(Ui_MainWindow):
 			loadA = self.load.measure('A')
 			self.data_A.append(loadA)
 			self.data_Atime.append(time.time())
-			self.load_plotWidget1_dataLine.setData(self.data_Atime, self.data_A)
+			self.plot1_dataLine.setData(self.data_Atime, self.data_A)
 			if len(self.data_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-				self.load_plotWidget1_dataLine2.setData([time.time()], [0])
+				self.plot1_dataLine0.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_V'):
 			loadV = self.load.measure('V')
 			self.data_V.append(loadV)
 			self.data_Vtime.append(time.time())
-			self.load_plotWidget2_dataLine.setData(self.data_Vtime, self.data_V)
+			self.plot2_dataLine.setData(self.data_Vtime, self.data_V)
 			if len(self.data_V) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-				self.load_plotWidget2_dataLine2.setData([time.time()], [0])
+				self.plot2_dataLine0.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_W'):
 			loadW = self.load.measure('W')
 			self.data_W.append(loadW)
 			self.data_Wtime.append(time.time())
-			self.load_plotWidget3_dataLine.setData(self.data_Wtime, self.data_W)
+			self.plot3_dataLine.setData(self.data_Wtime, self.data_W)
 			if len(self.data_W) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-				self.load_plotWidget3_dataLine2.setData([time.time()], [0])
+				self.plot3_dataLine0.setData([time.time()], [0])
 
 		if self.cfg.get('load/measure_Wh'):
 			loadWh = self.load.measure('Wh')
 			self.data_Wh.append(loadWh)
 			self.data_Whtime.append(time.time())
-			self.load_plotWidget4_dataLine.setData(self.data_Whtime, self.data_Wh)
+			self.plot4_dataLine.setData(self.data_Whtime, self.data_Wh)
 			if len(self.data_Wh) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
-				self.load_plotWidget4_dataLine2.setData([time.time()], [0])
+				self.plot4_dataLine0.setData([time.time()], [0])
 
 		self.load_mereni_finished = True
 
@@ -763,8 +779,8 @@ class Tab_Load(Ui_MainWindow):
 			self.export_textEdit1.insertHtml('<BR></BR>')
 
 	def load_mereni_clearGraphs(self):
-		data_A = []
-		data_Atime = []
+		self.data_A = []
+		self.data_Atime = []
 		self.data_V = []
 		self.data_Vtime = []
 		self.data_W = []
@@ -1685,7 +1701,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.wattmeter = Wattmeter_GUI(
 			VISAresource=self.cfg.get('wattmeter/VISAresource'),
 			demo=self.cfg.get('wattmeter/demo'),
-			status = self.tab_Wattmeter_widget.ui_status
+			status = self.tab_Wattmeter_widget.ui_status,
+			verbose = verbose,
 		)
 
 		self.tab_Wattmeter_widget.myinit(cfg=self.cfg, wattmeter=self.wattmeter, export=self.export_textEdit1)
@@ -1697,8 +1714,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			VISAresource=self.cfg.get('load/VISAresource'),
 			demo=self.cfg.get('load/demo'),
 			status = self.load_status,
+			verbose = verbose,
 		)
-		self.tab_load = Tab_Load(cfg=self.cfg, load=self.load, export=self.export_textEdit1)
+		self.tab_load = Tab_Load(mw = self, cfg=self.cfg, load=self.load, export=self.export_textEdit1)
 
 		#endregion
 

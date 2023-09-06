@@ -148,10 +148,11 @@ class Wattmeter(VisaDevice):
 		return(VisaDevice.query(self, ":INTEGrate:STATe?"))
 
 class Wattmeter_GUI(Wattmeter):
-	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit):
+	def __init__(self, VISAresource: str, demo: bool, status: QtWidgets.QTextEdit, verbose: int):
 		Wattmeter. VISAresource = VISAresource
 		Wattmeter.demo = demo
 		self.status = status
+		self.verbose = verbose
 
 	def connect(self):
 		if  self.is_connected() == True:

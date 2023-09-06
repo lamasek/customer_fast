@@ -134,10 +134,12 @@ class Tab_Wattmeter(QWidget, Ui_TabWattmeterContent):
 
 
 	def wattmeter_mereni_start(self):
-		self.wattmeter.connect()
-		# schedule Measuring
-		self.mereni_timer.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
-		self.mereni_timer.start()
+		if self.wattmeter.is_connected() == False:
+			self.wattmeter.connect()
+		if self.wattmeter.is_connected() == True:
+			# schedule Measuring
+			self.mereni_timer.setInterval(self.cfg.get('wattmeter/measure_interval')) # ms
+			self.mereni_timer.start()
 
 
 	def wattmeter_mereni_stop(self):

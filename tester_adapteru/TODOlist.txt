@@ -36,3 +36,5 @@ ve wattmetru krici v realu ze ma problem s merenim MATH protoze tam nejsou data,
 
 
 na novem kompu nezabral muj lib check install pry pyqt6, prepisoval jsem to ale neni to overeno
+
+

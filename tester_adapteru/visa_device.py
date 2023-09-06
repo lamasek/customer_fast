@@ -119,7 +119,9 @@ class VisaDevice():
 			return(False, 'Not connected')
 
 	def query(self, commandi):
-		#return(retCode = True/False, retString)
+		'''
+		return(retCode = True (OK) | False (Error), retString (string containig answer | error message))
+		'''
 		if  self.demo == True:
 			return(True, 'Demo')
 
