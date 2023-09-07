@@ -198,7 +198,7 @@ CONFIG_DEFAULT = {
 					'load/measure_Wh': False,
 					'netio/IP': '10.10.134.11',
 					'netio/demo': True,
-					'netio/measure_interval': 100,
+					'netio/measure_interval': 500,
 					'netio/username': 'netio',
 					'netio/password': 'netio',
 					'netio/output_id': 1,
@@ -435,34 +435,36 @@ class Tab_Config():
 			qdarktheme.setup_theme(theme)
 		except:
 			None
-		try:
-			themeName: str
-			if theme == 'auto':
+
+		themeName: str
+		if theme == 'auto':
+			try:
 				if darkdetect.isDark():
 					themeName = 'k'
 				else:
 					themeName = 'w'
-			elif theme == 'light':
+			except:
+				None
 				themeName = 'w'
-			elif theme == 'dark':
-				themeName = 'k'
-			else:
-				print('config_GUItheme_changed: ERROR: unknown theme: ' + str(theme))
+		elif theme == 'light':
+			themeName = 'w'
+		elif theme == 'dark':
+			themeName = 'k'
+		else:
+			print('config_GUItheme_changed: ERROR: unknown theme: ' + str(theme))
 			
-			self.mw.wattmeter_plotWidget1.setBackground(themeName)
-			self.mw.wattmeter_plotWidget2.setBackground(themeName)
-			self.mw.wattmeter_plotWidget3.setBackground(themeName)
-			self.mw.wattmeter_plotWidget4.setBackground(themeName)
-			self.mw.load_plotWidget1.setBackground(themeName)
-			self.mw.load_plotWidget2.setBackground(themeName)
-			self.mw.load_plotWidget3.setBackground(themeName)
-			self.mw.load_plotWidget4.setBackground(themeName)
-			self.mw.testACDCadapteru_plotWidget1.setBackground(themeName)
-			self.mw.testACDCadapteru_plotWidget2.setBackground(themeName)
-			self.mw.testACDCadapteru_plotWidget3.setBackground(themeName)
+		#self.mw.wattmeter. _plotWidget1.setBackground(themeName)
+		#self.mw.wattmeter_plotWidget2.setBackground(themeName)
+		#self.mw.wattmeter_plotWidget3.setBackground(themeName)
+		#self.mw.wattmeter_plotWidget4.setBackground(themeName)
+		self.mw.load_plotWidget1.setBackground(themeName)
+		self.mw.load_plotWidget2.setBackground(themeName)
+		self.mw.load_plotWidget3.setBackground(themeName)
+		self.mw.load_plotWidget4.setBackground(themeName)
+		self.mw.testACDCadapteru_plotWidget1.setBackground(themeName)
+		self.mw.testACDCadapteru_plotWidget2.setBackground(themeName)
+		self.mw.testACDCadapteru_plotWidget3.setBackground(themeName)
 
-		except:
-			None
 	#endregion
 
 	def config_verbose_changed(self):
