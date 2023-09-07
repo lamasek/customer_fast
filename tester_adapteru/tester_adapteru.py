@@ -453,6 +453,7 @@ class Tab_Config():
 		else:
 			print('config_GUItheme_changed: ERROR: unknown theme: ' + str(theme))
 			
+		#TODO
 		#self.mw.wattmeter. _plotWidget1.setBackground(themeName)
 		#self.mw.wattmeter_plotWidget2.setBackground(themeName)
 		#self.mw.wattmeter_plotWidget3.setBackground(themeName)
