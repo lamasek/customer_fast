@@ -154,6 +154,11 @@ try:
 except all:
     pass
 
+lib_check_install('Netio')
+from Netio import Netio
+
+
+
 #import shared_functions
 #from shared_functions import plot_prepare
 from shared_functions import *
@@ -191,6 +196,12 @@ CONFIG_DEFAULT = {
 					'load/measure_V': True,
 					'load/measure_W': True,
 					'load/measure_Wh': False,
+					'netio/IP': '10.10.134.11',
+					'netio/demo': True,
+					'netio/measure_interval': 100,
+					'netio/username': 'netio',
+					'netio/password': 'netio',
+					'netio/output_id': 1,
 					'testACDCadapteru/Po':  1, #W
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
@@ -563,7 +574,9 @@ class Tab_Load():
 		self.cfg.add_handler('load/VISAresource', self.mw.load_lineEdit_VISAresource)
 		self.mw.load_lineEdit_VISAresource.textChanged.connect(self.load_VISAresource_changed)
 		self.cfg.add_handler('load/demo', self.mw.load_checkBox_demo)
-		self.mw.load_checkBox_demo.stateChanged.connect(self.load_demo_pressed)
+		self.mw.load_checkBox_demo.stateChanged.connect(self.load_demo_changed)
+		#self.mw.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
+
 		self.mw.load_pushButton_connect.pressed.connect(self.load.connect)
 		self.mw.load_pushButton_disconnect.pressed.connect(self.load.disconnect)
 		self.mw.load_pushButton_StateON.pressed.connect(self.load_pushButton_StateON_pressed)
@@ -582,7 +595,6 @@ class Tab_Load():
 		self.mw.load_pushButton_mereni_stop.pressed.connect(self.load_mereni_stop)
 		self.mw.load_pushButton_export.pressed.connect(self.load_mereni_export)
 
-		self.mw.load_checkBox_demo.stateChanged.connect(self.load_checkBox_demo_changed)
 		self.cfg.add_handler('load/measure_interval', self.mw.load_spinBox_measure_interval)
 		self.mw.load_pushButton_clearGraphs.pressed.connect(self.load_mereni_clearGraphs)
 
@@ -610,12 +622,11 @@ class Tab_Load():
 	def load_VISAresource_changed(self):
 			self.load.setVISAresource(self.cfg.get('load/VISAresource'))
 
-	def load_demo_pressed(self):
+	def load_demo_changed(self):
 		self.load.disconnect()
 		self.status.setText('Disconnected')
 		self.status.setStyleSheet('')
 		self.load.setDemo(self.cfg.get('load/demo'))
-
 
 	def load_radioButton_Mode_CC_pressed(self):
 		self.load.setFunction('CC')
@@ -645,9 +656,6 @@ class Tab_Load():
 		if verbose > 120:
 			print('Load State set to OFF')
 		ret = self.load.setStateOn(False)
-
-	def load_checkBox_demo_changed(self):
-		self.load.setDemo(self.cfg.get('load/demo'))
 
 	def load_checkBox_measure_A_changed(self):
 		if self.cfg.get('load/measure_A'):
@@ -799,6 +807,195 @@ class Tab_Load():
 
 #endregion 
 
+#region Netio_GUI -----------------------------------------------------
+class Netio_GUI:
+
+	netio: Netio
+	connected = False
+
+	def __init__(self, cfg: QSettingsManager, status: QtWidgets.QTextEdit):
+		self.cfg = cfg
+		self.status = status
+		self.verbose = cfg.get('verbose')
+		
+
+	def connect(self):
+		if  self.connected == False:
+			self.status.setText('Trying to connect...')
+			self.status.setStyleSheet('')
+
+			netio_json_url = 'http://'+self.cfg.get('netio/IP')+'/netio.json'
+			username = self.cfg.get('netio/username')
+			password = self.cfg.get('netio/password')
+			try:
+				self.netio = Netio(netio_json_url, auth_rw=(username, password), timeout=3) # timeout in seconds
+			except Exception as e:
+				print(f'Netio_GUI Connection Error: {e}')
+				self.status.setText('FAILED to connect, error: ' + str(e))
+				self.status.setStyleSheet('color:red')
+				return(False)
+			self.status.setText('Connected to: ' + str(self.netio))
+			self.status.setStyleSheet('color:green')
+			self.connected = True
+			return(True)
+
+	def disconnect(self):
+		if  self.connected == True:
+			self.status.setText('Disconnecting...')
+			self.status.setStyleSheet(None)
+			del self.netio
+			#self.netio = None
+			#if ret == False:
+			#	self.status.setText('Disconnected, FAILED to nice disconnect')
+			#		self.status.setStyleSheet('color:red')
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
+			self.connected = False
+		else:
+			self.status.setText('Disconnected ')
+			self.status.setStyleSheet(None)
+			self.connected = False
+
+
+#endregion ------------------------------------------------------------
+
+#region Tab_Netio -----------------------------------------------------
+class Tab_Netio():
+
+	output_id: int
+
+
+	data_A = []
+	data_Atime = []
+	data_V = []
+	data_Vtime = []
+	data_W = []
+	data_Wtime = []
+	data_Ah = []
+	data_Ahtime = []
+	data_Wh = []
+	data_Whtime = []
+
+	mereni_finished = True
+
+
+	def __init__(self, mw: Ui_MainWindow, netio_gui: Netio_GUI, cfg: QSettingsManager, export: QTextEdit):
+		#self.setupUi(self)
+
+		self.mw = mw
+		self.netio_gui = netio_gui
+		self.cfg = cfg
+		self.export = export
+		self.status = self.mw.netio_status
+
+		self.output_id = cfg.get('netio/output_id')
+
+
+		self.mw.netio_demo.setVisible(False)
+
+		self.timer_mereni = QtCore.QTimer()
+		self.timer_mereni.timeout.connect(self.mereni_mer)
+
+
+		self.cfg.add_handler('netio/IP', self.mw.netio_IP)
+		#self.mw.netio_IP.textChanged.connect(self.IP_changed)
+		self.cfg.add_handler('netio/demo', self.mw.netio_demo)
+		self.mw.netio_demo.stateChanged.connect(self.demo_changed)
+		self.mw.netio_connect.pressed.connect(self.netio_gui.connect)
+		self.mw.netio_disconnect.pressed.connect(self.netio_gui.disconnect)
+
+		self.mw.netio_on.pressed.connect(self.on_pressed)
+		self.mw.netio_off.pressed.connect(self.off_pressed)
+
+
+		self.mw.netio_start.pressed.connect(self.mereni_start)
+		self.mw.netio_stop.pressed.connect(self.mereni_stop)
+		#self.mw.load_pushButton_export.pressed.connect(self.load_mereni_export)
+
+		self.cfg.add_handler('netio/measure_interval', self.mw.netio_measure_interval)
+		self.mw.netio_clear.pressed.connect(self.mereni_clear)
+
+		self.plot1_dataLine0, self.plot1_dataLine = plot_prepare(cfg, self.mw.netio_plot1, 'Current/I [A]', addLine2Zero=True)
+
+
+	def demo_changed(self):
+		self.netio_gui.disconnect()
+		#self.load.setDemo(self.cfg.get('load/demo'))
+
+	def on_pressed(self):
+		if self.netio_gui.connected == False:
+			return()
+		if verbose > 120:
+			print('Netio turning ON')
+		self.netio_gui.netio.set_output(self.output_id, 1)
+
+	def off_pressed(self):
+		if self.netio_gui.connected == False:
+			return()
+		if verbose > 120:
+			print('Netio turning OFF')
+		self.netio_gui.netio.set_output(self.output_id, 0)
+
+	def mereni_start(self):
+		if  self.netio_gui.connected == False:
+			self.netio_gui.connect()
+		#self.label_test_zatizeni.setText('Measuring')
+		#self.label_test_zatizeni.setStyleSheet('color:green')
+
+		if  self.netio_gui.connected == True:
+			# schedule Measuring
+			self.timer_mereni.setInterval(self.cfg.get('netio/measure_interval')) # ms
+			self.timer_mereni.start()
+
+
+	def mereni_stop(self):
+		self.timer_mereni.stop()
+		self.mereni_finished = True
+
+
+	def mereni_mer(self):
+		if self.mereni_finished == False:
+			print('netio mereni_mereni-nestiha')
+			return()
+		self.mereni_finished = False
+
+
+		netio_get_output = self.netio_gui.netio.get_output(self.output_id)
+		#print(netio_get_output)
+		#Output(ID=1, Name='Power output 1', State=0, Action=<ACTION.IGNORED: 6>, Delay=2020, Current=0,
+		#  PowerFactor=1.0, Load=0, Energy=5056)
+		#ps_current = ps_get_output[5]
+
+		xA = float(netio_get_output[5]/1000)
+		self.data_A.append(xA)
+		self.data_Atime.append(time.time())
+		self.plot1_dataLine.setData(self.data_Atime, self.data_A)
+		if len(self.data_A) == 1: #at begin of measuring we add 0 to line2 to force autorange work from 0
+			self.plot1_dataLine0.setData([time.time()], [0])
+
+		self.mereni_finished = True
+
+
+	def mereni_clear(self):
+		self.data_A = []
+		self.data_Atime = []
+		self.data_V = []
+		self.data_Vtime = []
+		self.data_W = []
+		self.data_Wtime = []
+		self.data_Wh = []
+		self.data_Whtime = []
+
+		self.plot1_dataLine0.setData([], [])
+		self.plot1_dataLine.setData([], [])
+		#self.plot2_dataLine0.setData([], [])
+		#self.plot2_dataLine.setData([], [])
+		#self.plot3_dataLine0.setData([], [])
+		#self.plot3_dataLine.setData([], [])
+		#elf.plot4_dataLine0.setData([], [])
+		#self.plot4_dataLine.setData([], [])
+
+#endregion 
 
 #region Tab_help -----------------------------------------------------
 class Tab_help(Ui_MainWindow):
@@ -1720,6 +1917,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 		#endregion
 
+		#region Netio -------------------------------------------------------------
+		self.netio_gui = Netio_GUI(cfg=self.cfg, status=self.netio_status)
+
+		self.tab_netio = Tab_Netio(mw=self, cfg=self.cfg, netio_gui= self.netio_gui, export=self.export_textEdit1)
+
+
+
+		#endregion ----------------------------------------------------------------
 
 		#region testACDCadapteru ----------------------------------------------
 		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
