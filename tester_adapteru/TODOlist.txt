@@ -1,10 +1,13 @@
 
-nefunguje prepinani dark/light u pyqtgrafu
-
-
 
 v testech ac dc 
 zkontrolovat ze na zacatku kazdeho testu si testa nastavuje spravny mod zateze
+
+
+Měření charakteristik při zkratu (Short)
+v grafu je na zacatku male napeti - asi nevypnu predchazejici test
+
+
 
 
 Měření účinnosti v aktivním režimu - Pa
@@ -22,9 +25,6 @@ Měření VA charakteristiky při přetížení
 Průběh změřeného výkonu na zátěži během měření:
 pokud to pujde tak udelat v grafu oznaceni maxima dosazeneho vykonu
 
-
-Měření charakteristik při zkratu (Short)
-v grafu je na zacatku male napeti - asi nevypnu predchazejici test
 
 
 

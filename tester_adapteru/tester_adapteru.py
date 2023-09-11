@@ -453,11 +453,11 @@ class Tab_Config():
 		else:
 			print('config_GUItheme_changed: ERROR: unknown theme: ' + str(theme))
 			
-		#TODO
-		#self.mw.wattmeter. _plotWidget1.setBackground(themeName)
-		#self.mw.wattmeter_plotWidget2.setBackground(themeName)
-		#self.mw.wattmeter_plotWidget3.setBackground(themeName)
-		#self.mw.wattmeter_plotWidget4.setBackground(themeName)
+		
+		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
 		self.mw.load_plotWidget1.setBackground(themeName)
 		self.mw.load_plotWidget2.setBackground(themeName)
 		self.mw.load_plotWidget3.setBackground(themeName)
@@ -1488,6 +1488,7 @@ class TestACDCadapteru():
 					load.setStateOn(False)
 					break
 
+			load.setStateOn(False)
 
 			exportTextEdit.insertHtml('<P>VA charakteristika' + '<BR></BR>')
 			img = data2plot2qimg(dataLoadA, dataLoadV, ylabel='Voltage [V]', xlabel='Current [A]', height=400)
@@ -1820,7 +1821,6 @@ class TestACDCadapteru():
 			load.setStateOn(False)
 
 
-
 		#endregion 
 
 
@@ -1870,27 +1870,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		qiconlogo = QtGui.QIcon('images\logo_charger_white.png')
 		self.setWindowIcon(qiconlogo)
 
-		self.stop = False  #stop semaphore for running tests
-
 		self.cfg = QSettingsManager()
 
 		self.cfg.set_defaults(CONFIG_DEFAULT)
-		self.tab_Config = Tab_Config(self, self.cfg)
 
 		self.tabWidget.setCurrentIndex(self.cfg.get('GUI/lastTabIndex'))
 
+
 		#region CONFIG ----------------------------
+		self.tab_Config = Tab_Config(self, self.cfg)
 
 		#endregion
 
-		#region for all pyqt graphs in this app:
-		self.penColor = color=(205, 205, 205)
-		self.pen = pyqtgraph.mkPen(self.penColor, width=1)
-		self.cursor = Qt.CursorShape.CrossCursor
-		plotMinW = self.cfg.get('plots/minWidth')
-		plotMinH = self.cfg.get('plots/minHeight')
-      # https://www.geeksforgeeks.org/pyqtgraph-symbols/
-		#endregion
 
 		self.visa = VisaDevice(
 			VISAresource=self.cfg.get('VISA/VISAresource')
@@ -1990,8 +1981,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 			print('GUI closeEvent...')
 		self.cfg.set('GUI/lastTabIndex', self.tabWidget.currentIndex())
 
-
-	
 
 
 	#region testACDCadapteru ------------------------------------------------------
