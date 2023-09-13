@@ -1,38 +1,20 @@
 
 
-v testech ac dc 
-zkontrolovat ze na zacatku kazdeho testu si testa nastavuje spravny mod zateze
-
 
 Měření charakteristik při zkratu (Short)
 v grafu je na zacatku male napeti - asi nevypnu predchazejici test
 
 
 
-
-Měření účinnosti v aktivním režimu - Pa
-vypocet je vadny 
-ma ukazovat cca 85% ale ukazuje cca 98%
+test ac dc adapteru
+grafy nebezi od 0
 
 
-Měření VA charakteristiky při normálním zatížení
-test 33W adapter
-graf Učinnost vzhledem k zatížení
-konci u 24W misto 33W 
-
-
-Měření VA charakteristiky při přetížení
-Průběh změřeného výkonu na zátěži během měření:
-pokud to pujde tak udelat v grafu oznaceni maxima dosazeneho vykonu
-
-
-
-
-nekdy nesmaze dobre grafy ve wattmeter_pushButton_clearGraphs
 
 
 ve wattmetru krici v realu ze ma problem s merenim MATH protoze tam nejsou data, protoze tam merak zadne nema
 , ale ja se s tim musim srovnat
+
 
 
 na novem kompu nezabral muj lib check install pry pyqt6, prepisoval jsem to ale neni to overeno
