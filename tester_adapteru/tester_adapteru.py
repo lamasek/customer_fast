@@ -206,6 +206,7 @@ CONFIG_DEFAULT = {
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
 					'testACDCadapteru/load8h': False,
+					'testACDCadapteru/typAdapteru': 'Ignore',
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -1224,6 +1225,13 @@ class TestACDCadapteru():
 		rc, rs = wmeter.query('*IDN?')
 		exportTextEdit.insertHtml('<P>Wattmeter IDN: ' + rs + '</P><BR></BR>')
 
+
+
+		vPo = cfg.get('testACDCadapteru/Po')
+		vTypAdapteru = cfg.get(
+			self.mw.testACDCadapteru_typAdapteru
+		#'testACDCadapteru/typAdapteru': 'Ignore',
+
 		#plot1.hide()
 		#plot2.hide()
 		#plot3.hide()
@@ -1334,7 +1342,6 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml('<P>Po nastavení zátěže se čeká 5 vteřin, než se začne měřit.' + 
 					'Na wattmetru se měří 10x a z toho se použije aritmetický průměr.</P><BR></BR>')
 			#TODO 'NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019, kterým se stanoví požadavky na ekodesign vnějších napájecích zdrojů podle směrnice Evropského parlamentu a Rady 2009/125/ES'
-			vPo = cfg.get('testACDCadapteru/Po')
 			exportTextEdit.insertHtml('<H3>Nominální/maximální výkon adaptéru - <B>Po = ' + str(vPo) + 
 					' W</B></H3><BR></BR>')
 

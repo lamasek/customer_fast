@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -923,7 +923,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru">
+           <widget class="QComboBox" name="testACDCadapteru_typAdapteru">
             <property name="minimumSize">
              <size>
               <width>120</width>
