@@ -9,6 +9,7 @@ v grafu je na zacatku male napeti - asi nevypnu predchazejici test
 test ac dc adapteru
 grafy nebezi od 0
 
+test zkratu neprojde kdyz je range na 6A a on nastavuje 60A
 
 
 

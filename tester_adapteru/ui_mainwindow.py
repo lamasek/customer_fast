@@ -451,10 +451,10 @@ class Ui_MainWindow(object):
         self.label_27 = QtWidgets.QLabel(parent=self.tab_test_ACDCadapteru)
         self.label_27.setObjectName("label_27")
         self.horizontalLayout_14.addWidget(self.label_27)
-        self.testACDCadapteru_comboBox_typAdapteru = QtWidgets.QComboBox(parent=self.tab_test_ACDCadapteru)
-        self.testACDCadapteru_comboBox_typAdapteru.setMinimumSize(QtCore.QSize(120, 0))
-        self.testACDCadapteru_comboBox_typAdapteru.setObjectName("testACDCadapteru_comboBox_typAdapteru")
-        self.horizontalLayout_14.addWidget(self.testACDCadapteru_comboBox_typAdapteru)
+        self.testACDCadapteru_typAdapteru = QtWidgets.QComboBox(parent=self.tab_test_ACDCadapteru)
+        self.testACDCadapteru_typAdapteru.setMinimumSize(QtCore.QSize(120, 0))
+        self.testACDCadapteru_typAdapteru.setObjectName("testACDCadapteru_typAdapteru")
+        self.horizontalLayout_14.addWidget(self.testACDCadapteru_typAdapteru)
         spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_14.addItem(spacerItem3)
         self.verticalLayout_16.addLayout(self.horizontalLayout_14)
@@ -653,7 +653,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(4)
+        self.tabWidget.setCurrentIndex(5)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

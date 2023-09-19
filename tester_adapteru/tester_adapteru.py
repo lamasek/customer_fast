@@ -1214,6 +1214,7 @@ class TestACDCadapteru():
 				return(False)
 		rc, rs = load.query('*IDN?')
 		exportTextEdit.insertHtml('<P>Load IDN: ' + rs + '</P><BR></BR>')
+		load.write(':SOUR:CURR:RANG 60')  # nutne pro short test atp.
 
 
 		if wmeter.is_connected() == False:
@@ -1228,8 +1229,7 @@ class TestACDCadapteru():
 
 
 		vPo = cfg.get('testACDCadapteru/Po')
-		vTypAdapteru = cfg.get(
-			self.mw.testACDCadapteru_typAdapteru
+		vTypAdapteru = cfg.get('testACDCadapteru/typAdapteru')
 		#'testACDCadapteru/typAdapteru': 'Ignore',
 
 		#plot1.hide()
@@ -1938,7 +1938,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		#region testACDCadapteru ----------------------------------------------
 		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
-		self.testACDCadapteru_comboBox_typAdapteru.addItems(['Ignore', 'AC-AC', 'AC-DC <6V  I>=550mA', 'AC-DC >=6V', 'AC-DC multiple outputs'])
+		
+		self.testACDCadapteru_typAdapteru.addItems(['Ignore', 'AC-AC', 'AC-DC <6V  I>=550mA', 'AC-DC >=6V', 'AC-DC multiple outputs'])
+		self.cfg.add_handler('testACDCadapteru/typAdapteru', self.testACDCadapteru_typAdapteru)
+		
 		#testACDCadapteru_comboBox_typAdapteru
 		self.testACDCadapteru_comboBox_test.addItems(['All', 'Pstb', 'Pa', 'VA char.', 'VA char. overcur.', 'Short', '1 hour load'])
 		self.cfg.add_handler('testACDCadapteru/test', self.testACDCadapteru_comboBox_test)
