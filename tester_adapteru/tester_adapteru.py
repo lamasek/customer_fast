@@ -206,7 +206,7 @@ CONFIG_DEFAULT = {
 					'testACDCadapteru/Vmax':  10, #V - Maximální/nominální napětí zdroje
 					'testACDCadapteru/test': 'All',
 					'testACDCadapteru/load8h': False,
-					'testACDCadapteru/typAdapteru': 'Ignore',
+					'testACDCadapteru/typAdapteru': '0: Ignore',
 					'test_adapteru/reqmAstep': 100, # mA
 					'test_adapteru/reqmAstop': 1000, # mA
 					'test_adapteru/stop_mV': 1000, # mV
@@ -1230,7 +1230,49 @@ class TestACDCadapteru():
 
 		vPo = cfg.get('testACDCadapteru/Po')
 		vTypAdapteru = cfg.get('testACDCadapteru/typAdapteru')
-		#'testACDCadapteru/typAdapteru': 'Ignore',
+		#	['0: Ignore', '2: Low voltage <6V >=550mA', '3: AC-DC >=6V', '4: Multiple outputs'
+
+		if vTypAdapteru[0] == '0':
+			vPstbMax = 0
+			vPaMin = 0
+			vPaMinStr = 'Ignored'
+		elif vTypAdapteru[0] == '2': #'2: Low voltage <6V >=550mA'
+			if vPo <= 1:
+				vPstbMax = 0.1
+				vPaMin = 0.517*vPo + 0.087
+				vPaMinStr = '0,517*Po/1W + 0,087'
+			elif vPo <= 49:
+				vPstbMax = 0.1
+				vPaMin = 0.0834*math.log(vPo) - 0.0014*vPo + 0,609
+				vPaMinStr = '0,0834*ln(Po/1W) - 0,0014*Po/1W + 0,609'
+			else:
+				vPstbMax = 0.21
+				vPaMin = 0.87
+				vPaMinStr = '0,87'
+		elif vTypAdapteru[0] == '3': #'3: AC-DC >=6V'
+			if vPo <= 1:
+				vPstbMax = 0.1
+				vPaMin = 0.5*vPo + 0.160
+				vPaMinStr = '0,5*Po/1W + 0,160'
+			elif vPo <= 49:
+				vPstbMax = 0.1
+				vPaMin = 0.071*math.log(vPo) - 0.0014*vPo + 0,67
+				vPaMinStr = '0,071*ln(Po/1W) - 0,0014*Po/1W + 0,67'
+			else:
+				vPstbMax = 0.21
+				vPaMin = 0.88
+				vPaMinStr = '0,88'
+		elif vTypAdapteru[0] == '4': #'4: Multiple outputs'
+			vPstbMax = 0.3
+			if vPo <= 1:
+				vPaMin = 0.497*vPo + 0.067
+				vPaMinStr = '0,497*Po/1W + 0,067'
+			elif vPo <= 49:
+				vPaMin = 0.075*math.log(vPo) + 0.561
+				vPaMinStr = '0,075*ln(Po/1W) + 0,561'
+			else:
+				vPaMin = 0.86
+				vPaMinStr = '0,86'
 
 		#plot1.hide()
 		#plot2.hide()
@@ -1292,6 +1334,7 @@ class TestACDCadapteru():
 					exportTextEdit.insertHtml('<H2>Měření <B> PŘERUŠENO UŽIVATELEM</B> - naměřená data, '
 			       		+ 'grafy a vyhodnocení jsou pouze částečné - jejich vyhodnocení je na uživateli</H2><BR></BR>')
 					statusLabel.setText('Test Pstb - Stopped by user')
+					vPstbLast = MATH
 					wmeter.integrateReset()
 					break
 
@@ -1303,8 +1346,22 @@ class TestACDCadapteru():
 			#Pstb = ldata_wattmeter_MATH[-1] 
 			vPstb = wmeter.measureNoNAN('MATH')
 			wmeter.integrateReset()
+			if not vPstb > 0:
+				exportTextEdit.insertHtml(f'<H3>Pstb nelze načíst jako výsledek z wattmetru, bereme poslední hodnotu z grafu.</H3><BR></BR>')
+				vPstb = vPstbLast
+
 			exportTextEdit.insertHtml(f'<H3>Standby příkon adaptéru - <B>Pstb</B>: {vPstb:.3f} W</H3><BR></BR>')
 			exportTextEdit.insertHtml('<BR></BR>')
+
+			if vPstbMax > 0:
+				if vPstb <= vPstbMax:
+					vPstbSplnil = 'ANO'
+				else:
+					vPstbSplnil = 'NE'
+				exportTextEdit.insertHtml(f'<H3>Maximální povolený Pstb dle NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019.</H3><BR></BR>')
+				exportTextEdit.insertHtml(f'<H4>&nbsp;&nbsp;&nbsp;PstbMax: {vPstbMax} W</H4><BR></BR>')
+				exportTextEdit.insertHtml(f'<H4>&nbsp;&nbsp;&nbsp;Splnil (ANO/NE): <B>{vPstbSplnil}</B></H4><BR></BR>')
+				exportTextEdit.insertHtml('<BR></BR>')
 
 			exportTextEdit.insertHtml('<P>Průběh spotřeby během měření:<BR></BR>')
 			img = data2plot2qimg(ldata_wattmeter_Wtime, ldata_wattmeter_W, 
@@ -1939,7 +1996,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 		self.testACDCadapteru = TestACDCadapteru(self, self.cfg, self.load, self.wattmeter)
 		self.cfg.add_handler('testACDCadapteru/Po', self.testACDCadapteru_doubleSpinBox_Po)
 		
-		self.testACDCadapteru_typAdapteru.addItems(['Ignore', 'AC-AC', 'AC-DC <6V  I>=550mA', 'AC-DC >=6V', 'AC-DC multiple outputs'])
+		self.testACDCadapteru_typAdapteru.addItems(['0: Ignore', '2: Low voltage <6V >=550mA', '3: AC-DC >=6V', '4: Multiple outputs'])
 		self.cfg.add_handler('testACDCadapteru/typAdapteru', self.testACDCadapteru_typAdapteru)
 		
 		#testACDCadapteru_comboBox_typAdapteru
