@@ -1,23 +1,12 @@
 
 
 
-Měření charakteristik při zkratu (Short)
-v grafu je na zacatku male napeti - asi nevypnu predchazejici test
-
-
-
 test ac dc adapteru
 grafy nebezi od 0
-
-test zkratu neprojde kdyz je range na 6A a on nastavuje 60A
-
-
 
 ve wattmetru krici v realu ze ma problem s merenim MATH protoze tam nejsou data, protoze tam merak zadne nema
 , ale ja se s tim musim srovnat
 
-
-
-na novem kompu nezabral muj lib check install pry pyqt6, prepisoval jsem to ale neni to overeno
+na novem kompu nezabral muj lib check install pro pyqt6, prepisoval jsem to ale neni to overeno
 
 

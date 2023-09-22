@@ -1243,7 +1243,7 @@ class TestACDCadapteru():
 				vPaMinStr = '0,517*Po/1W + 0,087'
 			elif vPo <= 49:
 				vPstbMax = 0.1
-				vPaMin = 0.0834*math.log(vPo) - 0.0014*vPo + 0,609
+				vPaMin = 0.0834*math.log(vPo) - 0.0014*vPo + 0.609
 				vPaMinStr = '0,0834*ln(Po/1W) - 0,0014*Po/1W + 0,609'
 			else:
 				vPstbMax = 0.21
@@ -1256,7 +1256,7 @@ class TestACDCadapteru():
 				vPaMinStr = '0,5*Po/1W + 0,160'
 			elif vPo <= 49:
 				vPstbMax = 0.1
-				vPaMin = 0.071*math.log(vPo) - 0.0014*vPo + 0,67
+				vPaMin = 0.071*math.log(vPo) - 0.0014*vPo + 0.67
 				vPaMinStr = '0,071*ln(Po/1W) - 0,0014*Po/1W + 0,67'
 			else:
 				vPstbMax = 0.21
@@ -1343,7 +1343,6 @@ class TestACDCadapteru():
 				statusLabel.setText('Test Pstb - Failed')
 
 
-			#Pstb = ldata_wattmeter_MATH[-1] 
 			vPstb = wmeter.measureNoNAN('MATH')
 			wmeter.integrateReset()
 			if not vPstb > 0:
@@ -1353,7 +1352,7 @@ class TestACDCadapteru():
 			exportTextEdit.insertHtml(f'<H3>Standby příkon adaptéru - <B>Pstb</B>: {vPstb:.3f} W</H3><BR></BR>')
 			exportTextEdit.insertHtml('<BR></BR>')
 
-			if vPstbMax > 0:
+			if vPstbMax > 0:# evaluate Pstb
 				if vPstb <= vPstbMax:
 					vPstbSplnil = 'ANO'
 				else:
@@ -1467,7 +1466,6 @@ class TestACDCadapteru():
 			except:
 				xP100 = 0
 
-			vPa = (xP25 + xP50 + xP75 + xP100)/4
 			exportTextEdit.insertHtml(
 				'<TABLE BORDER="1">' +
 					'<TR><TH>% z Po</TH><TH>Požadovaný P [W]</TH><TH>Naměřený P na zátěži [W]</TH>' +
@@ -1481,8 +1479,30 @@ class TestACDCadapteru():
 					f'<TR><TD>100%</TD><TD>{vPo}</TD><TD>{loadW100:.3f}</TD>' +
 						f'<TD>{wmeterW100:.3f}</TD><TD>{xP100:.3f}</TD></TR>'
 				'</TABLE><BR></BR>')
-			exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu - <B>Pa = </B>' +
-					f'{vPa:.3f}</H3><BR></BR>')
+
+			if (xP25 >= 0) and (xP50 >= 0) and (xP75 >= 0) and (xP100 >=0):
+				vPa = (xP25 + xP50 + xP75 + xP100)/4
+				exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu - <B>Pa = </B>' +
+						f'{vPa:.3f}</H3><BR></BR>')
+
+				if vPaMin > 0:# evaluate Pa
+					if vPa >= vPaMin:
+						vPstbSplnil = 'ANO'
+					else:
+						vPstbSplnil = 'NE'
+					exportTextEdit.insertHtml(f'<H3>Minimální Pa dle NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019.</H3><BR></BR>')
+					exportTextEdit.insertHtml(f'<H4>&nbsp;&nbsp;&nbsp;Vzorec pro výpočet PaMin: {vPaMinStr}</H4><BR></BR>')
+					exportTextEdit.insertHtml(f'<H4>&nbsp;&nbsp;&nbsp;PaMin: {vPaMin}</H4><BR></BR>')
+					exportTextEdit.insertHtml(f'<H4>&nbsp;&nbsp;&nbsp;Splnil (ANO/NE): <B>{vPstbSplnil}</B></H4><BR></BR>')
+					exportTextEdit.insertHtml('<BR></BR>')
+
+			else:
+				exportTextEdit.insertHtml('<H3>Průměrná účinnost v aktivním režimu nemohla být vypočtena.</H3><BR></BR>')
+				if vPaMin > 0:# evaluate Pa
+					exportTextEdit.insertHtml(f'<H3>Minimální Pa dle NAŘÍZENÍ KOMISE (EU) 2019/1782 ze dne 1. října 2019 nemohla být porovnána.</H3><BR></BR>')
+			
+
+
 			exportTextEdit.insertHtml('<BR></BR>')
 
 			load.setStateOn(False)
@@ -1533,18 +1553,21 @@ class TestACDCadapteru():
 			while loadReqW < xPo:
 				load.setPower(loadReqW)
 				QtTest.QTest.qWait(stepTime)
-				
-				dataLoadA.append(load.measure('A'))
-				dataLoadAtime.append(time.time())
-				dataLoadV.append(load.measure('V'))
-				dataLoadVtime.append(time.time())
-				dataLoadW.append(load.measure('W'))
-				dataLoadWtime.append(time.time())
-				dataLoadReqW.append(loadReqW)
-				dataLoadReqWtime.append(time.time())
 
-				dataWmeterW.append(wmeter.measure('W'))
-				dataWmeterWtime.append(time)
+				pWW = wmeter.measure('W')
+				if pWW >=0: 
+					dataWmeterW.append(pWW)
+					dataWmeterWtime.append(time)
+
+					dataLoadA.append(load.measure('A'))
+					dataLoadAtime.append(time.time())
+					dataLoadV.append(load.measure('V'))
+					dataLoadVtime.append(time.time())
+					dataLoadW.append(load.measure('W'))
+					dataLoadWtime.append(time.time())
+					dataLoadReqW.append(loadReqW)
+					dataLoadReqWtime.append(time.time())
+
 
 				plot1_dataLine.setData(dataLoadAtime, dataLoadA)
 				plot2_dataLine.setData(dataLoadVtime, dataLoadV)
@@ -1578,10 +1601,10 @@ class TestACDCadapteru():
 			for i in range(len(dataLoadW)):
 				try:
 					xP = dataLoadW[i]/dataWmeterW[i]
-					if xP > 1:
+					if xP > 2:
 						print(f'Error: i={i}, dataLoadW[i]={dataLoadW[i]}, dataWmeterW[i]={dataWmeterW[i]}, xp={xP}')
-					else:
-						dataUcinnostP.append(xP)
+						xP = 2
+					dataUcinnostP.append(xP)
 				except:
 					dataUcinnostP.append(0)
 			exportTextEdit.insertHtml('<P>Učinnost vzhledem k zatížení' + '<BR></BR>')
