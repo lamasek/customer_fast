@@ -456,13 +456,14 @@ class Tab_Config():
 			
 		
 		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
-		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
-		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
-		self.mw.tab_Wattmeter_widget.plot1.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot2.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot3.setBackground(themeName)
+		self.mw.tab_Wattmeter_widget.plot4.setBackground(themeName)
 		self.mw.load_plotWidget1.setBackground(themeName)
 		self.mw.load_plotWidget2.setBackground(themeName)
 		self.mw.load_plotWidget3.setBackground(themeName)
 		self.mw.load_plotWidget4.setBackground(themeName)
+		self.mw.netio_plot1.setBackground(themeName)
 		self.mw.testACDCadapteru_plotWidget1.setBackground(themeName)
 		self.mw.testACDCadapteru_plotWidget2.setBackground(themeName)
 		self.mw.testACDCadapteru_plotWidget3.setBackground(themeName)
