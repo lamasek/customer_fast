@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -194,7 +194,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,10">
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,10,0,0,0,0,15">
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
@@ -246,17 +246,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="load_label_status">
-              <property name="minimumSize">
-               <size>
-                <width>80</width>
-                <height>0</height>
-               </size>
+             <widget class="QLineEdit" name="load_status">
+              <property name="frame">
+               <bool>false</bool>
               </property>
-              <property name="text">
-               <string>Init...</string>
-              </property>
-              <property name="wordWrap">
+              <property name="readOnly">
                <bool>true</bool>
               </property>
              </widget>
@@ -727,6 +721,173 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab_Netio">
+       <attribute name="title">
+        <string>Netio</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_14">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="0,5,0,0,0,0,0,0,0,0,15">
+          <item>
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>IP:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="netio_IP"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="netio_demo">
+            <property name="text">
+             <string>Demo</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_connect">
+            <property name="text">
+             <string>Connect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_disconnect">
+            <property name="text">
+             <string>Disconnect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_8">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_on">
+            <property name="text">
+             <string>On</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_off">
+            <property name="text">
+             <string>Off</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>Status</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="netio_status"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_17">
+          <item>
+           <widget class="QLabel" name="label_24">
+            <property name="text">
+             <string>Measure:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_start">
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_stop">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="netio_clear">
+            <property name="text">
+             <string>Clear Graphs</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_25">
+            <property name="text">
+             <string>Interval [ms]:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="netio_measure_interval">
+            <property name="minimum">
+             <number>500</number>
+            </property>
+            <property name="maximum">
+             <number>1000000</number>
+            </property>
+            <property name="singleStep">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QScrollArea" name="scrollArea_2">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>879</width>
+             <height>429</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_15">
+            <item>
+             <widget class="PlotWidget" name="netio_plot1" native="true"/>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tab_test_ACDCadapteru">
        <attribute name="title">
         <string>Test AC/DC adapteru</string>
@@ -762,7 +923,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="testACDCadapteru_comboBox_typAdapteru"/>
+           <widget class="QComboBox" name="testACDCadapteru_typAdapteru">
+            <property name="minimumSize">
+             <size>
+              <width>120</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item>
            <spacer name="horizontalSpacer_4">
@@ -1176,7 +1344,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="load_buttonGroup_Mode"/>
   <buttongroup name="load_buttonGroup_BATT_range"/>
+  <buttongroup name="load_buttonGroup_Mode"/>
  </buttongroups>
 </ui>
