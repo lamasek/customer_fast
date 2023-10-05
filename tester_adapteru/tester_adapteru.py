@@ -744,52 +744,52 @@ class Tab_Load():
 		self.load_mereni_finished = True
 
 	def load_mereni_export(self):
-		self.export_textEdit1.insertHtml('<BR></BR><H1>Export naměřených hodnot zátěže</H1><BR></BR>')
+		self.export.insertHtml('<BR></BR><H1>Export naměřených hodnot zátěže</H1><BR></BR>')
 		CSVDELIM = self.cfg.get('export/CSVDELIM')
 
 		if self.cfg.get('load/measure_A'):
-			self.export_textEdit1.insertHtml('<H2>Proud [A]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
+			self.export.insertHtml('<H2>Proud [A]</H2><BR></BR>')
+			self.export.append(f'Time [seconds since 1970]{CSVDELIM}I [A]')
 			for i in range(len(self.data_A)):
-				self.export_textEdit1.append(
+				self.export.append(
 					str(self.data_Atime[i])+CSVDELIM+
 					str(self.data_A[i])
 				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
+			self.export.append('')
+			self.export.insertHtml('<BR></BR>')
 
 		if self.cfg.get('load/measure_V'):
-			self.export_textEdit1.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
+			self.export.insertHtml('<H2>Napětí [V]</H2><BR></BR>')
+			self.export.append(f'Time [seconds since 1970]{CSVDELIM}U [V]')
 			for i in range(len(self.data_V)):
-				self.export_textEdit1.append(
+				self.export.append(
 					str(self.data_Vtime[i])+CSVDELIM+
 					str(self.data_V[i])
 				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
+			self.export.append('')
+			self.export.insertHtml('<BR></BR>')
 
 		if self.cfg.get('load/measure_W'):
-			self.export_textEdit1.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
+			self.export.insertHtml('<H2>Výkon [W]</H2><BR></BR>')
+			self.export.append(f'Time [seconds since 1970]{CSVDELIM}P [W]')
 			for i in range(len(self.data_W)):
-				self.export_textEdit1.append(
+				self.export.append(
 					str(self.data_Wtime[i])+CSVDELIM+
 					str(self.data_W[i])
 				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
+			self.export.append('')
+			self.export.insertHtml('<BR></BR>')
 
 		if self.cfg.get('load/measure_Wh'):
-			self.export_textEdit1.insertHtml('<H2>Energie [Wh]</H2><BR></BR>')
-			self.export_textEdit1.append(f'Time [seconds since 1970]{CSVDELIM} [Wh]')
+			self.export.insertHtml('<H2>Energie [Wh]</H2><BR></BR>')
+			self.export.append(f'Time [seconds since 1970]{CSVDELIM} [Wh]')
 			for i in range(len(self.data_Wh)):
-				self.export_textEdit1.append(
+				self.export.append(
 					str(self.data_Whtime[i])+CSVDELIM+
 					str(self.data_Wh[i])
 				)
-			self.export_textEdit1.append('')
-			self.export_textEdit1.insertHtml('<BR></BR>')
+			self.export.append('')
+			self.export.insertHtml('<BR></BR>')
 
 	def load_mereni_clearGraphs(self):
 		self.data_A = []
