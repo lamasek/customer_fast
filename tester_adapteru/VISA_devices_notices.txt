@@ -47,6 +47,7 @@ seznam co jde odecitat:
 :NUMeric?
 :NUM:FORM ASC;NUM 10;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;:NUM:LIST:NUM 2;ORD 50;SEL ALL;ITEM1 U,1;ITEM2 I,1;:NUM:HOLD 0
 
+POZOR - může se měnit mezi restarty (pod ITEM je pak jina promenna)
 
 :NUM:VAL? 1
 

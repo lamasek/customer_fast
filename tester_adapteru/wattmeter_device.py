@@ -26,6 +26,16 @@ class Wattmeter(VisaDevice):
 		#:integ?
 		#kontrolovat ze to je spravne na NORM;0,10,0
 
+		#TODO
+		# najdeme v NUM, kterym ITEM odpovidaji V, W, A, MATH (obcas se meni): 
+		# bereme prvni ze seznamu
+		self.ITEM_U = '1' #prvni z moznych vyskytu
+		self.ITEM_I = '8'
+		self.ITEM_P = '215'
+		self.ITEM_TIME = '17'
+		self.ITEM_MATH = '16'
+
+
 		return(r, s)
 		#self.connected = True
 
@@ -42,7 +52,7 @@ class Wattmeter(VisaDevice):
 		self.verbose -= 100
 		# ;ITEM1 MATH;ITEM2 TIME;ITEM3 U,1;ITEM4 I,1;ITEM5 P,1;ITEM6 S,1;ITEM7 Q,1;ITEM8 LAMB,1;ITEM9 PHI,1;ITEM10 FU,1;ITEM11 UTHD,1;ITEM12 ITHD,1;ITEM13 LAMB,1;ITEM14 PHI,1;ITEM15 F
 		if varName == 'MATH':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 1")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? "+self.ITEM_MATH)
 			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
@@ -50,7 +60,7 @@ class Wattmeter(VisaDevice):
 			else:
 				return(None)
 		if varName == 'TIME':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 2")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? "+self.ITEM_TIME)
 			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
@@ -58,7 +68,7 @@ class Wattmeter(VisaDevice):
 			else:
 				return(None)
 		elif varName == 'V':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 3")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? "+self.ITEM_U)
 			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
@@ -66,7 +76,7 @@ class Wattmeter(VisaDevice):
 			else:
 				return(None)
 		elif varName == 'A':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 4")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? "+self.ITEM_I)
 			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
@@ -74,7 +84,7 @@ class Wattmeter(VisaDevice):
 			else:
 				return(None)
 		elif varName == 'W':
-			retCode, retString = VisaDevice.query(self, ":NUM:VAL? 5")
+			retCode, retString = VisaDevice.query(self, ":NUM:VAL? "+self.ITEM_P)
 			self.verbose += 100
 			f = float(retString.strip())
 			if type(f) == float:
