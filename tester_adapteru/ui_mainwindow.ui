@@ -39,7 +39,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>6</number>
       </property>
       <widget class="QWidget" name="tab_config">
        <attribute name="title">
@@ -670,8 +670,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>865</width>
-             <height>836</height>
+             <width>875</width>
+             <height>824</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -874,8 +874,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>879</width>
-             <height>429</height>
+             <width>885</width>
+             <height>455</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -1028,8 +1028,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>879</width>
-             <height>429</height>
+             <width>885</width>
+             <height>454</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_17">
@@ -1119,7 +1119,7 @@
             <item row="2" column="1">
              <widget class="QSpinBox" name="spinBox_time_step_delay">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Cas mezi jednotlivymi merenimi&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Čas mezi jednotlivými měřeními (a je k němu nutno připočítat i [Measure delay])&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="maximum">
                <number>1000000</number>
@@ -1132,7 +1132,7 @@
             <item row="2" column="3">
              <widget class="QSpinBox" name="spinBox_time_measure_delay">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zpozdeni mezi nastavenim pozadovaneho proudu a merenim&lt;/p&gt;&lt;p&gt;Musi byt mensi nez Step delay&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zpoždění od nastavení požadovaného proudu na zátěži a změřením hodnot (čas potřebný než se ustálí zátěž i zdroj)&lt;/p&gt;&lt;p&gt;Doporučená hodnota 800ms&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="maximum">
                <number>1000000</number>
@@ -1144,8 +1144,11 @@
             </item>
             <item row="3" column="0">
              <widget class="QLabel" name="label_10">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test je zastaven pokud je na zátěži naměřeno menší napětí než [Vmin] při více měřeních než [Vmin - Attempts].&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
-               <string>Stop at mVmin [V]</string>
+               <string>Stop at Vmin [mV]</string>
               </property>
              </widget>
             </item>
@@ -1164,10 +1167,17 @@
              </widget>
             </item>
             <item row="3" column="3">
-             <widget class="QSpinBox" name="spinBox_stop_mVAttempts"/>
+             <widget class="QSpinBox" name="spinBox_stop_mVAttempts">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test je zastaven pokud je na zátěži naměřeno menší napětí než [Vmin] při více měřeních než [Vmin - Attempts].&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item row="3" column="1">
              <widget class="QSpinBox" name="spinBox_stop_mV">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test je zastaven pokud je na zátěži naměřeno menší napětí než [Vmin] při více měřeních než [Vmin - Attempts].&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="minimum">
                <number>-1000000</number>
               </property>
@@ -1181,6 +1191,9 @@
             </item>
             <item row="0" column="1">
              <widget class="QSpinBox" name="spinBox_reqmAstart">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Měření začíná od tohoto požadovaného proudu (na zátěži)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="maximum">
                <number>1000000</number>
               </property>
@@ -1194,8 +1207,11 @@
             </item>
             <item row="3" column="2" alignment="Qt::AlignRight">
              <widget class="QLabel" name="label_11">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test je zastaven pokud je na zátěži naměřeno menší napětí než [Vmin] při více měřeních než [Vmin - Attempts].&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
-               <string>Stop At mVmin - Attempts</string>
+               <string>Stop at Vmin - Attempts</string>
               </property>
              </widget>
             </item>
@@ -1225,6 +1241,9 @@
             </item>
             <item row="0" column="3">
              <widget class="QSpinBox" name="spinBox_reqmAstep">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Při každém dalším měření je požadouvaný proud zvýšen o [Step]&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="maximum">
                <number>1000000</number>
               </property>
@@ -1315,7 +1334,7 @@
      <x>0</x>
      <y>0</y>
      <width>903</width>
-     <height>21</height>
+     <height>17</height>
     </rect>
    </property>
   </widget>

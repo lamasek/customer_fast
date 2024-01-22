@@ -2246,7 +2246,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	#region export text
 	def export_save_as_text(self):
 		dlg = QFileDialog()
-		fileName, fileType = dlg.getSaveFileName()
+		#fileName, fileType = dlg.getSaveFileName()
+		fileName, fileType = dlg.getSaveFileName(self, 'Export Text file', 'Tester Adapteru - export.txt', 
+										   'TXT files(*.txt); CSV files(*.csv);;All files(*)')
+
 		print(fileName)
 		if fileName == '':
 			return
@@ -2260,7 +2263,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 	def export_save_as_pdf(self):
 		dlg = QFileDialog()
 		#dlg.
-		fileName, fileType = dlg.getSaveFileName()
+		#fileName, fileType = dlg.getSaveFileName()
+		fileName, fileType = dlg.getSaveFileName(self, 'Export PDF', 'Tester Adapteru - export.pdf', 'Pdf files(.pdf);;All files()')
 		print(fileName)
 		if fileName == '':
 			return
